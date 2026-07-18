@@ -49,6 +49,20 @@ export async function getClientById(id: string): Promise<Client | null> {
   return data ? rowToClient(data) : null;
 }
 
+export async function getClientByEmail(email: string): Promise<Client | null> {
+  if (!isSupabaseConfigured()) {
+    return mockClients.find((c) => c.email.toLowerCase() === email.toLowerCase()) ?? null;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToClient(data) : null;
+}
+
 export async function createClient(input: CreateClientInput): Promise<Client> {
   if (!isSupabaseConfigured()) {
     const client: Client = {

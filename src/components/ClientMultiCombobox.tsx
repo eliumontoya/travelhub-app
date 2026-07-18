@@ -17,13 +17,14 @@ function normalize(text: string) {
 export function ClientMultiCombobox({
   clients,
   name,
-  defaultValues,
+  selectedIds,
+  onSelectionChange,
 }: {
   clients: Client[];
   name: string;
-  defaultValues?: string[];
+  selectedIds: string[];
+  onSelectionChange: (ids: string[]) => void;
 }) {
-  const [selectedIds, setSelectedIds] = useState<string[]>(defaultValues ?? []);
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -45,13 +46,13 @@ export function ClientMultiCombobox({
   }, [clients, query, selectedIds]);
 
   function handleSelect(client: Client) {
-    setSelectedIds((prev) => (prev.includes(client.id) ? prev : [...prev, client.id]));
+    onSelectionChange(selectedIds.includes(client.id) ? selectedIds : [...selectedIds, client.id]);
     setQuery("");
     setIsOpen(false);
   }
 
   function handleRemove(clientId: string) {
-    setSelectedIds((prev) => prev.filter((id) => id !== clientId));
+    onSelectionChange(selectedIds.filter((id) => id !== clientId));
   }
 
   return (

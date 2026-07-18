@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Client } from "@/types";
+import { CreateClientDialog } from "@/components/CreateClientDialog";
 
 function normalize(text: string) {
   return text
@@ -23,12 +24,14 @@ export function ClientCombobox({
   const [query, setQuery] = useState(defaultClient?.name ?? "");
   const [selectedId, setSelectedId] = useState(defaultClient?.id ?? "");
   const [isOpen, setIsOpen] = useState(false);
+  const [allClients, setAllClients] = useState<Client[]>(clients);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const results = useMemo(() => {
     const q = normalize(query.trim());
     if (!q) return [];
-    return clients.filter((c) => normalize(c.name).includes(q)).slice(0, 8);
-  }, [clients, query]);
+    return allClients.filter((c) => normalize(c.name).includes(q)).slice(0, 8);
+  }, [allClients, query]);
 
   function handleSelect(client: Client) {
     setQuery(client.name);
@@ -40,6 +43,13 @@ export function ClientCombobox({
     setQuery(value);
     setSelectedId("");
     setIsOpen(true);
+  }
+
+  function handleClientCreated(client: Client) {
+    setAllClients((prev) => [client, ...prev]);
+    setQuery(client.name);
+    setSelectedId(client.id);
+    setIsOpen(false);
   }
 
   return (
@@ -56,7 +66,7 @@ export function ClientCombobox({
       />
       <input type="hidden" name={name} value={selectedId} />
 
-      {isOpen && results.length > 0 && (
+      {isOpen && (
         <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
           {results.map((c) => (
             <li key={c.id}>
@@ -70,8 +80,26 @@ export function ClientCombobox({
               </button>
             </li>
           ))}
+          <li className="border-t border-gray-100">
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setShowCreateDialog(true);
+              }}
+              className="block w-full px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50"
+            >
+              + Crear nuevo
+            </button>
+          </li>
         </ul>
       )}
+
+      <CreateClientDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreated={handleClientCreated}
+      />
     </div>
   );
 }
