@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getClients } from "@/lib/data";
 import { createTripAction } from "./actions";
-import { ClientCombobox } from "@/components/ClientCombobox";
+import { ClientMultiCombobox } from "@/components/ClientMultiCombobox";
+import { MinClientsGuard } from "@/components/MinClientsGuard";
 
 export default async function NewTripPage({
   searchParams,
@@ -59,8 +60,13 @@ export default async function NewTripPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Cliente existente</label>
-          <ClientCombobox clients={clients} name="clientId" defaultValue={clientId} />
+          <label className="block text-sm font-medium text-gray-700">Clientes existentes</label>
+          <ClientMultiCombobox
+            clients={clients}
+            name="clientIds"
+            defaultValues={clientId ? [clientId] : []}
+          />
+          <MinClientsGuard fieldName="clientIds" />
         </div>
 
         <fieldset className="rounded-lg border border-gray-200 p-4">

@@ -10,6 +10,7 @@ import {
   getItemDocuments,
   reorderItems,
   reorderTripDays,
+  setTripClients,
   updateItem,
   updateTrip,
   updateTripDay,
@@ -138,6 +139,14 @@ export async function updateTripInstructionsAction(
   await updateTrip(tripId, { instructions: instructions || null });
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function setTripClientsAction(tripId: string, formData: FormData) {
+  const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
+  if (clientIds.length < 1) return; // no-op: server-side "mínimo 1 cliente" (defensa en profundidad)
+  await setTripClients(tripId, clientIds);
+  revalidateTrip(tripId);
+  revalidatePath("/dashboard");
 }
 
 export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {

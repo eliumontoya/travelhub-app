@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getClients, getTrips } from "@/lib/data";
-import { formatDateShort } from "@/lib/item-meta";
+import { getClients, getTripsWithClients } from "@/lib/data";
+import { formatDateShort, formatAssignedClients } from "@/lib/item-meta";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -9,7 +9,7 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTrips()]);
+  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -25,7 +25,6 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4">
         {trips.map((trip) => {
-          const client = clients.find((c) => c.id === trip.clientId);
           const status = statusMeta[trip.status];
           return (
             <Link
@@ -40,7 +39,7 @@ export default async function DashboardPage() {
                     {status.label}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">{client?.name}</p>
+                <p className="mt-1 text-sm text-gray-500">{formatAssignedClients(trip.clients)}</p>
                 <p className="text-sm text-gray-400">
                   {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
                 </p>

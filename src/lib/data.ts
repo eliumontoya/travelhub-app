@@ -4,6 +4,7 @@ import {
   mockTrips,
   mockTripDays,
   mockItems,
+  mockTripClients,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -103,7 +104,7 @@ function rowToClient(row: Record<string, unknown>): Client {
 // ---------- Trips ----------
 
 export type CreateTripInput = {
-  clientId: string;
+  clientIds: string[];
   title: string;
   slug: string;
   startDate?: string;
@@ -133,13 +134,84 @@ export async function getTrips(): Promise<Trip[]> {
   return data.map(rowToTrip);
 }
 
-export async function getTripsByClientId(clientId: string): Promise<Trip[]> {
-  if (!isSupabaseConfigured()) return mockTrips.filter((t) => t.clientId === clientId);
+// Query batcheada para el dashboard/list: trips + UN solo trip_clients.in()
+// + UN solo clients.in() (sin N+1 por fila) y SIN cargar days/items/documents
+// (solo lo que necesita la vista de lista). clients[] queda ordenado por
+// created_at asc (orden de asignación), igual que assembleTripWithDetails.
+export async function getTripsWithClients(): Promise<(Trip & { clients: Client[] })[]> {
+  if (!isSupabaseConfigured()) {
+    return mockTrips.map((trip) => ({
+      ...trip,
+      clients: mockTripClients
+        .filter((tc) => tc.tripId === trip.id)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map((tc) => mockClients.find((c) => c.id === tc.clientId))
+        .filter((c): c is Client => Boolean(c)),
+    }));
+  }
+
   const supabase = await createServerSupabase();
+  const { data: tripRows, error } = await supabase
+    .from("trips")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const trips = (tripRows ?? []).map(rowToTrip);
+  const tripIds = trips.map((t) => t.id);
+  if (!tripIds.length) return [];
+
+  const { data: linkRows, error: linksError } = await supabase
+    .from("trip_clients")
+    .select("trip_id, client_id, created_at")
+    .in("trip_id", tripIds)
+    .order("created_at", { ascending: true });
+  if (linksError) throw linksError;
+
+  const clientIds = [...new Set((linkRows ?? []).map((l) => l.client_id as string))];
+  let clientsById = new Map<string, Client>();
+  if (clientIds.length) {
+    const { data: clientRows, error: clientsError } = await supabase
+      .from("clients")
+      .select("*")
+      .in("id", clientIds);
+    if (clientsError) throw clientsError;
+    clientsById = new Map((clientRows ?? []).map((c) => [c.id as string, rowToClient(c)]));
+  }
+
+  return trips.map((trip) => ({
+    ...trip,
+    clients: (linkRows ?? [])
+      .filter((l) => l.trip_id === trip.id)
+      .map((l) => clientsById.get(l.client_id as string))
+      .filter((c): c is Client => Boolean(c)),
+  }));
+}
+
+// Devuelve todos los viajes asignados a un cliente vía trip_clients (fuente
+// de verdad many-to-many), no solo los que tienen trips.client_id === clientId.
+// Batch query (.in) para evitar N+1 al resolver los trips encontrados.
+export async function getTripsByClientId(clientId: string): Promise<Trip[]> {
+  if (!isSupabaseConfigured()) {
+    const tripIds = new Set(
+      mockTripClients.filter((tc) => tc.clientId === clientId).map((tc) => tc.tripId)
+    );
+    return mockTrips
+      .filter((t) => tripIds.has(t.id))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  const supabase = await createServerSupabase();
+  const { data: links, error: linksError } = await supabase
+    .from("trip_clients")
+    .select("trip_id")
+    .eq("client_id", clientId);
+  if (linksError) throw linksError;
+  const tripIds = (links ?? []).map((l) => l.trip_id as string);
+  if (!tripIds.length) return [];
   const { data, error } = await supabase
     .from("trips")
     .select("*")
-    .eq("client_id", clientId)
+    .in("id", tripIds)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data.map(rowToTrip);
@@ -175,12 +247,30 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
   const supabase = await createServerSupabase();
   const trip = rowToTrip(tripRow);
 
-  const { data: clientRow, error: clientError } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("id", trip.clientId)
-    .maybeSingle();
-  if (clientError) throw clientError;
+  // trip_clients es la fuente de verdad: se ordena por created_at asc
+  // (orden de asignación) y luego se resuelven los clientes en un solo
+  // batch .in() (sin N+1).
+  const { data: linkRows, error: linksError } = await supabase
+    .from("trip_clients")
+    .select("client_id, created_at")
+    .eq("trip_id", trip.id)
+    .order("created_at", { ascending: true });
+  if (linksError) throw linksError;
+
+  const orderedClientIds = (linkRows ?? []).map((l) => l.client_id as string);
+  let clients: Client[] = [];
+  if (orderedClientIds.length) {
+    const { data: clientRows, error: clientsError } = await supabase
+      .from("clients")
+      .select("*")
+      .in("id", orderedClientIds);
+    if (clientsError) throw clientsError;
+    const byId = new Map((clientRows ?? []).map((c) => [c.id as string, rowToClient(c)]));
+    clients = orderedClientIds
+      .map((id) => byId.get(id))
+      .filter((c): c is Client => Boolean(c));
+  }
+  const client = clients[0] ?? ({} as Client);
 
   const { data: dayRows, error: daysError } = await supabase
     .from("trip_days")
@@ -228,16 +318,24 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
 
   return {
     ...trip,
-    client: clientRow ? rowToClient(clientRow) : ({} as Client),
+    clients,
+    client,
     days,
   };
 }
 
+// clientIds MUST have length >= 1. Rechaza ANTES de escribir cualquier fila
+// (no debe quedar un trip persistido con cero clientes asignados).
+// trips.client_id se sigue escribiendo como espejo de compatibilidad
+// (clientIds[0]); trip_clients es la fuente de verdad para lecturas.
 export async function createTrip(input: CreateTripInput): Promise<Trip> {
+  if (!input.clientIds || input.clientIds.length < 1) {
+    throw new Error("Se requiere al menos un cliente para crear el viaje");
+  }
   if (!isSupabaseConfigured()) {
     const trip: Trip = {
       id: uid(),
-      clientId: input.clientId,
+      clientId: input.clientIds[0],
       title: input.title,
       slug: input.slug,
       startDate: input.startDate ?? "",
@@ -248,13 +346,21 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       createdAt: new Date().toISOString(),
     };
     mockTrips.unshift(trip);
+    const now = new Date().toISOString();
+    input.clientIds.forEach((clientId, idx) => {
+      mockTripClients.push({
+        tripId: trip.id,
+        clientId,
+        createdAt: new Date(Date.parse(now) + idx).toISOString(),
+      });
+    });
     return trip;
   }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trips")
     .insert({
-      client_id: input.clientId,
+      client_id: input.clientIds[0],
       title: input.title,
       slug: input.slug,
       start_date: input.startDate || null,
@@ -265,7 +371,89 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
     .select()
     .single();
   if (error) throw error;
-  return rowToTrip(data);
+  const trip = rowToTrip(data);
+
+  const { error: linksError } = await supabase
+    .from("trip_clients")
+    .insert(input.clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
+  if (linksError) throw linksError;
+
+  return trip;
+}
+
+// Reemplaza el conjunto completo de clientes asignados a un viaje mediante
+// un diff (borra los removidos + inserta los agregados con ON CONFLICT DO
+// NOTHING), NO delete-all-then-reinsert, para preservar el created_at (orden
+// de asignación) de los clientes retenidos. Rechaza si clientIds queda vacío
+// (regla de mínimo 1 cliente aplica también en edición) dejando la
+// asignación existente sin cambios.
+export async function setTripClients(tripId: string, clientIds: string[]): Promise<void> {
+  if (!clientIds || clientIds.length < 1) {
+    throw new Error("Se requiere al menos un cliente asignado al viaje");
+  }
+  if (!isSupabaseConfigured()) {
+    const current = mockTripClients.filter((tc) => tc.tripId === tripId);
+    const currentIds = new Set(current.map((tc) => tc.clientId));
+    const nextIds = new Set(clientIds);
+
+    for (let i = mockTripClients.length - 1; i >= 0; i--) {
+      const tc = mockTripClients[i];
+      if (tc.tripId === tripId && !nextIds.has(tc.clientId)) {
+        mockTripClients.splice(i, 1);
+      }
+    }
+    const now = Date.now();
+    clientIds.forEach((clientId, idx) => {
+      if (!currentIds.has(clientId)) {
+        mockTripClients.push({
+          tripId,
+          clientId,
+          createdAt: new Date(now + idx).toISOString(),
+        });
+      }
+    });
+
+    const trip = mockTrips.find((t) => t.id === tripId);
+    if (trip) trip.clientId = clientIds[0];
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: currentRows, error: currentError } = await supabase
+    .from("trip_clients")
+    .select("client_id")
+    .eq("trip_id", tripId);
+  if (currentError) throw currentError;
+
+  const currentIds = new Set((currentRows ?? []).map((r) => r.client_id as string));
+  const nextIds = new Set(clientIds);
+  const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
+  const toAdd = clientIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    const { error: removeError } = await supabase
+      .from("trip_clients")
+      .delete()
+      .eq("trip_id", tripId)
+      .in("client_id", toRemove);
+    if (removeError) throw removeError;
+  }
+
+  if (toAdd.length) {
+    const { error: addError } = await supabase
+      .from("trip_clients")
+      .upsert(
+        toAdd.map((clientId) => ({ trip_id: tripId, client_id: clientId })),
+        { onConflict: "trip_id,client_id", ignoreDuplicates: true }
+      );
+    if (addError) throw addError;
+  }
+
+  const { error: mirrorError } = await supabase
+    .from("trips")
+    .update({ client_id: clientIds[0] })
+    .eq("id", tripId);
+  if (mirrorError) throw mirrorError;
 }
 
 export async function updateTrip(id: string, input: UpdateTripInput): Promise<Trip> {
@@ -298,7 +486,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
 function rowToTrip(row: Record<string, unknown>): Trip {
   return {
     id: row.id as string,
-    clientId: row.client_id as string,
+    clientId: (row.client_id as string) ?? "",
     title: row.title as string,
     slug: row.slug as string,
     startDate: (row.start_date as string) ?? "",

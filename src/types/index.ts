@@ -63,6 +63,9 @@ export interface Item {
 }
 
 export interface TripWithDetails extends Trip {
+  /** Fuente de verdad: todos los clientes asignados (orden = asignación, created_at asc). */
+  clients: Client[];
+  /** Compatibilidad hacia atrás: siempre clients[0] (o {} si no hay clientes). */
   client: Client;
   days: (TripDay & { items: Item[] })[];
 }
