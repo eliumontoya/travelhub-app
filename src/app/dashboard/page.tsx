@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { mockClients, mockTrips } from "@/lib/mock-data";
+import { getClients, getTrips } from "@/lib/data";
 import { formatDateShort } from "@/lib/item-meta";
 
 const statusMeta = {
@@ -8,19 +8,24 @@ const statusMeta = {
   archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [clients, trips] = await Promise.all([getClients(), getTrips()]);
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Mis viajes</h1>
-        <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+        <Link
+          href="/dashboard/trips/new"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+        >
           + Nuevo viaje
-        </button>
+        </Link>
       </div>
 
       <div className="grid gap-4">
-        {mockTrips.map((trip) => {
-          const client = mockClients.find((c) => c.id === trip.clientId);
+        {trips.map((trip) => {
+          const client = clients.find((c) => c.id === trip.clientId);
           const status = statusMeta[trip.status];
           return (
             <Link
@@ -48,7 +53,7 @@ export default function DashboardPage() {
 
       <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
       <div className="grid gap-3">
-        {mockClients.map((client) => (
+        {clients.map((client) => (
           <div key={client.id} className="rounded-lg border border-gray-200 bg-white p-4">
             <p className="font-medium text-gray-900">{client.name}</p>
             <p className="text-sm text-gray-500">{client.email} · {client.phone}</p>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTripById } from "@/lib/mock-data";
+import { getTripById } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
 
 export default async function TripEditorPage({
@@ -9,7 +9,7 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const trip = getTripById(id);
+  const trip = await getTripById(id);
   if (!trip) notFound();
 
   return (

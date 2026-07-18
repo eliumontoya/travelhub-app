@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTripWithDetails } from "@/lib/mock-data";
+import { getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
@@ -10,7 +10,7 @@ export default async function PublicTripPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const trip = getTripWithDetails(slug);
+  const trip = await getTripWithDetails(slug);
   if (!trip) notFound();
 
   return (

@@ -1,0 +1,23 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+
+export async function signIn(formData: FormData) {
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const redirectTo = String(formData.get("redirectTo") ?? "/dashboard");
+
+  if (!isSupabaseConfigured()) {
+    redirect(`/login?error=${encodeURIComponent("Supabase no está configurado")}`);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(redirectTo || "/dashboard");
+}
