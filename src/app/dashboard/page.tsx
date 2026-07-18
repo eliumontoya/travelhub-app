@@ -34,7 +34,7 @@ export default async function DashboardPage() {
               className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
             >
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-semibold text-gray-900">{trip.title}</h2>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                     {status.label}
