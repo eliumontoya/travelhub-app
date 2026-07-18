@@ -16,6 +16,7 @@ export async function createTripAction(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");
+  const instructions = String(formData.get("instructions") ?? "").trim() || undefined;
   let clientId = String(formData.get("clientId") ?? "");
 
   const newClientName = String(formData.get("newClientName") ?? "").trim();
@@ -35,6 +36,6 @@ export async function createTripAction(formData: FormData) {
   const slugBase = slugify(title) || "viaje";
   const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-  const trip = await createTrip({ clientId, title, slug, startDate, endDate });
+  const trip = await createTrip({ clientId, title, slug, startDate, endDate, instructions });
   redirect(`/dashboard/trips/${trip.id}`);
 }

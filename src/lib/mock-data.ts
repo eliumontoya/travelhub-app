@@ -29,6 +29,8 @@ export const mockTrips: Trip[] = [
     endDate: "2026-09-17",
     coverImageUrl:
       "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1200",
+    instructions:
+      "¡Bienvenidos! Llegada al hotel a partir de las 15:00. Contacto de emergencia 24/7: +39 06 1234 5678. Lleven documento de identidad para el check-in.",
     status: "published",
     createdAt: "2026-07-01T09:00:00Z",
   },

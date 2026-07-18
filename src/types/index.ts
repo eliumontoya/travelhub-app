@@ -25,6 +25,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   coverImageUrl?: string;
+  instructions?: string;
   status: TripStatus;
   createdAt: string;
 }

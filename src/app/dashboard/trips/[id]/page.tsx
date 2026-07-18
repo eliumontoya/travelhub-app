@@ -4,6 +4,7 @@ import { getTripById } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
+import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import {
@@ -18,6 +19,7 @@ import {
   moveDayAction,
   moveItemAction,
   publishTripStatusAction,
+  updateTripInstructionsAction,
   uploadDocumentAction,
 } from "./actions";
 
@@ -67,6 +69,18 @@ export default async function TripEditorPage({
               {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
             </button>
           </form>
+          <TripInstructionsDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Instrucciones
+              </button>
+            }
+            onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
+          />
           <Link
             href={`/t/${trip.slug}`}
             target="_blank"
