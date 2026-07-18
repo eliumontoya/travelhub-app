@@ -1,4 +1,4 @@
-import { ItemType } from "@/types";
+import { Client, ItemType } from "@/types";
 
 export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color: string }> = {
   flight: { label: "Vuelo", icon: "✈️", color: "bg-sky-100 text-sky-700" },
@@ -31,4 +31,17 @@ export function formatDateCompact(dateStr: string) {
     day: "numeric",
     month: "short",
   });
+}
+
+// Formato es-MX para listas de clientes asignados a un viaje: hasta 2
+// nombres se muestran completos separados por coma; a partir de 3, se
+// muestran los primeros 2 + "+N más" (N = total - 2).
+// Ej.: ["Ana", "Luis"] -> "Ana, Luis"; ["Ana","Luis","Carla","Diego"] ->
+// "Ana, Luis +2 más".
+export function formatAssignedClients(clients: Client[]): string {
+  if (clients.length === 0) return "";
+  if (clients.length <= 2) return clients.map((c) => c.name).join(", ");
+  const [first, second] = clients;
+  const remaining = clients.length - 2;
+  return `${first.name}, ${second.name} +${remaining} más`;
 }
