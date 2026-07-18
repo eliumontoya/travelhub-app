@@ -5,6 +5,7 @@ import { siteContact } from "@/lib/site-config";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
+import { TripDaySidebar } from "@/components/TripDaySidebar";
 
 export default async function PublicTripPage({
   params,
@@ -45,67 +46,74 @@ export default async function PublicTripPage({
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-4">
-        {trip.instructions && (
-          <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
+      <div className="mx-auto max-w-2xl px-4 lg:max-w-5xl lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-x-8">
+        <TripDaySidebar
+          days={trip.days}
+          className="hidden lg:block lg:sticky lg:top-6 lg:self-start"
+        />
+
+        <div className="lg:max-w-2xl">
+          {trip.instructions && (
+            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
+            </div>
+          )}
+
+          <div className="my-6 flex justify-center">
+            <AddTripToCalendarButton trip={trip} />
           </div>
-        )}
 
-        <div className="my-6 flex justify-center">
-          <AddTripToCalendarButton trip={trip} />
-        </div>
-
-        <div className="space-y-8">
-          {trip.days.map((day) => (
-            <div key={day.id}>
-              <h2 className="mb-3 text-lg font-semibold capitalize text-gray-900">
-                {formatDateLong(day.date)}
-              </h2>
-              <div className="space-y-3 border-l-2 border-gray-200 pl-4">
-                {day.items.map((item) => {
-                  const meta = itemTypeMeta[item.type];
-                  return (
-                    <div
-                      key={item.id}
-                      className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-3">
-                          <span className={`rounded-full px-2 py-1 text-lg ${meta.color}`}>
-                            {meta.icon}
-                          </span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{item.title}</span>
-                              {item.startTime && (
-                                <span className="text-xs text-gray-400">{item.startTime}</span>
+          <div className="space-y-8">
+            {trip.days.map((day) => (
+              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
+                <h2 className="mb-3 text-lg font-semibold capitalize text-gray-900">
+                  {formatDateLong(day.date)}
+                </h2>
+                <div className="space-y-3 border-l-2 border-gray-200 pl-4">
+                  {day.items.map((item) => {
+                    const meta = itemTypeMeta[item.type];
+                    return (
+                      <div
+                        key={item.id}
+                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3">
+                            <span className={`rounded-full px-2 py-1 text-lg ${meta.color}`}>
+                              {meta.icon}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900">{item.title}</span>
+                                {item.startTime && (
+                                  <span className="text-xs text-gray-400">{item.startTime}</span>
+                                )}
+                              </div>
+                              {item.location && (
+                                <p className="text-sm text-gray-500">{item.location}</p>
+                              )}
+                              {item.notes && (
+                                <p className="mt-1 text-sm text-gray-400">{item.notes}</p>
+                              )}
+                              {item.confirmationCode && (
+                                <p className="mt-1 text-xs text-gray-400">
+                                  Confirmación: {item.confirmationCode}
+                                </p>
+                              )}
+                              {item.lat !== undefined && item.lng !== undefined && (
+                                <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
                               )}
                             </div>
-                            {item.location && (
-                              <p className="text-sm text-gray-500">{item.location}</p>
-                            )}
-                            {item.notes && (
-                              <p className="mt-1 text-sm text-gray-400">{item.notes}</p>
-                            )}
-                            {item.confirmationCode && (
-                              <p className="mt-1 text-xs text-gray-400">
-                                Confirmación: {item.confirmationCode}
-                              </p>
-                            )}
-                            {item.lat !== undefined && item.lng !== undefined && (
-                              <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
-                            )}
                           </div>
+                          <AddToCalendarButton item={item} date={day.date} />
                         </div>
-                        <AddToCalendarButton item={item} date={day.date} />
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </main>
