@@ -18,9 +18,10 @@ export function MinClientsGuard({ fieldName }: { fieldName: string }) {
 
     function handleSubmit(e: Event) {
       const count = form!.querySelectorAll(`input[name="${fieldName}"]`).length;
-      if (count < 1) {
+      const newClientName = (form!.querySelector('input[name="newClientName"]') as HTMLInputElement)?.value?.trim();
+      if (count < 1 && !newClientName) {
         e.preventDefault();
-        setError("Selecciona al menos un cliente");
+        setError("Selecciona al menos un cliente o creá uno nuevo");
       } else {
         setError(null);
       }
