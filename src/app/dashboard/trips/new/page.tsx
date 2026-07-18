@@ -29,6 +29,16 @@ export default async function NewTripPage({
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Instrucciones</label>
+          <textarea
+            name="instructions"
+            rows={4}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            placeholder="Mensaje de bienvenida, instrucciones de llegada, contactos de emergencia…"
+          />
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700">Fecha inicio</label>

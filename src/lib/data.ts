@@ -109,6 +109,7 @@ export type CreateTripInput = {
   startDate?: string;
   endDate?: string;
   coverImageUrl?: string;
+  instructions?: string;
 };
 
 export type UpdateTripInput = Partial<{
@@ -117,6 +118,7 @@ export type UpdateTripInput = Partial<{
   startDate: string;
   endDate: string;
   coverImageUrl: string;
+  instructions: string | null;
   status: Trip["status"];
 }>;
 
@@ -241,6 +243,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       startDate: input.startDate ?? "",
       endDate: input.endDate ?? "",
       coverImageUrl: input.coverImageUrl,
+      instructions: input.instructions,
       status: "draft",
       createdAt: new Date().toISOString(),
     };
@@ -257,6 +260,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       start_date: input.startDate || null,
       end_date: input.endDate || null,
       cover_image_url: input.coverImageUrl,
+      instructions: input.instructions ?? null,
     })
     .select()
     .single();
@@ -273,6 +277,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.startDate !== undefined) trip.startDate = input.startDate;
     if (input.endDate !== undefined) trip.endDate = input.endDate;
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
+    if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
     return trip;
   }
@@ -283,6 +288,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.startDate !== undefined) patch.start_date = input.startDate;
   if (input.endDate !== undefined) patch.end_date = input.endDate;
   if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl;
+  if (input.instructions !== undefined) patch.instructions = input.instructions;
   if (input.status !== undefined) patch.status = input.status;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
@@ -298,6 +304,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     startDate: (row.start_date as string) ?? "",
     endDate: (row.end_date as string) ?? "",
     coverImageUrl: (row.cover_image_url as string) ?? undefined,
+    instructions: (row.instructions as string) ?? undefined,
     status: row.status as Trip["status"],
     createdAt: row.created_at as string,
   };

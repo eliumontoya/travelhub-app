@@ -33,6 +33,12 @@ export default async function PublicTripPage({
       </div>
 
       <div className="mx-auto max-w-2xl px-4">
+        {trip.instructions && (
+          <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
+          </div>
+        )}
+
         <div className="my-6 flex justify-center">
           <AddTripToCalendarButton trip={trip} />
         </div>

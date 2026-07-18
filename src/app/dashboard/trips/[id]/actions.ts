@@ -129,6 +129,17 @@ export async function publishTripStatusAction(tripId: string, status: "draft" | 
   revalidateTrip(tripId);
 }
 
+export async function updateTripInstructionsAction(
+  tripId: string,
+  slug: string,
+  formData: FormData
+) {
+  const instructions = String(formData.get("instructions") ?? "").trim();
+  await updateTrip(tripId, { instructions: instructions || null });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
 export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
