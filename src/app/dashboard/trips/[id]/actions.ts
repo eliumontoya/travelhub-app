@@ -8,9 +8,11 @@ import {
   deleteItem,
   deleteTripDay,
   getItemDocuments,
+  getOrCreateTag,
   reorderItems,
   reorderTripDays,
   setTripClients,
+  setTripTags,
   updateItem,
   updateTrip,
   updateTripDay,
@@ -145,6 +147,19 @@ export async function setTripClientsAction(tripId: string, formData: FormData) {
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   if (clientIds.length < 1) return; // no-op: server-side "mínimo 1 cliente" (defensa en profundidad)
   await setTripClients(tripId, clientIds);
+  revalidateTrip(tripId);
+  revalidatePath("/dashboard");
+}
+
+export async function setTripTagsAction(tripId: string, formData: FormData) {
+  const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
+  const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
+  for (const name of newTagNames) {
+    const tag = await getOrCreateTag(name);
+    tagIds.push(tag.id);
+  }
+  // 0 tags es válido (a diferencia de setTripClientsAction, sin guard de mínimo).
+  await setTripTags(tripId, tagIds);
   revalidateTrip(tripId);
   revalidatePath("/dashboard");
 }

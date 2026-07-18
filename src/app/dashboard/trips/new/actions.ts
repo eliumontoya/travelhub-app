@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient as createClientRecord, createTrip } from "@/lib/data";
+import { createClient as createClientRecord, createTrip, getOrCreateTag } from "@/lib/data";
 
 function slugify(text: string) {
   return text
@@ -18,6 +18,8 @@ export async function createTripAction(formData: FormData) {
   const endDate = String(formData.get("endDate") ?? "");
   const instructions = String(formData.get("instructions") ?? "").trim() || undefined;
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
+  const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
+  const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
 
   const newClientName = String(formData.get("newClientName") ?? "").trim();
   if (newClientName) {
@@ -27,6 +29,11 @@ export async function createTripAction(formData: FormData) {
       phone: String(formData.get("newClientPhone") ?? "").trim() || undefined,
     });
     clientIds.push(client.id);
+  }
+
+  for (const name of newTagNames) {
+    const tag = await getOrCreateTag(name);
+    tagIds.push(tag.id);
   }
 
   if (!title) {
@@ -39,6 +46,6 @@ export async function createTripAction(formData: FormData) {
   const slugBase = slugify(title) || "viaje";
   const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-  const trip = await createTrip({ clientIds, title, slug, startDate, endDate, instructions });
+  const trip = await createTrip({ clientIds, title, slug, startDate, endDate, instructions, tagIds });
   redirect(`/dashboard/trips/${trip.id}`);
 }

@@ -17,6 +17,12 @@ export interface Client {
   createdAt: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface Trip {
   id: string;
   clientId: string;
@@ -67,6 +73,8 @@ export interface TripWithDetails extends Trip {
   clients: Client[];
   /** Compatibilidad hacia atrás: siempre clients[0] (o {} si no hay clientes). */
   client: Client;
+  /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
+  tags: Tag[];
   days: (TripDay & { items: Item[] })[];
 }
 
