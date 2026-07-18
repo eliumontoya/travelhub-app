@@ -24,3 +24,11 @@ export function formatDateShort(dateStr: string) {
     month: "short",
   });
 }
+
+export function formatDateCompact(dateStr: string) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
