@@ -1,0 +1,16 @@
+# Supabase
+.branches
+# .temp/project-ref and .temp/linked-project.json are committed on purpose
+# so any worktree can `supabase db push` without re-running `supabase link`.
+.temp/cli-latest
+.temp/gotrue-version
+.temp/pooler-url
+.temp/postgres-version
+.temp/rest-version
+.temp/storage-migration
+.temp/storage-version
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
