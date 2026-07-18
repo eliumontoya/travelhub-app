@@ -2,6 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTripById } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
+import { ItemFormDialog } from "@/components/ItemFormDialog";
+import { DayFormDialog } from "@/components/DayFormDialog";
+import { ReorderButtons } from "@/components/ReorderButtons";
+import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import {
+  addDayAction,
+  addItemAction,
+  deleteDayAction,
+  deleteItemAction,
+  editDayAction,
+  editItemAction,
+  moveDayAction,
+  moveItemAction,
+} from "./actions";
 
 export default async function TripEditorPage({
   params,
@@ -12,18 +26,20 @@ export default async function TripEditorPage({
   const trip = await getTripById(id);
   if (!trip) notFound();
 
+  const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
         ← Volver
       </Link>
 
-      <div className="mt-4 mb-6 flex items-center justify-between">
+      <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
           <p className="text-sm text-gray-500">{trip.client.name}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href={`/t/${trip.slug}`}
             target="_blank"
@@ -31,59 +47,112 @@ export default async function TripEditorPage({
           >
             Vista previa
           </Link>
-          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-            Copiar URL
-          </button>
+          <CopyUrlButtonClient slug={trip.slug} />
         </div>
       </div>
 
       <div className="space-y-6">
-        {trip.days.map((day) => (
-          <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-5">
-            <h3 className="mb-4 font-semibold capitalize text-gray-900">
-              {formatDateLong(day.date)}
-            </h3>
-            <div className="space-y-3">
-              {day.items.map((item) => {
-                const meta = itemTypeMeta[item.type];
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-3 rounded-lg border border-gray-100 p-3"
-                  >
-                    <span className={`rounded-full px-2 py-1 text-lg ${meta.color}`}>
-                      {meta.icon}
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{item.title}</span>
-                        {item.startTime && (
-                          <span className="text-xs text-gray-400">{item.startTime}</span>
+        {trip.days.map((day) => {
+          const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
+          const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
+
+          return (
+            <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <h3 className="font-semibold capitalize text-gray-900">
+                  {formatDateLong(day.date)}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <ReorderButtons
+                    disableUp={dayIdx === 0}
+                    disableDown={dayIdx === dayOrder.length - 1}
+                    onMoveUp={moveDayAction.bind(null, trip.id, dayOrder, day.id, "up")}
+                    onMoveDown={moveDayAction.bind(null, trip.id, dayOrder, day.id, "down")}
+                  />
+                  <DayFormDialog
+                    day={day}
+                    trigger={
+                      <button className="text-sm text-gray-400 hover:text-gray-600">✏️</button>
+                    }
+                    onSubmit={editDayAction.bind(null, trip.id, day.id)}
+                    onDelete={deleteDayAction.bind(null, trip.id, day.id)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {day.items.map((item) => {
+                  const meta = itemTypeMeta[item.type];
+                  const itemIdx = itemOrder.findIndex((i) => i.id === item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-2 rounded-lg border border-gray-100 p-3 sm:flex-row sm:items-start"
+                    >
+                      <span className={`w-fit rounded-full px-2 py-1 text-lg ${meta.color}`}>
+                        {meta.icon}
+                      </span>
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-gray-900">{item.title}</span>
+                          {item.startTime && (
+                            <span className="text-xs text-gray-400">{item.startTime}</span>
+                          )}
+                        </div>
+                        {item.location && (
+                          <p className="text-sm text-gray-500">{item.location}</p>
+                        )}
+                        {item.confirmationCode && (
+                          <p className="text-xs text-gray-400">
+                            Confirmación: {item.confirmationCode}
+                          </p>
                         )}
                       </div>
-                      {item.location && (
-                        <p className="text-sm text-gray-500">{item.location}</p>
-                      )}
-                      {item.confirmationCode && (
-                        <p className="text-xs text-gray-400">
-                          Confirmación: {item.confirmationCode}
-                        </p>
-                      )}
+                      <div className="flex items-center gap-2 self-end sm:self-start">
+                        <ReorderButtons
+                          disableUp={itemIdx === 0}
+                          disableDown={itemIdx === itemOrder.length - 1}
+                          onMoveUp={moveItemAction.bind(null, trip.id, itemOrder, item.id, "up")}
+                          onMoveDown={moveItemAction.bind(null, trip.id, itemOrder, item.id, "down")}
+                        />
+                        <ItemFormDialog
+                          item={item}
+                          trigger={
+                            <button className="text-sm text-gray-400 hover:text-gray-600">
+                              ✏️
+                            </button>
+                          }
+                          onSubmit={editItemAction.bind(null, trip.id, item.id)}
+                          onDelete={deleteItemAction.bind(null, trip.id, item.id)}
+                        />
+                      </div>
                     </div>
-                    <button className="text-sm text-gray-400 hover:text-gray-600">✏️</button>
-                  </div>
-                );
-              })}
-              <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50">
-                + Agregar item
-              </button>
+                  );
+                })}
+
+                <ItemFormDialog
+                  trigger={
+                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                      + Agregar item
+                    </button>
+                  }
+                  onSubmit={addItemAction.bind(null, trip.id, day.id)}
+                />
+              </div>
             </div>
-          </div>
-        ))}
-        <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50">
-          + Agregar día
-        </button>
+          );
+        })}
+
+        <DayFormDialog
+          trigger={
+            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50">
+              + Agregar día
+            </button>
+          }
+          onSubmit={addDayAction.bind(null, trip.id)}
+        />
       </div>
     </main>
   );
 }
+
