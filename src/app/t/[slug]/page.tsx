@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
+import { siteContact } from "@/lib/site-config";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -28,6 +29,18 @@ export default async function PublicTripPage({
           <h1 className="text-3xl font-bold">{trip.title}</h1>
           <p className="mt-1 text-sm text-white/80">
             {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
+          </p>
+          <p className="mt-1 text-sm text-white/80">
+            <a href={`mailto:${siteContact.email}`} className="hover:underline">
+              {siteContact.email}
+            </a>
+            {" · "}
+            <a
+              href={`tel:${siteContact.phone.replace(/[^+\d]/g, "")}`}
+              className="hover:underline"
+            >
+              {siteContact.phone}
+            </a>
           </p>
         </div>
       </div>

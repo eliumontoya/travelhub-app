@@ -51,3 +51,9 @@ Thumbs.db
 
 # Per-worktree process runtime
 .codex-process.json
+
+# Local agent tooling caches (skill registry, opencode, supabase CLI temp)
+.atl/
+.config/
+opencode.json
+supabase/.temp/
