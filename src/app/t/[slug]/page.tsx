@@ -3,6 +3,7 @@ import { getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
+import { LocationMap } from "@/components/LocationMap";
 
 export default async function PublicTripPage({
   params,
@@ -72,6 +73,9 @@ export default async function PublicTripPage({
                               <p className="mt-1 text-xs text-gray-400">
                                 Confirmación: {item.confirmationCode}
                               </p>
+                            )}
+                            {item.lat !== undefined && item.lng !== undefined && (
+                              <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
                             )}
                           </div>
                         </div>
