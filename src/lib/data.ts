@@ -498,6 +498,8 @@ function rowToItem(row: Record<string, unknown>): Item {
 
 // ---------- Documents ----------
 
+const DOCUMENTS_BUCKET = "trip-documents";
+
 export async function createDocument(input: {
   itemId: string;
   fileUrl: string;
@@ -525,8 +527,57 @@ export async function createDocument(input: {
 export async function deleteDocument(id: string): Promise<void> {
   if (!isSupabaseConfigured()) return;
   const supabase = await createServerSupabase();
+  const { data: row } = await supabase.from("documents").select("file_url").eq("id", id).maybeSingle();
+  if (row?.file_url) {
+    await supabase.storage.from(DOCUMENTS_BUCKET).remove([row.file_url as string]);
+  }
   const { error } = await supabase.from("documents").delete().eq("id", id);
   if (error) throw error;
+}
+
+// Sube un archivo al bucket privado "trip-documents" (ver
+// supabase/migrations/0002_storage_bucket.sql) y registra el documento.
+// Requiere Supabase configurado; si no, lanza para que la UI muestre el
+// mensaje de "configura Supabase" en vez de fallar en silencio.
+export async function uploadItemDocument(itemId: string, file: File): Promise<ItemDocument> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se pueden subir documentos.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `${itemId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+  return createDocument({ itemId, fileUrl: path, fileName: file.name });
+}
+
+// Genera una URL firmada de corta duración para descargar/ver un documento
+// privado. Devuelve null si Supabase no está configurado o si falla.
+export async function getSignedDocumentUrl(path: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUrl(path, 3600);
+  if (error) return null;
+  return data.signedUrl;
+}
+
+export async function getItemDocuments(
+  itemId: string
+): Promise<(ItemDocument & { url: string | null })[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.from("documents").select("*").eq("item_id", itemId);
+  if (error) throw error;
+  return Promise.all(
+    (data ?? []).map(async (row) => {
+      const doc = rowToDocument(row);
+      const url = await getSignedDocumentUrl(doc.fileUrl);
+      return { ...doc, url };
+    })
+  );
 }
 
 function rowToDocument(row: Record<string, unknown>): ItemDocument {

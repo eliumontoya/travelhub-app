@@ -10,12 +10,19 @@ import {
   addDayAction,
   addItemAction,
   deleteDayAction,
+  deleteDocumentAction,
   deleteItemAction,
   editDayAction,
   editItemAction,
+  getItemDocumentsAction,
   moveDayAction,
   moveItemAction,
+  uploadDocumentAction,
 } from "./actions";
+
+const documentsEnabled = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default async function TripEditorPage({
   params,
@@ -124,6 +131,10 @@ export default async function TripEditorPage({
                           }
                           onSubmit={editItemAction.bind(null, trip.id, item.id)}
                           onDelete={deleteItemAction.bind(null, trip.id, item.id)}
+                          documentsEnabled={documentsEnabled}
+                          onLoadDocuments={getItemDocumentsAction.bind(null, item.id)}
+                          onUploadDocument={uploadDocumentAction.bind(null, trip.id, item.id)}
+                          onDeleteDocument={deleteDocumentAction.bind(null, trip.id)}
                         />
                       </div>
                     </div>

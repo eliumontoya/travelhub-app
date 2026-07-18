@@ -4,15 +4,23 @@ import { revalidatePath } from "next/cache";
 import {
   createItem,
   createTripDay,
+  deleteDocument,
   deleteItem,
   deleteTripDay,
+  getItemDocuments,
   reorderItems,
   reorderTripDays,
   updateItem,
   updateTrip,
   updateTripDay,
+  uploadItemDocument,
 } from "@/lib/data";
 import { ItemType } from "@/types";
+
+function parseCoord(raw: FormDataEntryValue | null): number | undefined {
+  const value = String(raw ?? "").trim();
+  return value ? Number(value) : undefined;
+}
 
 function revalidateTrip(tripId: string) {
   revalidatePath(`/dashboard/trips/${tripId}`);
@@ -68,6 +76,8 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     startTime: String(formData.get("startTime") ?? "").trim() || undefined,
     endTime: String(formData.get("endTime") ?? "").trim() || undefined,
     location: String(formData.get("location") ?? "").trim() || undefined,
+    lat: parseCoord(formData.get("lat")),
+    lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
   });
@@ -81,6 +91,8 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     startTime: String(formData.get("startTime") ?? "").trim() || undefined,
     endTime: String(formData.get("endTime") ?? "").trim() || undefined,
     location: String(formData.get("location") ?? "").trim() || undefined,
+    lat: parseCoord(formData.get("lat")),
+    lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
   });
@@ -115,4 +127,20 @@ export async function moveItemAction(
 export async function publishTripStatusAction(tripId: string, status: "draft" | "published" | "archived") {
   await updateTrip(tripId, { status });
   revalidateTrip(tripId);
+}
+
+export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadItemDocument(itemId, file);
+  revalidateTrip(tripId);
+}
+
+export async function deleteDocumentAction(tripId: string, documentId: string) {
+  await deleteDocument(documentId);
+  revalidateTrip(tripId);
+}
+
+export async function getItemDocumentsAction(itemId: string) {
+  return getItemDocuments(itemId);
 }
