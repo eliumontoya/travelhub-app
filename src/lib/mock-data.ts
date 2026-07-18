@@ -51,6 +51,13 @@ export const mockTripDays: TripDay[] = [
   { id: "d2", tripId: "t1", date: "2026-09-11", sortOrder: 1 },
 ];
 
+// Fuente de verdad mock para la asignación many-to-many trip<->client,
+// espejo de la tabla trip_clients (ver supabase/migrations/0005_trip_clients.sql).
+export const mockTripClients: { tripId: string; clientId: string; createdAt: string }[] = [
+  { tripId: "t1", clientId: "c1", createdAt: "2026-07-01T09:00:00Z" },
+  { tripId: "t2", clientId: "c2", createdAt: "2026-07-05T09:00:00Z" },
+];
+
 export const mockItems: Item[] = [
   {
     id: "i1",
@@ -102,7 +109,12 @@ export const mockItems: Item[] = [
 export function getTripWithDetails(slug: string): TripWithDetails | null {
   const trip = mockTrips.find((t) => t.slug === slug);
   if (!trip) return null;
-  const client = mockClients.find((c) => c.id === trip.clientId)!;
+  const clients = mockTripClients
+    .filter((tc) => tc.tripId === trip.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((tc) => mockClients.find((c) => c.id === tc.clientId))
+    .filter((c): c is Client => Boolean(c));
+  const client = clients[0] ?? ({} as Client);
   const days = mockTripDays
     .filter((d) => d.tripId === trip.id)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -112,7 +124,7 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
         .filter((i) => i.tripDayId === day.id)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
-  return { ...trip, client, days };
+  return { ...trip, clients, client, days };
 }
 
 export function getTripById(id: string): TripWithDetails | null {

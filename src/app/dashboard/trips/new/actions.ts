@@ -17,25 +17,28 @@ export async function createTripAction(formData: FormData) {
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");
   const instructions = String(formData.get("instructions") ?? "").trim() || undefined;
-  let clientId = String(formData.get("clientId") ?? "");
+  const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
 
   const newClientName = String(formData.get("newClientName") ?? "").trim();
-  if (!clientId && newClientName) {
+  if (newClientName) {
     const client = await createClientRecord({
       name: newClientName,
       email: String(formData.get("newClientEmail") ?? "").trim() || undefined,
       phone: String(formData.get("newClientPhone") ?? "").trim() || undefined,
     });
-    clientId = client.id;
+    clientIds.push(client.id);
   }
 
-  if (!title || !clientId) {
-    redirect(`/dashboard/trips/new?error=${encodeURIComponent("Título y cliente son obligatorios")}`);
+  if (!title) {
+    redirect(`/dashboard/trips/new?error=${encodeURIComponent("El título es obligatorio")}`);
+  }
+  if (clientIds.length < 1) {
+    redirect(`/dashboard/trips/new?error=${encodeURIComponent("Selecciona al menos un cliente")}`);
   }
 
   const slugBase = slugify(title) || "viaje";
   const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-  const trip = await createTrip({ clientId, title, slug, startDate, endDate, instructions });
+  const trip = await createTrip({ clientIds, title, slug, startDate, endDate, instructions });
   redirect(`/dashboard/trips/${trip.id}`);
 }
