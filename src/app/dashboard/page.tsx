@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getClients, getTripsWithClients } from "@/lib/data";
-import { formatDateShort, formatAssignedClients } from "@/lib/item-meta";
+import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -43,6 +43,18 @@ export default async function DashboardPage() {
                 <p className="text-sm text-gray-400">
                   {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
                 </p>
+                {trip.tags.length > 0 && (
+                  <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                    {formatTags(trip.tags).map((name) => (
+                      <li
+                        key={name}
+                        className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                      >
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <span className="text-gray-300">→</span>
             </Link>

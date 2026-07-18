@@ -1,15 +1,20 @@
 import Link from "next/link";
-import { getClients } from "@/lib/data";
+import { getClients, getTags } from "@/lib/data";
 import { createTripAction } from "./actions";
 import { ClientMultiCombobox } from "@/components/ClientMultiCombobox";
 import { MinClientsGuard } from "@/components/MinClientsGuard";
+import { TagMultiCombobox } from "@/components/TagMultiCombobox";
 
 export default async function NewTripPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; clientId?: string }>;
 }) {
-  const [clients, { error, clientId }] = await Promise.all([getClients(), searchParams]);
+  const [clients, tags, { error, clientId }] = await Promise.all([
+    getClients(),
+    getTags(),
+    searchParams,
+  ]);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
@@ -91,6 +96,11 @@ export default async function NewTripPage({
             </div>
           </div>
         </fieldset>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Tags</label>
+          <TagMultiCombobox tags={tags} />
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -1,4 +1,4 @@
-import { Client, Trip, TripDay, Item, TripWithDetails, SiteSettings } from "@/types";
+import { Client, Trip, TripDay, Item, Tag, TripWithDetails, SiteSettings } from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -58,6 +58,20 @@ export const mockTripClients: { tripId: string; clientId: string; createdAt: str
   { tripId: "t2", clientId: "c2", createdAt: "2026-07-05T09:00:00Z" },
 ];
 
+// Catálogo mock de tags, espejo de la tabla tags (ver
+// supabase/migrations/0006_trip_tags.sql).
+export const mockTags: Tag[] = [
+  { id: "tg1", name: "Luna de miel", createdAt: "2026-07-01T09:00:00Z" },
+  { id: "tg2", name: "Familiar", createdAt: "2026-07-05T09:00:00Z" },
+];
+
+// Fuente de verdad mock para la asignación many-to-many trip<->tag, espejo
+// de la tabla trip_tags. A diferencia de mockTripClients, 0 tags es válido.
+export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[] = [
+  { tripId: "t1", tagId: "tg1", createdAt: "2026-07-01T09:00:00Z" },
+  { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
+];
+
 export const mockItems: Item[] = [
   {
     id: "i1",
@@ -115,6 +129,11 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
     .map((tc) => mockClients.find((c) => c.id === tc.clientId))
     .filter((c): c is Client => Boolean(c));
   const client = clients[0] ?? ({} as Client);
+  const tags = mockTripTags
+    .filter((tt) => tt.tripId === trip.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((tt) => mockTags.find((t) => t.id === tt.tagId))
+    .filter((t): t is Tag => Boolean(t));
   const days = mockTripDays
     .filter((d) => d.tripId === trip.id)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -124,7 +143,7 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
         .filter((i) => i.tripDayId === day.id)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
-  return { ...trip, clients, client, days };
+  return { ...trip, clients, client, tags, days };
 }
 
 export function getTripById(id: string): TripWithDetails | null {

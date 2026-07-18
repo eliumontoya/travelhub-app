@@ -1,4 +1,4 @@
-import { Client, Item, ItemDocument, SiteSettings, Trip, TripDay, TripWithDetails } from "@/types";
+import { Client, Item, ItemDocument, SiteSettings, Tag, Trip, TripDay, TripWithDetails } from "@/types";
 import {
   mockClients,
   mockTrips,
@@ -6,6 +6,8 @@ import {
   mockItems,
   mockSiteSettings,
   mockTripClients,
+  mockTags,
+  mockTripTags,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -102,6 +104,139 @@ function rowToClient(row: Record<string, unknown>): Client {
   };
 }
 
+// ---------- Tags ----------
+
+function rowToTag(row: Record<string, unknown>): Tag {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    createdAt: row.created_at as string,
+  };
+}
+
+export async function getTags(): Promise<Tag[]> {
+  if (!isSupabaseConfigured()) {
+    return [...mockTags].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("tags")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data.map(rowToTag);
+}
+
+// Busca un tag por nombre case-insensitive; si no existe, lo crea. Nunca
+// crea una segunda fila de catálogo para un nombre que difiera solo en
+// mayúsculas/minúsculas (spec §4). Trimea el nombre y rechaza vacío.
+export async function getOrCreateTag(name: string): Promise<Tag> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("El nombre del tag no puede estar vacío");
+  const normalized = trimmed.toLowerCase();
+
+  if (!isSupabaseConfigured()) {
+    const existing = mockTags.find((t) => t.name.toLowerCase() === normalized);
+    if (existing) return existing;
+    const tag: Tag = { id: uid(), name: trimmed, createdAt: new Date().toISOString() };
+    mockTags.push(tag);
+    return tag;
+  }
+
+  const supabase = await createServerSupabase();
+
+  // ilike es case-insensitive pero trata % y _ como wildcards; se guarda con
+  // una comparación exacta en JS después de normalizar a minúsculas.
+  const { data: candidates, error: findError } = await supabase
+    .from("tags")
+    .select("*")
+    .ilike("name", trimmed);
+  if (findError) throw findError;
+  const existingRow = (candidates ?? []).find(
+    (row) => (row.name as string).toLowerCase() === normalized
+  );
+  if (existingRow) return rowToTag(existingRow);
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("tags")
+    .insert({ name: trimmed })
+    .select()
+    .single();
+  if (!insertError) return rowToTag(inserted);
+
+  // 23505 = unique_violation (índice lower(name)): otra llamada concurrente
+  // ganó la carrera. Re-seleccionar y devolver la fila ganadora.
+  if ((insertError as { code?: string }).code === "23505") {
+    const { data: winner, error: reselectError } = await supabase
+      .from("tags")
+      .select("*")
+      .ilike("name", trimmed);
+    if (reselectError) throw reselectError;
+    const winnerRow = (winner ?? []).find(
+      (row) => (row.name as string).toLowerCase() === normalized
+    );
+    if (winnerRow) return rowToTag(winnerRow);
+  }
+  throw insertError;
+}
+
+// Reemplaza el conjunto completo de tags asignados a un viaje mediante un
+// diff (borra los removidos + inserta los agregados), NO delete-all-then-
+// reinsert, para preservar el created_at de los tags retenidos. A diferencia
+// de setTripClients, un arreglo vacío es válido (0 tags permitido).
+export async function setTripTags(tripId: string, tagIds: string[]): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const current = mockTripTags.filter((tt) => tt.tripId === tripId);
+    const currentIds = new Set(current.map((tt) => tt.tagId));
+    const nextIds = new Set(tagIds);
+
+    for (let i = mockTripTags.length - 1; i >= 0; i--) {
+      const tt = mockTripTags[i];
+      if (tt.tripId === tripId && !nextIds.has(tt.tagId)) {
+        mockTripTags.splice(i, 1);
+      }
+    }
+    const now = Date.now();
+    tagIds.forEach((tagId, idx) => {
+      if (!currentIds.has(tagId)) {
+        mockTripTags.push({ tripId, tagId, createdAt: new Date(now + idx).toISOString() });
+      }
+    });
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: currentRows, error: currentError } = await supabase
+    .from("trip_tags")
+    .select("tag_id")
+    .eq("trip_id", tripId);
+  if (currentError) throw currentError;
+
+  const currentIds = new Set((currentRows ?? []).map((r) => r.tag_id as string));
+  const nextIds = new Set(tagIds);
+  const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
+  const toAdd = tagIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    const { error: removeError } = await supabase
+      .from("trip_tags")
+      .delete()
+      .eq("trip_id", tripId)
+      .in("tag_id", toRemove);
+    if (removeError) throw removeError;
+  }
+
+  if (toAdd.length) {
+    const { error: addError } = await supabase
+      .from("trip_tags")
+      .upsert(
+        toAdd.map((tagId) => ({ trip_id: tripId, tag_id: tagId })),
+        { onConflict: "trip_id,tag_id", ignoreDuplicates: true }
+      );
+    if (addError) throw addError;
+  }
+}
+
 // ---------- Trips ----------
 
 export type CreateTripInput = {
@@ -112,6 +247,7 @@ export type CreateTripInput = {
   endDate?: string;
   coverImageUrl?: string;
   instructions?: string;
+  tagIds?: string[];
 };
 
 export type UpdateTripInput = Partial<{
@@ -139,7 +275,9 @@ export async function getTrips(): Promise<Trip[]> {
 // + UN solo clients.in() (sin N+1 por fila) y SIN cargar days/items/documents
 // (solo lo que necesita la vista de lista). clients[] queda ordenado por
 // created_at asc (orden de asignación), igual que assembleTripWithDetails.
-export async function getTripsWithClients(): Promise<(Trip & { clients: Client[] })[]> {
+export async function getTripsWithClients(): Promise<
+  (Trip & { clients: Client[]; tags: Tag[] })[]
+> {
   if (!isSupabaseConfigured()) {
     return mockTrips.map((trip) => ({
       ...trip,
@@ -148,6 +286,11 @@ export async function getTripsWithClients(): Promise<(Trip & { clients: Client[]
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
         .map((tc) => mockClients.find((c) => c.id === tc.clientId))
         .filter((c): c is Client => Boolean(c)),
+      tags: mockTripTags
+        .filter((tt) => tt.tripId === trip.id)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map((tt) => mockTags.find((t) => t.id === tt.tagId))
+        .filter((t): t is Tag => Boolean(t)),
     }));
   }
 
@@ -180,12 +323,34 @@ export async function getTripsWithClients(): Promise<(Trip & { clients: Client[]
     clientsById = new Map((clientRows ?? []).map((c) => [c.id as string, rowToClient(c)]));
   }
 
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("trip_tags")
+    .select("trip_id, tag_id, created_at")
+    .in("trip_id", tripIds)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const tagIds = [...new Set((tagLinkRows ?? []).map((l) => l.tag_id as string))];
+  let tagsById = new Map<string, Tag>();
+  if (tagIds.length) {
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("tags")
+      .select("*")
+      .in("id", tagIds);
+    if (tagsError) throw tagsError;
+    tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  }
+
   return trips.map((trip) => ({
     ...trip,
     clients: (linkRows ?? [])
       .filter((l) => l.trip_id === trip.id)
       .map((l) => clientsById.get(l.client_id as string))
       .filter((c): c is Client => Boolean(c)),
+    tags: (tagLinkRows ?? [])
+      .filter((l) => l.trip_id === trip.id)
+      .map((l) => tagsById.get(l.tag_id as string))
+      .filter((t): t is Tag => Boolean(t)),
   }));
 }
 
@@ -273,6 +438,27 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
   }
   const client = clients[0] ?? ({} as Client);
 
+  // trip_tags: mismo patrón que trip_clients (ordenado por created_at asc,
+  // resuelto en un solo batch .in()). 0 tags es válido, no lanza.
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("trip_tags")
+    .select("tag_id, created_at")
+    .eq("trip_id", trip.id)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const orderedTagIds = (tagLinkRows ?? []).map((l) => l.tag_id as string);
+  let tags: Tag[] = [];
+  if (orderedTagIds.length) {
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("tags")
+      .select("*")
+      .in("id", orderedTagIds);
+    if (tagsError) throw tagsError;
+    const tagById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+    tags = orderedTagIds.map((id) => tagById.get(id)).filter((t): t is Tag => Boolean(t));
+  }
+
   const { data: dayRows, error: daysError } = await supabase
     .from("trip_days")
     .select("*")
@@ -321,6 +507,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     ...trip,
     clients,
     client,
+    tags,
     days,
   };
 }
@@ -355,6 +542,13 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
         createdAt: new Date(Date.parse(now) + idx).toISOString(),
       });
     });
+    (input.tagIds ?? []).forEach((tagId, idx) => {
+      mockTripTags.push({
+        tripId: trip.id,
+        tagId,
+        createdAt: new Date(Date.parse(now) + idx).toISOString(),
+      });
+    });
     return trip;
   }
   const supabase = await createServerSupabase();
@@ -378,6 +572,13 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
     .from("trip_clients")
     .insert(input.clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
   if (linksError) throw linksError;
+
+  if (input.tagIds?.length) {
+    const { error: tagLinksError } = await supabase
+      .from("trip_tags")
+      .insert(input.tagIds.map((tagId) => ({ trip_id: trip.id, tag_id: tagId })));
+    if (tagLinksError) throw tagLinksError;
+  }
 
   return trip;
 }

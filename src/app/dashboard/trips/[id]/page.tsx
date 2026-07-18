@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClients, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients } from "@/lib/item-meta";
+import { getClients, getTags, getTripById } from "@/lib/data";
+import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
+import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import {
@@ -21,6 +22,7 @@ import {
   moveItemAction,
   publishTripStatusAction,
   setTripClientsAction,
+  setTripTagsAction,
   updateTripInstructionsAction,
   uploadDocumentAction,
 } from "./actions";
@@ -41,7 +43,7 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, clients] = await Promise.all([getTripById(id), getClients()]);
+  const [trip, clients, tags] = await Promise.all([getTripById(id), getClients(), getTags()]);
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
@@ -61,6 +63,18 @@ export default async function TripEditorPage({
             </span>
           </div>
           <p className="text-sm text-gray-500">{formatAssignedClients(trip.clients)}</p>
+          {trip.tags.length > 0 && (
+            <ul className="mt-1 flex flex-wrap gap-1.5">
+              {formatTags(trip.tags).map((name) => (
+                <li
+                  key={name}
+                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <form action={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}>
@@ -83,6 +97,19 @@ export default async function TripEditorPage({
               </button>
             }
             onSubmit={setTripClientsAction.bind(null, trip.id)}
+          />
+          <TripTagsManager
+            tags={tags}
+            assignedTagIds={trip.tags.map((t) => t.id)}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Gestionar tags
+              </button>
+            }
+            onSubmit={setTripTagsAction.bind(null, trip.id)}
           />
           <TripInstructionsDialog
             trip={trip}

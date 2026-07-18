@@ -1,4 +1,4 @@
-import { Client, ItemType } from "@/types";
+import { Client, ItemType, Tag } from "@/types";
 
 export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color: string }> = {
   flight: { label: "Vuelo", icon: "✈️", color: "bg-sky-100 text-sky-700" },
@@ -44,4 +44,10 @@ export function formatAssignedClients(clients: Client[]): string {
   const [first, second] = clients;
   const remaining = clients.length - 2;
   return `${first.name}, ${second.name} +${remaining} más`;
+}
+
+// Nombres de tags listos para render como chips (el componente que consuma
+// esto decide el markup; aquí solo se normaliza el orden/lista).
+export function formatTags(tags: Tag[]): string[] {
+  return tags.map((t) => t.name);
 }
