@@ -1,9 +1,10 @@
-import { Client, Item, ItemDocument, Trip, TripDay, TripWithDetails } from "@/types";
+import { Client, Item, ItemDocument, SiteSettings, Trip, TripDay, TripWithDetails } from "@/types";
 import {
   mockClients,
   mockTrips,
   mockTripDays,
   mockItems,
+  mockSiteSettings,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -627,5 +628,47 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
     fileUrl: row.file_url as string,
     fileName: row.file_name as string,
     uploadedAt: row.uploaded_at as string,
+  };
+}
+
+// ---------- Site settings (contacto público, fila singleton) ----------
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  if (!isSupabaseConfigured()) return mockSiteSettings;
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToSiteSettings(data) : { email: "", phone: "" };
+}
+
+export async function updateSiteSettings(
+  input: Partial<SiteSettings>
+): Promise<SiteSettings> {
+  if (!isSupabaseConfigured()) {
+    if (input.email !== undefined) mockSiteSettings.email = input.email;
+    if (input.phone !== undefined) mockSiteSettings.phone = input.phone;
+    return mockSiteSettings;
+  }
+  const supabase = await createServerSupabase();
+  const patch: Record<string, unknown> = { id: 1 };
+  if (input.email !== undefined) patch.email = input.email;
+  if (input.phone !== undefined) patch.phone = input.phone;
+  const { data, error } = await supabase
+    .from("site_settings")
+    .upsert(patch)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToSiteSettings(data);
+}
+
+function rowToSiteSettings(row: Record<string, unknown>): SiteSettings {
+  return {
+    email: (row.email as string) ?? "",
+    phone: (row.phone as string) ?? "",
   };
 }

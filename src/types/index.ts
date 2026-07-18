@@ -66,3 +66,8 @@ export interface TripWithDetails extends Trip {
   client: Client;
   days: (TripDay & { items: Item[] })[];
 }
+
+export interface SiteSettings {
+  email: string;
+  phone: string;
+}
