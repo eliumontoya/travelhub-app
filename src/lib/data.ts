@@ -68,6 +68,27 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   return rowToClient(data);
 }
 
+export async function updateClient(id: string, input: Partial<CreateClientInput>): Promise<Client> {
+  if (!isSupabaseConfigured()) {
+    const client = mockClients.find((c) => c.id === id);
+    if (!client) throw new Error("Cliente no encontrado");
+    if (input.name !== undefined) client.name = input.name;
+    if (input.email !== undefined) client.email = input.email;
+    if (input.phone !== undefined) client.phone = input.phone;
+    if (input.notes !== undefined) client.notes = input.notes;
+    return client;
+  }
+  const supabase = await createServerSupabase();
+  const patch: Record<string, unknown> = {};
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.email !== undefined) patch.email = input.email;
+  if (input.phone !== undefined) patch.phone = input.phone;
+  if (input.notes !== undefined) patch.notes = input.notes;
+  const { data, error } = await supabase.from("clients").update(patch).eq("id", id).select().single();
+  if (error) throw error;
+  return rowToClient(data);
+}
+
 function rowToClient(row: Record<string, unknown>): Client {
   return {
     id: row.id as string,
@@ -105,6 +126,18 @@ export async function getTrips(): Promise<Trip[]> {
   const { data, error } = await supabase
     .from("trips")
     .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data.map(rowToTrip);
+}
+
+export async function getTripsByClientId(clientId: string): Promise<Trip[]> {
+  if (!isSupabaseConfigured()) return mockTrips.filter((t) => t.clientId === clientId);
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trips")
+    .select("*")
+    .eq("client_id", clientId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data.map(rowToTrip);

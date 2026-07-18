@@ -1,0 +1,134 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getClientById, getTripsByClientId } from "@/lib/data";
+import { formatDateShort } from "@/lib/item-meta";
+import { updateClientAction } from "./actions";
+
+const statusMeta = {
+  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
+  published: { label: "Publicado", color: "bg-green-100 text-green-700" },
+  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
+};
+
+export default async function ClientDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const client = await getClientById(id);
+  if (!client) notFound();
+
+  const trips = await getTripsByClientId(id);
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-8">
+      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
+        ← Volver
+      </Link>
+
+      <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {client.email} · {client.phone}
+          </p>
+          {client.notes && <p className="mt-1 text-sm text-gray-500">{client.notes}</p>}
+          <p className="mt-1 text-xs text-gray-400">
+            Alta: {new Date(client.createdAt).toLocaleDateString("es-MX")}
+          </p>
+        </div>
+        <Link
+          href={`/dashboard/trips/new?clientId=${client.id}`}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + Nuevo viaje para este cliente
+        </Link>
+      </div>
+
+      <details className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
+        <summary className="cursor-pointer text-sm font-medium text-gray-700">
+          Editar datos del cliente
+        </summary>
+        <form
+          action={updateClientAction.bind(null, client.id)}
+          className="mt-4 space-y-3"
+        >
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nombre</label>
+            <input
+              name="name"
+              required
+              defaultValue={client.name}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                name="email"
+                defaultValue={client.email}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+              <input
+                name="phone"
+                defaultValue={client.phone}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Notas</label>
+            <textarea
+              name="notes"
+              defaultValue={client.notes}
+              rows={3}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Guardar cambios
+          </button>
+        </form>
+      </details>
+
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">Viajes</h2>
+      {trips.length === 0 ? (
+        <p className="text-sm text-gray-500">Este cliente aún no tiene viajes.</p>
+      ) : (
+        <div className="grid gap-4">
+          {trips.map((trip) => {
+            const status = statusMeta[trip.status];
+            return (
+              <Link
+                key={trip.id}
+                href={`/dashboard/trips/${trip.id}`}
+                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-gray-900">{trip.title}</h3>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
+                  </p>
+                </div>
+                <span className="text-gray-300">→</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </main>
+  );
+}

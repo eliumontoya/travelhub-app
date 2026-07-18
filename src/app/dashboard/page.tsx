@@ -54,10 +54,14 @@ export default async function DashboardPage() {
       <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
       <div className="grid gap-3">
         {clients.map((client) => (
-          <div key={client.id} className="rounded-lg border border-gray-200 bg-white p-4">
+          <Link
+            key={client.id}
+            href={`/dashboard/clients/${client.id}`}
+            className="rounded-lg border border-gray-200 bg-white p-4 transition hover:shadow-md"
+          >
             <p className="font-medium text-gray-900">{client.name}</p>
             <p className="text-sm text-gray-500">{client.email} · {client.phone}</p>
-          </div>
+          </Link>
         ))}
       </div>
     </main>

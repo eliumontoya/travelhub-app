@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { getClients } from "@/lib/data";
 import { createTripAction } from "./actions";
+import { ClientCombobox } from "@/components/ClientCombobox";
 
 export default async function NewTripPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; clientId?: string }>;
 }) {
-  const [clients, { error }] = await Promise.all([getClients(), searchParams]);
+  const [clients, { error, clientId }] = await Promise.all([getClients(), searchParams]);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
@@ -49,17 +50,7 @@ export default async function NewTripPage({
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Cliente existente</label>
-          <select
-            name="clientId"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="">— Crear cliente nuevo abajo —</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <ClientCombobox clients={clients} name="clientId" defaultValue={clientId} />
         </div>
 
         <fieldset className="rounded-lg border border-gray-200 p-4">
