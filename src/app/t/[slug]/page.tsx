@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
-import { getTripWithDetails } from "@/lib/data";
+import { getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
-import { siteContact } from "@/lib/site-config";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -13,7 +12,7 @@ export default async function PublicTripPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const trip = await getTripWithDetails(slug);
+  const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
   if (!trip) notFound();
 
   return (
@@ -32,15 +31,15 @@ export default async function PublicTripPage({
             {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
           </p>
           <p className="mt-1 text-sm text-white/80">
-            <a href={`mailto:${siteContact.email}`} className="hover:underline">
-              {siteContact.email}
+            <a href={`mailto:${contact.email}`} className="hover:underline">
+              {contact.email}
             </a>
             {" · "}
             <a
-              href={`tel:${siteContact.phone.replace(/[^+\d]/g, "")}`}
+              href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}
               className="hover:underline"
             >
-              {siteContact.phone}
+              {contact.phone}
             </a>
           </p>
         </div>

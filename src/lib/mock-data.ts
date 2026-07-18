@@ -1,4 +1,4 @@
-import { Client, Trip, TripDay, Item, TripWithDetails } from "@/types";
+import { Client, Trip, TripDay, Item, TripWithDetails, SiteSettings } from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -131,3 +131,10 @@ export function getTripById(id: string): TripWithDetails | null {
   const trip = mockTrips.find((t) => t.id === id);
   return trip ? getTripWithDetails(trip.slug) : null;
 }
+
+// Mismos valores placeholder que la semilla de la migración 0005, para
+// que el modo mock y el modo Supabase se comporten igual por defecto.
+export const mockSiteSettings: SiteSettings = {
+  email: "contacto@example.com",
+  phone: "+52 000 000 0000",
+};
