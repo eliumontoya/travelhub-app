@@ -1,0 +1,52 @@
+# Vercel Project .gitignore
+
+# Build output
+.next
+.vercel
+.out
+.tmp
+
+# Node.js
+node_modules/
+
+# Environment variables
+.env
+
+# Logs and caches
+logs/
+*.log
+*.tmp
+
+# IDE files
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Other
+.git/
+
+
+
+
+# Obsidian: config/estado local de la app se ignora, pero el plugin
+# Command Operation Center sí se versiona (es código, no estado de usuario).
+.obsidian/*
+!.obsidian/plugins/
+.obsidian/plugins/*
+!.obsidian/plugins/command-operation-center/
+.obsidian/plugins/command-operation-center/node_modules/
+
+.claude/
+.sn_credentials.md
+
+# Engram: solo se versiona la config estable del proyecto.
+/.engram/*
+!/.engram/config.json
+
+# Per-worktree process runtime
+.codex-process.json

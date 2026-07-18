@@ -1,0 +1,67 @@
+export type ItemType =
+  | "flight"
+  | "hotel"
+  | "activity"
+  | "restaurant"
+  | "transport"
+  | "note";
+
+export type TripStatus = "draft" | "published" | "archived";
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface Trip {
+  id: string;
+  clientId: string;
+  title: string;
+  slug: string;
+  startDate: string;
+  endDate: string;
+  coverImageUrl?: string;
+  status: TripStatus;
+  createdAt: string;
+}
+
+export interface TripDay {
+  id: string;
+  tripId: string;
+  date: string;
+  notes?: string;
+  sortOrder: number;
+}
+
+export interface ItemDocument {
+  id: string;
+  itemId: string;
+  fileUrl: string;
+  fileName: string;
+  uploadedAt: string;
+}
+
+export interface Item {
+  id: string;
+  tripDayId: string;
+  type: ItemType;
+  title: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
+  confirmationCode?: string;
+  notes?: string;
+  sortOrder: number;
+  documents?: ItemDocument[];
+}
+
+export interface TripWithDetails extends Trip {
+  client: Client;
+  days: (TripDay & { items: Item[] })[];
+}
