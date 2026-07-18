@@ -17,12 +17,19 @@ import {
   getItemDocumentsAction,
   moveDayAction,
   moveItemAction,
+  publishTripStatusAction,
   uploadDocumentAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
+
+const statusMeta = {
+  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
+  published: { label: "Publicado", color: "bg-green-100 text-green-700" },
+  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
+};
 
 export default async function TripEditorPage({
   params,
@@ -43,10 +50,23 @@ export default async function TripEditorPage({
 
       <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta[trip.status].color}`}>
+              {statusMeta[trip.status].label}
+            </span>
+          </div>
           <p className="text-sm text-gray-500">{trip.client.name}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <form action={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}>
+            <button
+              type="submit"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
+            </button>
+          </form>
           <Link
             href={`/t/${trip.slug}`}
             target="_blank"
