@@ -4,12 +4,14 @@ import {
   getClientsWithTags,
   getRecentActivity,
   getTags,
+  getTripsPerMonth,
   getTripStats,
   getTripsWithClients,
   getUpcomingUnpublishedTrips,
 } from "@/lib/data";
 import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
+import { TripsTrendChart } from "@/components/TripsTrendChart";
 import { DashboardExplorer } from "./DashboardExplorer";
 
 function parsePage(value: string | undefined): number {
@@ -43,6 +45,7 @@ export default async function DashboardPage({
     stats,
     upcomingUnpublishedTrips,
     recentActivity,
+    tripsPerMonth,
   ] = await Promise.all([
     getTripsWithClients({ page: tripsPage }),
     getClientsWithTags({ page: clientsPageNum }),
@@ -50,6 +53,7 @@ export default async function DashboardPage({
     getTripStats(),
     getUpcomingUnpublishedTrips(),
     getRecentActivity(),
+    getTripsPerMonth(),
   ]);
 
   const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
@@ -91,6 +95,10 @@ export default async function DashboardPage({
       </div>
 
       <DashboardKpiCards stats={stats} />
+
+      <div className="mt-10">
+        <TripsTrendChart data={tripsPerMonth} />
+      </div>
 
       {recentActivity.length > 0 && (
         <section className="mb-8 mt-6">

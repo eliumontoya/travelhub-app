@@ -1078,6 +1078,40 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   return rowToTrip(data);
 }
 
+export type MonthlyTripCount = { label: string; count: number };
+
+// Agrupa trips por mes de creación para los últimos 6 meses (incluyendo el
+// mes actual), rellenando con 0 los meses sin viajes creados. El agrupado se
+// hace en JS (no SQL) para funcionar igual en modo mock y en modo Supabase,
+// reutilizando getTrips() en vez de una query nueva.
+export async function getTripsPerMonth(): Promise<MonthlyTripCount[]> {
+  const { items: trips } = await getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE });
+
+  const now = new Date();
+  const months: { year: number; month: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+
+  const counts = months.map(() => 0);
+  for (const trip of trips) {
+    const created = new Date(trip.createdAt);
+    const idx = months.findIndex(
+      (m) => m.year === created.getFullYear() && m.month === created.getMonth()
+    );
+    if (idx !== -1) counts[idx]++;
+  }
+
+  return months.map((m, idx) => ({
+    label: new Date(m.year, m.month, 1).toLocaleDateString("es-MX", {
+      month: "short",
+      year: "numeric",
+    }),
+    count: counts[idx],
+  }));
+}
+
 function rowToTrip(row: Record<string, unknown>): Trip {
   return {
     id: row.id as string,
