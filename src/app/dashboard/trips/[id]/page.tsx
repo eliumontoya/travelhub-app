@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -167,6 +168,7 @@ export default async function TripEditorPage({
                 {day.items.map((item) => {
                   const meta = itemTypeMeta[item.type];
                   const itemIdx = itemOrder.findIndex((i) => i.id === item.id);
+                  const tzLabel = getApproxUtcOffsetLabel(item.lat, item.lng);
                   return (
                     <div
                       key={item.id}
@@ -179,7 +181,10 @@ export default async function TripEditorPage({
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium text-gray-900">{item.title}</span>
                           {item.startTime && (
-                            <span className="text-xs text-gray-400">{item.startTime}</span>
+                            <span className="text-xs text-gray-400">
+                              {item.startTime}
+                              {tzLabel && ` · ${tzLabel}`}
+                            </span>
                           )}
                         </div>
                         {item.location && (
