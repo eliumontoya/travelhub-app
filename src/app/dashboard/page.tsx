@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getClients, getTripsWithClients } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { ExportClientsCsvButton } from "@/components/export-clients-csv-button";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -62,7 +63,10 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
+      <div className="mt-10 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Clientes</h2>
+        <ExportClientsCsvButton clients={clients} />
+      </div>
       <div className="grid gap-3">
         {clients.map((client) => (
           <Link
