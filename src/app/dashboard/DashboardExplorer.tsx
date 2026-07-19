@@ -28,13 +28,15 @@ function normalize(text: string) {
     .replace(/[̀-ͯ]/g, "");
 }
 
+type ClientListItem = Client & { tags: Tag[] };
+
 export function DashboardExplorer({
   trips,
   clients,
   tags,
 }: {
   trips: TripListItem[];
-  clients: Client[];
+  clients: ClientListItem[];
   tags: Tag[];
 }) {
   const [query, setQuery] = useState("");
@@ -150,6 +152,18 @@ export function DashboardExplorer({
           >
             <p className="font-medium text-gray-900">{client.name}</p>
             <p className="text-sm text-gray-500">{client.email} · {client.phone}</p>
+            {client.tags.length > 0 && (
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {formatTags(client.tags).map((name) => (
+                  <li
+                    key={name}
+                    className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Link>
         ))}
         {filteredClients.length === 0 && (
