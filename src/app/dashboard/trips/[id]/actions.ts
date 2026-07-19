@@ -7,6 +7,7 @@ import {
   deleteDocument,
   deleteItem,
   deleteTripDay,
+  deleteTripPhoto,
   getItemDocuments,
   getOrCreateTag,
   reorderItems,
@@ -17,6 +18,7 @@ import {
   updateTrip,
   updateTripDay,
   uploadItemDocument,
+  uploadTripPhoto,
 } from "@/lib/data";
 import { ItemType } from "@/types";
 
@@ -178,4 +180,18 @@ export async function deleteDocumentAction(tripId: string, documentId: string) {
 
 export async function getItemDocumentsAction(itemId: string) {
   return getItemDocuments(itemId);
+}
+
+export async function uploadTripPhotoAction(tripId: string, slug: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadTripPhoto(tripId, file);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+export async function deleteTripPhotoAction(tripId: string, slug: string, photoId: string) {
+  await deleteTripPhoto(photoId);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
 }

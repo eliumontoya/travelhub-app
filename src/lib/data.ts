@@ -1,4 +1,4 @@
-import { Client, Item, ItemDocument, SiteSettings, Tag, Trip, TripDay, TripWithDetails } from "@/types";
+import { Client, Item, ItemDocument, SiteSettings, Tag, Trip, TripDay, TripPhoto, TripWithDetails } from "@/types";
 import {
   mockClients,
   mockTrips,
@@ -8,6 +8,7 @@ import {
   mockTripClients,
   mockTags,
   mockTripTags,
+  mockTripPhotos,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -473,6 +474,18 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     tags = orderedTagIds.map((id) => tagById.get(id)).filter((t): t is Tag => Boolean(t));
   }
 
+  const { data: photoRows, error: photosError } = await supabase
+    .from("trip_photos")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (photosError) throw photosError;
+  const photos = (photoRows ?? []).map((row) => {
+    const photo = rowToTripPhoto(row);
+    const { data: publicUrlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(photo.filePath);
+    return { ...photo, url: publicUrlData.publicUrl };
+  });
+
   const { data: dayRows, error: daysError } = await supabase
     .from("trip_days")
     .select("*")
@@ -522,6 +535,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     clients,
     client,
     tags,
+    photos,
     days,
   };
 }
@@ -1032,6 +1046,97 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
     fileName: row.file_name as string,
     uploadedAt: row.uploaded_at as string,
   };
+}
+
+// ---------- Trip photos (galería pública) ----------
+
+// Bucket público (a diferencia de "trip-documents", privado): las fotos
+// están pensadas para verse en /t/{slug}, ver
+// supabase/migrations/0008_trip_photos.sql.
+const PHOTOS_BUCKET = "trip-photos";
+
+function rowToTripPhoto(row: Record<string, unknown>): TripPhoto {
+  return {
+    id: row.id as string,
+    tripId: row.trip_id as string,
+    filePath: row.file_path as string,
+    fileName: row.file_name as string,
+    sortOrder: row.sort_order as number,
+    createdAt: row.created_at as string,
+  };
+}
+
+export async function getTripPhotos(
+  tripId: string
+): Promise<(TripPhoto & { url: string | null })[]> {
+  if (!isSupabaseConfigured()) {
+    return mockTripPhotos
+      .filter((p) => p.tripId === tripId)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((p) => ({ ...p, url: p.filePath }));
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trip_photos")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => {
+    const photo = rowToTripPhoto(row);
+    const { data: publicUrlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(photo.filePath);
+    return { ...photo, url: publicUrlData.publicUrl };
+  });
+}
+
+// Sube una imagen al bucket público "trip-photos" (ver
+// supabase/migrations/0008_trip_photos.sql) y registra la foto. Requiere
+// Supabase configurado; si no, lanza para que la UI muestre el mensaje de
+// "configura Supabase" en vez de fallar en silencio (mismo patrón que
+// uploadItemDocument).
+export async function uploadTripPhoto(tripId: string, file: File): Promise<TripPhoto> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se pueden subir fotos.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `${tripId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+
+  const { count } = await supabase
+    .from("trip_photos")
+    .select("*", { count: "exact", head: true })
+    .eq("trip_id", tripId);
+
+  const { data, error } = await supabase
+    .from("trip_photos")
+    .insert({
+      trip_id: tripId,
+      file_path: path,
+      file_name: file.name,
+      sort_order: count ?? 0,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToTripPhoto(data);
+}
+
+export async function deleteTripPhoto(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = await createServerSupabase();
+  const { data: row } = await supabase
+    .from("trip_photos")
+    .select("file_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (row?.file_path) {
+    await supabase.storage.from(PHOTOS_BUCKET).remove([row.file_path as string]);
+  }
+  const { error } = await supabase.from("trip_photos").delete().eq("id", id);
+  if (error) throw error;
 }
 
 // ---------- Site settings (contacto público, fila singleton) ----------

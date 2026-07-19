@@ -7,6 +7,7 @@ import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
+import { TripPhotoGallery } from "@/components/TripPhotoGallery";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import {
@@ -15,6 +16,7 @@ import {
   deleteDayAction,
   deleteDocumentAction,
   deleteItemAction,
+  deleteTripPhotoAction,
   editDayAction,
   editItemAction,
   getItemDocumentsAction,
@@ -25,11 +27,13 @@ import {
   setTripTagsAction,
   updateTripInstructionsAction,
   uploadDocumentAction,
+  uploadTripPhotoAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
+const photosEnabled = documentsEnabled;
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -132,6 +136,15 @@ export default async function TripEditorPage({
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
         </div>
+      </div>
+
+      <div className="mb-6">
+        <TripPhotoGallery
+          photos={trip.photos}
+          photosEnabled={photosEnabled}
+          onUpload={uploadTripPhotoAction.bind(null, trip.id, trip.slug)}
+          onDelete={deleteTripPhotoAction.bind(null, trip.id, trip.slug)}
+        />
       </div>
 
       <div className="space-y-6">

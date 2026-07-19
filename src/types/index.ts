@@ -52,6 +52,15 @@ export interface ItemDocument {
   uploadedAt: string;
 }
 
+export interface TripPhoto {
+  id: string;
+  tripId: string;
+  filePath: string;
+  fileName: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface Item {
   id: string;
   tripDayId: string;
@@ -75,6 +84,8 @@ export interface TripWithDetails extends Trip {
   client: Client;
   /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
   tags: Tag[];
+  /** Fotos de la galería del viaje (0..N), ordenadas por sortOrder. */
+  photos: (TripPhoto & { url: string | null })[];
   days: (TripDay & { items: Item[] })[];
 }
 

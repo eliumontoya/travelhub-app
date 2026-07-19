@@ -1,4 +1,4 @@
-import { Client, Trip, TripDay, Item, Tag, TripWithDetails, SiteSettings } from "@/types";
+import { Client, Trip, TripDay, Item, Tag, TripPhoto, TripWithDetails, SiteSettings } from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -72,6 +72,21 @@ export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[
   { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
 ];
 
+// Galería mock de fotos por viaje, espejo de la tabla trip_photos (ver
+// supabase/migrations/0008_trip_photos.sql). filePath queda como URL externa
+// completa en modo mock (no hay bucket real), a diferencia de Supabase donde
+// es una ruta relativa dentro del bucket "trip-photos".
+export const mockTripPhotos: TripPhoto[] = [
+  {
+    id: "ph1",
+    tripId: "t1",
+    filePath: "https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=800",
+    fileName: "coliseo.jpg",
+    sortOrder: 0,
+    createdAt: "2026-07-02T09:00:00Z",
+  },
+];
+
 export const mockItems: Item[] = [
   {
     id: "i1",
@@ -134,6 +149,10 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map((tt) => mockTags.find((t) => t.id === tt.tagId))
     .filter((t): t is Tag => Boolean(t));
+  const photos = mockTripPhotos
+    .filter((p) => p.tripId === trip.id)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((p) => ({ ...p, url: p.filePath }));
   const days = mockTripDays
     .filter((d) => d.tripId === trip.id)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -143,7 +162,7 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
         .filter((i) => i.tripDayId === day.id)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
-  return { ...trip, clients, client, tags, days };
+  return { ...trip, clients, client, tags, photos, days };
 }
 
 export function getTripById(id: string): TripWithDetails | null {

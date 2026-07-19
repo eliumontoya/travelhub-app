@@ -62,6 +62,26 @@ export default async function PublicTripPage({
             <AddTripToCalendarButton trip={trip} />
           </div>
 
+          {trip.photos.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 text-lg font-semibold text-gray-900">Fotos</h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {trip.photos.map((photo) =>
+                  photo.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={photo.id}
+                      src={photo.url}
+                      alt={photo.fileName}
+                      className="aspect-square rounded-lg object-cover"
+                      loading="lazy"
+                    />
+                  ) : null
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-8">
             {trip.days.map((day) => (
               <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
