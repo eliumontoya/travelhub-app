@@ -18,6 +18,8 @@ import { TripTagsManager } from "@/components/TripTagsManager";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { WeatherBadge } from "@/components/WeatherBadge";
+import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
 import { PrintButton } from "@/components/PrintButton";
 import {
@@ -77,6 +79,13 @@ export default async function TripEditorPage({
   );
   const hasAnyCost = trip.days.some((day) => day.items.some((item) => item.cost !== undefined));
   const budgetDiff = trip.budget !== undefined ? trip.budget - totalCost : undefined;
+
+  const dayWeather = await Promise.all(
+    trip.days.map((day) => {
+      const withLocation = day.items.find((item) => item.lat !== undefined && item.lng !== undefined);
+      return getDailyWeather(withLocation?.lat, withLocation?.lng, day.date);
+    })
+  );
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 print:py-0">
@@ -256,7 +265,7 @@ export default async function TripEditorPage({
       </div>
 
       <div className="space-y-6 print:space-y-3">
-        {trip.days.map((day) => {
+        {trip.days.map((day, dayWeatherIdx) => {
           const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
           const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
 
@@ -266,8 +275,9 @@ export default async function TripEditorPage({
               className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:break-inside-avoid print:shadow-none print:border-gray-300"
             >
               <div className="mb-4 flex items-center justify-between gap-2">
-                <h3 className="font-semibold capitalize text-gray-900">
+                <h3 className="flex items-center gap-2 font-semibold capitalize text-gray-900">
                   {formatDateLong(day.date)}
+                  <WeatherBadge weather={dayWeather[dayWeatherIdx]} />
                 </h3>
                 <div className="flex items-center gap-2 print:hidden">
                   <ReorderButtons

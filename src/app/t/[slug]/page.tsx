@@ -5,6 +5,8 @@ import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { WeatherBadge } from "@/components/WeatherBadge";
+import { getDailyWeather } from "@/lib/weather";
 import { PrintButton } from "@/components/PrintButton";
 
 export default async function PublicTripPage({
@@ -22,6 +24,13 @@ export default async function PublicTripPage({
         0
       )
     : 0;
+
+  const dayWeather = await Promise.all(
+    trip.days.map((day) => {
+      const withLocation = day.items.find((item) => item.lat !== undefined && item.lng !== undefined);
+      return getDailyWeather(withLocation?.lat, withLocation?.lng, day.date);
+    })
+  );
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0">
@@ -87,10 +96,11 @@ export default async function PublicTripPage({
           )}
 
           <div className="space-y-8">
-            {trip.days.map((day) => (
+            {trip.days.map((day, dayIdx) => (
               <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6 print:break-inside-avoid">
-                <h2 className="mb-3 text-lg font-semibold capitalize text-gray-900">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold capitalize text-gray-900">
                   {formatDateLong(day.date)}
+                  <WeatherBadge weather={dayWeather[dayIdx]} />
                 </h2>
                 <div className="space-y-3 border-l-2 border-gray-200 pl-4">
                   {day.items.map((item) => {
