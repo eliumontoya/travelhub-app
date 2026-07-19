@@ -101,6 +101,7 @@ relevantes (`.env.local` en dev, configuradas en Vercel para producción):
 - `TRIP_REMINDER_DAYS_BEFORE` — opcional, días de anticipación del recordatorio (default 3)
 - `CRON_SECRET` — opcional, si está configurado exige `Authorization: Bearer <valor>` en el endpoint de cron
 - `NEXT_PUBLIC_SITE_URL` — opcional, base de la URL pública usada en el email de recordatorio (fallback: `VERCEL_URL` o `localhost:3000`)
+- `FLIGHT_API_KEY` — opcional, server-side, activa el estado en vivo de vuelos (Aviationstack) en items tipo `flight`
 
 ## Deploy
 
