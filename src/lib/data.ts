@@ -809,6 +809,7 @@ export type CreateItemInput = {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder?: number;
 };
 
@@ -828,6 +829,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmationCode: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost,
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
     };
@@ -848,6 +850,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmation_code: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost,
       sort_order: input.sortOrder ?? 0,
     })
     .select()
@@ -874,6 +877,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.lng !== undefined) patch.lng = input.lng;
   if (input.confirmationCode !== undefined) patch.confirmation_code = input.confirmationCode;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.cost !== undefined) patch.cost = input.cost;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
   if (error) throw error;
@@ -936,6 +940,7 @@ function rowToItem(row: Record<string, unknown>): Item {
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
     confirmationCode: (row.confirmation_code as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
+    cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     sortOrder: row.sort_order as number,
   };
 }

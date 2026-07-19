@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import {
+  itemTypeMeta,
+  formatDateLong,
+  formatAssignedClients,
+  formatTags,
+  formatCurrency,
+} from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -130,6 +136,12 @@ export default async function TripEditorPage({
           >
             Vista previa
           </Link>
+          <Link
+            href={`/dashboard/trips/${trip.id}/quote`}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cotización
+          </Link>
           <CopyUrlButtonClient slug={trip.slug} />
         </div>
       </div>
@@ -188,6 +200,11 @@ export default async function TripEditorPage({
                         {item.confirmationCode && (
                           <p className="text-xs text-gray-400">
                             Confirmación: {item.confirmationCode}
+                          </p>
+                        )}
+                        {item.cost !== undefined && (
+                          <p className="text-xs text-gray-400">
+                            Costo: {formatCurrency(item.cost)}
                           </p>
                         )}
                       </div>

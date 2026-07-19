@@ -64,6 +64,7 @@ export interface Item {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder: number;
   documents?: ItemDocument[];
 }
