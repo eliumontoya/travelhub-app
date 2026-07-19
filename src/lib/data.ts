@@ -1325,6 +1325,54 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
   };
 }
 
+// ---------- Dashboard stats ----------
+
+export type TripStats = {
+  byStatus: Record<Trip["status"], number>;
+  upcomingNext7: number;
+  upcomingNext30: number;
+  newClientsThisMonth: number;
+  unpublishedNearStart: number;
+};
+
+// Se apoya en getTrips()/getClients() (ya cubren el modo dual mock/Supabase)
+// y calcula los conteos en JS: al ser una sola cuenta de agente, el volumen
+// de trips/clients es bajo y no justifica duplicar el branching de
+// isSupabaseConfigured() con queries agregadas.
+export async function getTripStats(): Promise<TripStats> {
+  const [trips, clients] = await Promise.all([getTrips(), getClients()]);
+
+  const now = new Date();
+  const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const byStatus: Record<Trip["status"], number> = { draft: 0, published: 0, archived: 0 };
+  let upcomingNext7 = 0;
+  let upcomingNext30 = 0;
+  let unpublishedNearStart = 0;
+
+  for (const trip of trips) {
+    byStatus[trip.status] = (byStatus[trip.status] ?? 0) + 1;
+
+    const start = trip.startDate ? new Date(trip.startDate) : null;
+    const hasValidStart = start !== null && !Number.isNaN(start.getTime());
+
+    if (hasValidStart && start! >= now && start! <= in7Days) upcomingNext7++;
+    if (hasValidStart && start! >= now && start! <= in30Days) upcomingNext30++;
+    if (trip.status === "draft" && hasValidStart && start! >= now && start! <= in30Days) {
+      unpublishedNearStart++;
+    }
+  }
+
+  const newClientsThisMonth = clients.filter((client) => {
+    const created = new Date(client.createdAt);
+    return !Number.isNaN(created.getTime()) && created >= startOfMonth;
+  }).length;
+
+  return { byStatus, upcomingNext7, upcomingNext30, newClientsThisMonth, unpublishedNearStart };
+}
+
 // ---------- Site settings (contacto público, fila singleton) ----------
 
 export async function getSiteSettings(): Promise<SiteSettings> {

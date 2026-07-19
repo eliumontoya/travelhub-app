@@ -1,6 +1,12 @@
 import Link from "next/link";
-import { getClientsWithTags, getTripsWithClients, getUpcomingUnpublishedTrips } from "@/lib/data";
+import {
+  getClientsWithTags,
+  getTripStats,
+  getTripsWithClients,
+  getUpcomingUnpublishedTrips,
+} from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import DashboardKpiCards from "@/components/DashboardKpiCards";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -9,9 +15,10 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips, upcomingUnpublishedTrips] = await Promise.all([
+  const [clients, trips, stats, upcomingUnpublishedTrips] = await Promise.all([
     getClientsWithTags(),
     getTripsWithClients(),
+    getTripStats(),
     getUpcomingUnpublishedTrips(),
   ]);
 
@@ -49,6 +56,8 @@ export default async function DashboardPage() {
           + Nuevo viaje
         </Link>
       </div>
+
+      <DashboardKpiCards stats={stats} />
 
       <div className="grid gap-4">
         {trips.map((trip) => {
