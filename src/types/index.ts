@@ -32,6 +32,7 @@ export interface Trip {
   endDate: string;
   coverImageUrl?: string;
   instructions?: string;
+  budget?: number;
   status: TripStatus;
   createdAt: string;
 }
@@ -64,6 +65,7 @@ export interface Item {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder: number;
   documents?: ItemDocument[];
 }

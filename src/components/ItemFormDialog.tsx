@@ -160,15 +160,29 @@ export function ItemFormDialog({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Código de confirmación
-            </label>
-            <input
-              name="confirmationCode"
-              defaultValue={item?.confirmationCode}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Código de confirmación
+              </label>
+              <input
+                name="confirmationCode"
+                defaultValue={item?.confirmationCode}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Costo</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="cost"
+                defaultValue={item?.cost}
+                placeholder="Opcional"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           <div>

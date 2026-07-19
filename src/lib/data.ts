@@ -271,6 +271,7 @@ export type UpdateTripInput = Partial<{
   endDate: string;
   coverImageUrl: string;
   instructions: string | null;
+  budget: number | null;
   status: Trip["status"];
 }>;
 
@@ -682,6 +683,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.endDate !== undefined) trip.endDate = input.endDate;
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
     if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
+    if (input.budget !== undefined) trip.budget = input.budget ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
     return trip;
   }
@@ -693,6 +695,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.endDate !== undefined) patch.end_date = input.endDate;
   if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl;
   if (input.instructions !== undefined) patch.instructions = input.instructions;
+  if (input.budget !== undefined) patch.budget = input.budget;
   if (input.status !== undefined) patch.status = input.status;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
@@ -709,6 +712,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     endDate: (row.end_date as string) ?? "",
     coverImageUrl: (row.cover_image_url as string) ?? undefined,
     instructions: (row.instructions as string) ?? undefined,
+    budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
     status: row.status as Trip["status"],
     createdAt: row.created_at as string,
   };
@@ -809,6 +813,7 @@ export type CreateItemInput = {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder?: number;
 };
 
@@ -828,6 +833,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmationCode: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost,
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
     };
@@ -848,6 +854,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmation_code: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost,
       sort_order: input.sortOrder ?? 0,
     })
     .select()
@@ -874,6 +881,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.lng !== undefined) patch.lng = input.lng;
   if (input.confirmationCode !== undefined) patch.confirmation_code = input.confirmationCode;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.cost !== undefined) patch.cost = input.cost;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
   if (error) throw error;
@@ -936,6 +944,7 @@ function rowToItem(row: Record<string, unknown>): Item {
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
     confirmationCode: (row.confirmation_code as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
+    cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     sortOrder: row.sort_order as number,
   };
 }

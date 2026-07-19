@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags, formatCurrency } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripBudgetDialog } from "@/components/TripBudgetDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
@@ -23,6 +24,7 @@ import {
   publishTripStatusAction,
   setTripClientsAction,
   setTripTagsAction,
+  updateTripBudgetAction,
   updateTripInstructionsAction,
   uploadDocumentAction,
 } from "./actions";
@@ -47,6 +49,13 @@ export default async function TripEditorPage({
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+
+  const totalCost = trip.days.reduce(
+    (daysSum, day) => daysSum + day.items.reduce((itemsSum, item) => itemsSum + (item.cost ?? 0), 0),
+    0
+  );
+  const hasAnyCost = trip.days.some((day) => day.items.some((item) => item.cost !== undefined));
+  const budgetDiff = trip.budget !== undefined ? trip.budget - totalCost : undefined;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -123,6 +132,18 @@ export default async function TripEditorPage({
             }
             onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
           />
+          <TripBudgetDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Presupuesto
+              </button>
+            }
+            onSubmit={updateTripBudgetAction.bind(null, trip.id)}
+          />
           <Link
             href={`/t/${trip.slug}`}
             target="_blank"
@@ -133,6 +154,35 @@ export default async function TripEditorPage({
           <CopyUrlButtonClient slug={trip.slug} />
         </div>
       </div>
+
+      {(hasAnyCost || trip.budget !== undefined) && (
+        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-sm sm:p-5">
+          <div>
+            <span className="text-gray-500">Costo total: </span>
+            <span className="font-semibold text-gray-900">{formatCurrency(totalCost)}</span>
+          </div>
+          {trip.budget !== undefined && (
+            <>
+              <div>
+                <span className="text-gray-500">Presupuesto: </span>
+                <span className="font-semibold text-gray-900">{formatCurrency(trip.budget)}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">
+                  {budgetDiff !== undefined && budgetDiff < 0 ? "Excedido: " : "Disponible: "}
+                </span>
+                <span
+                  className={`font-semibold ${
+                    budgetDiff !== undefined && budgetDiff < 0 ? "text-red-600" : "text-green-700"
+                  }`}
+                >
+                  {formatCurrency(Math.abs(budgetDiff ?? 0))}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="space-y-6">
         {trip.days.map((day) => {
@@ -189,6 +239,9 @@ export default async function TripEditorPage({
                           <p className="text-xs text-gray-400">
                             Confirmación: {item.confirmationCode}
                           </p>
+                        )}
+                        {item.cost !== undefined && (
+                          <p className="text-xs text-gray-400">Costo: {formatCurrency(item.cost)}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 self-end sm:self-start">

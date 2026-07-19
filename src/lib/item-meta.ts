@@ -51,3 +51,9 @@ export function formatAssignedClients(clients: Client[]): string {
 export function formatTags(tags: Tag[]): string[] {
   return tags.map((t) => t.name);
 }
+
+// Sin campo de moneda en el modelo de datos: se formatea como número con
+// separador de miles y 2 decimales, sin asumir una divisa específica.
+export function formatCurrency(amount: number): string {
+  return `$${amount.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
