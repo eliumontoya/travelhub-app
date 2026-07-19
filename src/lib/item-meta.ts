@@ -1,5 +1,8 @@
 import { Client, ItemType, Tag } from "@/types";
+import { DEFAULT_LANG, Lang, localeFor } from "@/lib/i18n";
 
+// label es fijo en español: se usa en el dashboard interno (fuera del alcance
+// del toggle ES/EN de la vista pública /t/[slug]).
 export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color: string }> = {
   flight: { label: "Vuelo", icon: "✈️", color: "bg-sky-100 text-sky-700" },
   hotel: { label: "Hotel", icon: "🏨", color: "bg-purple-100 text-purple-700" },
@@ -9,8 +12,8 @@ export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color
   note: { label: "Nota", icon: "📝", color: "bg-gray-100 text-gray-700" },
 };
 
-export function formatDateLong(dateStr: string) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
+export function formatDateLong(dateStr: string, lang: Lang = DEFAULT_LANG) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(localeFor(lang), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -18,15 +21,15 @@ export function formatDateLong(dateStr: string) {
   });
 }
 
-export function formatDateShort(dateStr: string) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
+export function formatDateShort(dateStr: string, lang: Lang = DEFAULT_LANG) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(localeFor(lang), {
     day: "numeric",
     month: "short",
   });
 }
 
-export function formatDateCompact(dateStr: string) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
+export function formatDateCompact(dateStr: string, lang: Lang = DEFAULT_LANG) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(localeFor(lang), {
     weekday: "short",
     day: "numeric",
     month: "short",

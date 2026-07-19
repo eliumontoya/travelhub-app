@@ -5,13 +5,20 @@ import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
 
 export default async function PublicTripPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const lang = getLangFromSearchParams(resolvedSearchParams) ?? DEFAULT_LANG;
+  const t = dictionary[lang];
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
   if (!trip) notFound();
 
@@ -26,9 +33,12 @@ export default async function PublicTripPage({
         }}
       >
         <div className="mx-auto w-full max-w-2xl px-4 pb-6 text-white">
+          <div className="mb-2 flex justify-end">
+            <LanguageToggle lang={lang} />
+          </div>
           <h1 className="text-3xl font-bold">{trip.title}</h1>
           <p className="mt-1 text-sm text-white/80">
-            {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
+            {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
           </p>
           <p className="mt-1 text-sm text-white/80">
             <a href={`mailto:${contact.email}`} className="hover:underline">
@@ -49,6 +59,7 @@ export default async function PublicTripPage({
         <TripDaySidebar
           days={trip.days}
           className="hidden lg:block lg:sticky lg:top-6 lg:self-start"
+          lang={lang}
         />
 
         <div className="lg:max-w-2xl">
@@ -59,14 +70,14 @@ export default async function PublicTripPage({
           )}
 
           <div className="my-6 flex justify-center">
-            <AddTripToCalendarButton trip={trip} />
+            <AddTripToCalendarButton trip={trip} lang={lang} />
           </div>
 
           <div className="space-y-8">
             {trip.days.map((day) => (
               <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
                 <h2 className="mb-3 text-lg font-semibold capitalize text-gray-900">
-                  {formatDateLong(day.date)}
+                  {formatDateLong(day.date, lang)}
                 </h2>
                 <div className="space-y-3 border-l-2 border-gray-200 pl-4">
                   {day.items.map((item) => {
@@ -78,7 +89,10 @@ export default async function PublicTripPage({
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-3">
-                            <span className={`rounded-full px-2 py-1 text-lg ${meta.color}`}>
+                            <span
+                              className={`rounded-full px-2 py-1 text-lg ${meta.color}`}
+                              title={t.itemType[item.type]}
+                            >
                               {meta.icon}
                             </span>
                             <div>
@@ -96,7 +110,7 @@ export default async function PublicTripPage({
                               )}
                               {item.confirmationCode && (
                                 <p className="mt-1 text-xs text-gray-400">
-                                  Confirmación: {item.confirmationCode}
+                                  {t.confirmationLabel}: {item.confirmationCode}
                                 </p>
                               )}
                               {item.lat !== undefined && item.lng !== undefined && (
@@ -104,7 +118,7 @@ export default async function PublicTripPage({
                               )}
                             </div>
                           </div>
-                          <AddToCalendarButton item={item} date={day.date} />
+                          <AddToCalendarButton item={item} date={day.date} lang={lang} />
                         </div>
                       </div>
                     );
