@@ -47,6 +47,8 @@ export interface Trip {
   showCostsToClient: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Timestamp del envío del recordatorio automático por email; undefined = aún no enviado. */
+  reminderSentAt?: string;
 }
 
 export interface TripDay {
