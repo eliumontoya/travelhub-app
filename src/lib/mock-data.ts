@@ -8,6 +8,7 @@ export const mockClients: Client[] = [
     email: "ana.perez@example.com",
     phone: "+52 55 1234 5678",
     notes: "Luna de miel, prefieren hoteles boutique.",
+    birthDate: "1990-08-01",
     createdAt: "2026-06-01T10:00:00Z",
     updatedAt: "2026-06-01T10:00:00Z",
   },

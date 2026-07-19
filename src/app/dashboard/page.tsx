@@ -7,6 +7,7 @@ import {
   getTripsPerMonth,
   getTripStats,
   getTripsWithClients,
+  getUpcomingBirthdays,
   getUpcomingUnpublishedTrips,
 } from "@/lib/data";
 import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
@@ -47,6 +48,7 @@ export default async function DashboardPage({
     upcomingUnpublishedTrips,
     recentActivity,
     tripsPerMonth,
+    upcomingBirthdays,
   ] = await Promise.all([
     getTripsWithClients({ page: tripsPage }),
     getClientsWithTags({ page: clientsPageNum }),
@@ -55,6 +57,7 @@ export default async function DashboardPage({
     getUpcomingUnpublishedTrips(),
     getRecentActivity(),
     getTripsPerMonth(),
+    getUpcomingBirthdays(),
   ]);
 
   const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
@@ -100,6 +103,35 @@ export default async function DashboardPage({
       <div className="mt-10">
         <TripsTrendChart data={tripsPerMonth} />
       </div>
+
+      {upcomingBirthdays.length > 0 && (
+        <div className="mb-8 mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950">
+          <h2 className="mb-3 text-sm font-semibold text-amber-800 dark:text-amber-300">
+            🎂 Cumpleaños próximos (30 días)
+          </h2>
+          <ul className="space-y-2">
+            {upcomingBirthdays.map((client) => (
+              <li key={client.id} className="flex items-center justify-between text-sm">
+                <Link
+                  href={`/dashboard/clients/${client.id}`}
+                  className="font-medium text-gray-900 hover:underline dark:text-gray-100"
+                >
+                  {client.name}
+                </Link>
+                <span className="text-amber-700 dark:text-amber-400">
+                  {formatDateShort(client.birthDate)}
+                  {" · "}
+                  {client.daysUntilBirthday === 0
+                    ? "hoy"
+                    : client.daysUntilBirthday === 1
+                      ? "mañana"
+                      : `en ${client.daysUntilBirthday} días`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-8">
         <IntegrationsStatusCard />

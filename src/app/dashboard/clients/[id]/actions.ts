@@ -11,6 +11,7 @@ export async function updateClientAction(clientId: string, formData: FormData) {
     email: String(formData.get("email") ?? "").trim() || undefined,
     phone: String(formData.get("phone") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    birthDate: String(formData.get("birthDate") ?? "").trim() || undefined,
   });
   revalidatePath(`/dashboard/clients/${clientId}`);
 }
