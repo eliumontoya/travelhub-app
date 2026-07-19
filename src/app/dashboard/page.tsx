@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getClients, getTripsWithClients } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -60,6 +61,10 @@ export default async function DashboardPage() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-8">
+        <IntegrationsStatusCard />
       </div>
 
       <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
