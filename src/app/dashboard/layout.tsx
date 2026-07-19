@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { signOutAction } from "@/app/dashboard/settings/actions";
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
             TravelHub
           </Link>
           <div className="flex items-center gap-2">
+            <ChangelogDialog />
             <ThemeToggle />
             <ProfileMenu email={email} signOutAction={signOutAction} />
           </div>
