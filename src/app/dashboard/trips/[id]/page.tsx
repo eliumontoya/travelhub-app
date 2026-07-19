@@ -33,6 +33,7 @@ import { TripPhotoGallery } from "@/components/TripPhotoGallery";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
@@ -286,6 +287,7 @@ export default async function TripEditorPage({
             Cotización
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <CopyTripSummaryButtonClient trip={trip} />
           <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
           <SaveAsTemplateDialog
             defaultTitle={trip.title}
