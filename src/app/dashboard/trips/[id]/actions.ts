@@ -26,6 +26,7 @@ import {
   updatePackingItem,
   updateTrip,
   updateTripDay,
+  updateTripInternalNotes,
   uploadItemDocument,
   uploadTripPhoto,
 } from "@/lib/data";
@@ -190,6 +191,12 @@ export async function updateTripInstructionsAction(
   await updateTrip(tripId, { instructions: instructions || null });
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function updateTripInternalNotesAction(tripId: string, formData: FormData) {
+  const internalNotes = String(formData.get("internalNotes") ?? "").trim();
+  await updateTripInternalNotes(tripId, internalNotes || null);
+  revalidateTrip(tripId);
 }
 
 export async function updateTripCurrencyAction(tripId: string, formData: FormData) {

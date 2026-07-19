@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags, getTripById, getTripFeedback } from "@/lib/data";
+import {
+  ALL_CLIENTS_PAGE_SIZE,
+  getClients,
+  getTags,
+  getTripById,
+  getTripFeedback,
+  getTripInternalNotes,
+} from "@/lib/data";
 import {
   itemTypeMeta,
   formatDateLong,
@@ -14,6 +21,7 @@ import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripInternalNotesDialog } from "@/components/TripInternalNotesDialog";
 import { TripCommissionDialog } from "@/components/TripCommissionDialog";
 import { TripCurrencyDialog } from "@/components/TripCurrencyDialog";
 import { TripTravelerCountDialog } from "@/components/TripTravelerCountDialog";
@@ -64,6 +72,7 @@ import {
   updateTripCommissionAction,
   updateTripCurrencyAction,
   updateTripInstructionsAction,
+  updateTripInternalNotesAction,
   updateTripTravelerCountAction,
   uploadDocumentAction,
   uploadTripPhotoAction,
@@ -86,10 +95,11 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, { items: clients }, tags] = await Promise.all([
+  const [trip, { items: clients }, tags, internalNotes] = await Promise.all([
     getTripById(id),
     getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
     getTags(),
+    getTripInternalNotes(id),
   ]);
   if (!trip) notFound();
   const feedback = await getTripFeedback(trip.id);
@@ -201,6 +211,18 @@ export default async function TripEditorPage({
               </button>
             }
             onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
+          />
+          <TripInternalNotesDialog
+            internalNotes={internalNotes}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Notas internas
+              </button>
+            }
+            onSubmit={updateTripInternalNotesAction.bind(null, trip.id)}
           />
           <TripCurrencyDialog
             trip={trip}

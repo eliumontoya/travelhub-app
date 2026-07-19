@@ -85,6 +85,13 @@ export const mockTripClients: { tripId: string; clientId: string; createdAt: str
   { tripId: "t2", clientId: "c2", createdAt: "2026-07-05T09:00:00Z" },
 ];
 
+// Notas privadas de agente, mantenidas fuera de mockTrips/Trip a propósito:
+// getTripWithDetails()/getTripById() nunca las mezclan en el objeto TripWithDetails
+// (que sí llega a componentes cliente en /t/[slug]), espejo del hecho de que en
+// Supabase tampoco se seleccionan junto con el resto del trip (ver
+// supabase/migrations/0025_trip_internal_notes.sql).
+export const mockTripInternalNotes: Record<string, string> = {};
+
 // Catálogo mock de tags, espejo de la tabla tags (ver
 // supabase/migrations/0006_trip_tags.sql).
 export const mockTags: Tag[] = [
