@@ -7,6 +7,7 @@ import {
   deleteDocument,
   deleteItem,
   deleteTripDay,
+  generateTripDays,
   getItemDocuments,
   getOrCreateTag,
   reorderItems,
@@ -35,6 +36,24 @@ export async function addDayAction(tripId: string, formData: FormData) {
   if (!date) return;
   await createTripDay({ tripId, date, notes });
   revalidateTrip(tripId);
+}
+
+export async function generateTripDaysAction(
+  tripId: string
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    const result = await generateTripDays(tripId);
+    revalidateTrip(tripId);
+    if (result.created === 0) {
+      return { ok: true, message: "No había días faltantes: ya existen todos los días del rango del viaje." };
+    }
+    return { ok: true, message: `Se generaron ${result.created} día(s) faltante(s).` };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "No se pudieron generar los días.",
+    };
+  }
 }
 
 export async function editDayAction(tripId: string, dayId: string, formData: FormData) {

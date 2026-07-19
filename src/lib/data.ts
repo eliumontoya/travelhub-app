@@ -796,6 +796,54 @@ function rowToTripDay(row: Record<string, unknown>): TripDay {
   };
 }
 
+export type GenerateTripDaysResult = { created: number; totalDays: number };
+
+// Recorre start_date..end_date del viaje día por día, crea los trip_days que
+// falten (createTripDay ya resuelve mock/Supabase) y luego reescribe el
+// sort_order de TODOS los días del viaje en orden cronológico, para que los
+// días recién generados queden intercalados correctamente y no simplemente
+// al final de la lista.
+export async function generateTripDays(tripId: string): Promise<GenerateTripDaysResult> {
+  const trip = await getTripById(tripId);
+  if (!trip) throw new Error("Viaje no encontrado");
+  if (!trip.startDate || !trip.endDate) {
+    throw new Error("El viaje necesita fecha de inicio y fin para generar los días");
+  }
+
+  const dates = enumerateDates(trip.startDate, trip.endDate);
+  if (dates.length === 0) {
+    throw new Error("El rango de fechas del viaje no es válido");
+  }
+
+  const dayIdByDate = new Map(trip.days.map((d) => [d.date, d.id]));
+  const missingDates = dates.filter((date) => !dayIdByDate.has(date));
+
+  for (const date of missingDates) {
+    const created = await createTripDay({ tripId, date });
+    dayIdByDate.set(date, created.id);
+  }
+
+  const order = dates.map((date, index) => ({
+    id: dayIdByDate.get(date) as string,
+    sortOrder: index,
+  }));
+  await reorderTripDays(order);
+
+  return { created: missingDates.length, totalDays: dates.length };
+}
+
+function enumerateDates(startDate: string, endDate: string): string[] {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return [];
+
+  const dates: string[] = [];
+  for (let t = start.getTime(); t <= end.getTime(); t += 86_400_000) {
+    dates.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
 // ---------- Items ----------
 
 export type CreateItemInput = {
