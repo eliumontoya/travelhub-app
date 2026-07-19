@@ -2,17 +2,20 @@
 
 import { useRef, useState, useTransition } from "react";
 import { TripDay } from "@/types";
+import { showUndoToast } from "@/components/UndoToast";
 
 export function DayFormDialog({
   trigger,
   day,
   onSubmit,
   onDelete,
+  onUndoDelete,
 }: {
   trigger: React.ReactNode;
   day?: TripDay;
   onSubmit: (formData: FormData) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onUndoDelete?: () => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -46,6 +49,9 @@ export function DayFormDialog({
     startTransition(async () => {
       await onDelete();
       close();
+      if (onUndoDelete) {
+        showUndoToast({ message: "Día eliminado", onUndo: onUndoDelete });
+      }
     });
   }
 

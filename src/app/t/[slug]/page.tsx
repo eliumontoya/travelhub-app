@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
-import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
+import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
+import { PrintButton } from "@/components/PrintButton";
 
 export default async function PublicTripPage({
   params,
@@ -15,7 +16,14 @@ export default async function PublicTripPage({
 }) {
   const { slug } = await params;
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
-  if (!trip) notFound();
+  if (!trip || trip.status !== "published") notFound();
+
+  const totalCost = trip.showCostsToClient
+    ? trip.days.reduce(
+        (sum, day) => sum + day.items.reduce((daySum, item) => daySum + (item.cost ?? 0), 0),
+        0
+      )
+    : 0;
 
   const dayWeather = await Promise.all(
     trip.days.map((day) => {
@@ -25,9 +33,9 @@ export default async function PublicTripPage({
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-16">
+    <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0">
       <div
-        className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72"
+        className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72 print:hidden"
         style={{
           backgroundImage: trip.coverImageUrl
             ? `linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.1)), url(${trip.coverImageUrl})`
@@ -54,26 +62,42 @@ export default async function PublicTripPage({
         </div>
       </div>
 
+      <div className="hidden print:block px-4 pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
+        </p>
+      </div>
+
       <div className="mx-auto max-w-2xl px-4 lg:max-w-5xl lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-x-8">
         <TripDaySidebar
           days={trip.days}
-          className="hidden lg:block lg:sticky lg:top-6 lg:self-start"
+          className="hidden lg:block lg:sticky lg:top-6 lg:self-start print:hidden"
         />
 
         <div className="lg:max-w-2xl">
           {trip.instructions && (
-            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:shadow-none print:border-gray-300">
               <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
             </div>
           )}
 
-          <div className="my-6 flex justify-center">
+          <div className="my-6 flex justify-center gap-2 print:hidden">
             <AddTripToCalendarButton trip={trip} />
+            <PrintButton />
           </div>
+
+          {trip.showCostsToClient && (
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900">Resumen de costos</h2>
+              <p className="mt-1 text-2xl font-bold text-gray-900">{formatCost(totalCost)}</p>
+              <p className="text-xs text-gray-400">Total estimado del viaje</p>
+            </div>
+          )}
 
           <div className="space-y-8">
             {trip.days.map((day, dayIdx) => (
-              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
+              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6 print:break-inside-avoid">
                 <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold capitalize text-gray-900">
                   {formatDateLong(day.date)}
                   <WeatherBadge weather={dayWeather[dayIdx]} />
@@ -84,7 +108,7 @@ export default async function PublicTripPage({
                     return (
                       <div
                         key={item.id}
-                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid print:shadow-none print:border-gray-300"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-3">
@@ -109,12 +133,21 @@ export default async function PublicTripPage({
                                   Confirmación: {item.confirmationCode}
                                 </p>
                               )}
+                              {trip.showCostsToClient && item.cost !== undefined && (
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Costo: {formatCost(item.cost)}
+                                </p>
+                              )}
                               {item.lat !== undefined && item.lng !== undefined && (
-                                <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                <div className="print:hidden">
+                                  <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                </div>
                               )}
                             </div>
                           </div>
-                          <AddToCalendarButton item={item} date={day.date} />
+                          <div className="print:hidden">
+                            <AddToCalendarButton item={item} date={day.date} />
+                          </div>
                         </div>
                       </div>
                     );
