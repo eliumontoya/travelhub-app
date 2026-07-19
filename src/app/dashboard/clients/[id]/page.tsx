@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClientById, getClientDocuments, getTripsByClientId } from "@/lib/data";
-import { formatDateShort } from "@/lib/item-meta";
+import {
+  getClientById,
+  getClientDocuments,
+  getClientTags,
+  getClientTripSummary,
+  getTags,
+  getTripsByClientId,
+} from "@/lib/data";
+import { formatDateShort, formatTags, REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
 import { ClientDocuments } from "@/components/ClientDocuments";
+import { TripTagsManager } from "@/components/TripTagsManager";
 import {
   deleteClientDocumentAction,
   getClientDocumentsAction,
+  setClientTagsAction,
   updateClientAction,
   uploadClientDocumentAction,
 } from "./actions";
@@ -29,8 +38,13 @@ export default async function ClientDetailPage({
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const trips = await getTripsByClientId(id);
-  const documents = await getClientDocuments(id);
+  const [trips, tags, clientTags, summary, documents] = await Promise.all([
+    getTripsByClientId(id),
+    getTags(),
+    getClientTags(id),
+    getClientTripSummary(id),
+    getClientDocuments(id),
+  ]);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -48,13 +62,40 @@ export default async function ClientDetailPage({
           <p className="mt-1 text-xs text-gray-400">
             Alta: {new Date(client.createdAt).toLocaleDateString("es-MX")}
           </p>
+          {clientTags.length > 0 && (
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {formatTags(clientTags).map((name) => (
+                <li
+                  key={name}
+                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        <Link
-          href={`/dashboard/trips/new?clientId=${client.id}`}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Nuevo viaje para este cliente
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <TripTagsManager
+            tags={tags}
+            assignedTagIds={clientTags.map((t) => t.id)}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Gestionar tags
+              </button>
+            }
+            onSubmit={setClientTagsAction.bind(null, client.id)}
+          />
+          <Link
+            href={`/dashboard/trips/new?clientId=${client.id}`}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + Nuevo viaje para este cliente
+          </Link>
+        </div>
       </div>
 
       <details className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
@@ -91,6 +132,15 @@ export default async function ClientDetailPage({
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Fecha de nacimiento</label>
+              <input
+                name="birthDate"
+                type="date"
+                defaultValue={client.birthDate}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Notas</label>
@@ -101,6 +151,21 @@ export default async function ClientDetailPage({
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Cómo llegó el cliente</label>
+            <select
+              name="referralSource"
+              defaultValue={client.referralSource ?? ""}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">Sin especificar</option>
+              {REFERRAL_SOURCE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="submit"
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -109,6 +174,34 @@ export default async function ClientDetailPage({
           </button>
         </form>
       </details>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+          <p className="text-xl font-bold text-gray-900">{summary.totalTrips}</p>
+          <p className="text-xs text-gray-500">Viajes totales</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+          <p className="text-xl font-bold text-green-700">{summary.publishedCount}</p>
+          <p className="text-xs text-gray-500">Publicados</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+          <p className="text-xl font-bold text-gray-600">{summary.draftCount}</p>
+          <p className="text-xs text-gray-500">Borradores</p>
+        </div>
+        {summary.totalCost !== null ? (
+          <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+            <p className="text-xl font-bold text-gray-900">
+              {summary.totalCost.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
+            </p>
+            <p className="text-xs text-gray-500">Gasto total</p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+            <p className="text-xl font-bold text-gray-400">{summary.archivedCount}</p>
+            <p className="text-xs text-gray-500">Archivados</p>
+          </div>
+        )}
+      </div>
 
       <div className="mb-8">
         <ClientDocuments
