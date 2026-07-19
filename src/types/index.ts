@@ -34,6 +34,10 @@ export interface Trip {
   instructions?: string;
   status: TripStatus;
   createdAt: string;
+  /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
+  salePrice?: number;
+  /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
+  commissionRate?: number;
 }
 
 export interface TripDay {

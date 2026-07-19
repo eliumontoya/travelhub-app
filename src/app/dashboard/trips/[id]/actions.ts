@@ -143,6 +143,21 @@ export async function updateTripInstructionsAction(
   revalidatePath(`/t/${slug}`);
 }
 
+function parseNullableNumber(raw: FormDataEntryValue | null): number | null {
+  const value = String(raw ?? "").trim();
+  return value ? Number(value) : null;
+}
+
+// Solo agente: sale_price/commission_rate (issue #53) nunca se propagan a
+// revalidatePath(`/t/${slug}`) — la vista pública no depende de estos campos.
+export async function updateTripCommissionAction(tripId: string, formData: FormData) {
+  await updateTrip(tripId, {
+    salePrice: parseNullableNumber(formData.get("salePrice")),
+    commissionRate: parseNullableNumber(formData.get("commissionRate")),
+  });
+  revalidateTrip(tripId);
+}
+
 export async function setTripClientsAction(tripId: string, formData: FormData) {
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   if (clientIds.length < 1) return; // no-op: server-side "mínimo 1 cliente" (defensa en profundidad)
