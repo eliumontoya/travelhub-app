@@ -527,6 +527,8 @@ export type UpdateTripInput = Partial<{
   status: Trip["status"];
   currency: Trip["currency"];
   showCostsToClient: boolean;
+  salePrice: number | null;
+  commissionRate: number | null;
 }>;
 
 export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
@@ -751,12 +753,22 @@ export async function getTripById(id: string): Promise<TripWithDetails | null> {
   return assembleTripWithDetails(tripRow);
 }
 
+// Vista pública /t/[slug]: NUNCA selecciona ni expone sale_price/commission_rate
+// (issue #53, campos exclusivos del editor del agente). A diferencia de
+// getTripById, no usa select("*") — lista explícita de columnas públicas.
 export async function getTripWithDetails(slug: string): Promise<TripWithDetails | null> {
-  if (!isSupabaseConfigured()) return mockGetTripWithDetails(slug);
+  if (!isSupabaseConfigured()) {
+    const trip = mockGetTripWithDetails(slug);
+    if (!trip) return null;
+    const { salePrice: _salePrice, commissionRate: _commissionRate, ...publicTrip } = trip;
+    return publicTrip as TripWithDetails;
+  }
   const supabase = await createServerSupabase();
   const { data: tripRow, error } = await supabase
     .from("trips")
-    .select("*")
+    .select(
+      "id, client_id, title, slug, start_date, end_date, cover_image_url, instructions, status, created_at"
+    )
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
@@ -1172,6 +1184,8 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.status !== undefined) trip.status = input.status;
     if (input.currency !== undefined) trip.currency = input.currency;
     if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
+    if (input.salePrice !== undefined) trip.salePrice = input.salePrice ?? undefined;
+    if (input.commissionRate !== undefined) trip.commissionRate = input.commissionRate ?? undefined;
     trip.updatedAt = new Date().toISOString();
     return trip;
   }
@@ -1188,6 +1202,8 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.status !== undefined) patch.status = input.status;
   if (input.currency !== undefined) patch.currency = input.currency;
   if (input.showCostsToClient !== undefined) patch.show_costs_to_client = input.showCostsToClient;
+  if (input.salePrice !== undefined) patch.sale_price = input.salePrice;
+  if (input.commissionRate !== undefined) patch.commission_rate = input.commissionRate;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToTrip(data);
@@ -1246,6 +1262,12 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     createdAt: row.created_at as string,
     updatedAt: (row.updated_at as string) ?? (row.created_at as string),
     reminderSentAt: (row.reminder_sent_at as string) ?? undefined,
+    salePrice:
+      row.sale_price !== null && row.sale_price !== undefined ? Number(row.sale_price) : undefined,
+    commissionRate:
+      row.commission_rate !== null && row.commission_rate !== undefined
+        ? Number(row.commission_rate)
+        : undefined,
   };
 }
 

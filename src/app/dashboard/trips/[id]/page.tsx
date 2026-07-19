@@ -13,6 +13,7 @@ import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripCommissionDialog } from "@/components/TripCommissionDialog";
 import { TripCurrencyDialog } from "@/components/TripCurrencyDialog";
 import { TripTravelerCountDialog } from "@/components/TripTravelerCountDialog";
 import { TripBudgetDialog } from "@/components/TripBudgetDialog";
@@ -59,6 +60,7 @@ import {
   setTripTagsAction,
   togglePackingItemAction,
   updateTripBudgetAction,
+  updateTripCommissionAction,
   updateTripCurrencyAction,
   updateTripInstructionsAction,
   updateTripTravelerCountAction,
@@ -234,6 +236,18 @@ export default async function TripEditorPage({
               </button>
             }
             onSubmit={updateTripBudgetAction.bind(null, trip.id)}
+          />
+          <TripCommissionDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Comisión
+              </button>
+            }
+            onSubmit={updateTripCommissionAction.bind(null, trip.id)}
           />
           <Link
             href={`/t/${trip.slug}`}

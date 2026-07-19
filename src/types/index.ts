@@ -50,6 +50,10 @@ export interface Trip {
   updatedAt: string;
   /** Timestamp del envío del recordatorio automático por email; undefined = aún no enviado. */
   reminderSentAt?: string;
+  /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
+  salePrice?: number;
+  /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
+  commissionRate?: number;
 }
 
 export interface TripDay {
