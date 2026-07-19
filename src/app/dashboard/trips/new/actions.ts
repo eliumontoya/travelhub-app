@@ -1,7 +1,15 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient as createClientRecord, createTrip, getOrCreateTag } from "@/lib/data";
+import {
+  createClient as createClientRecord,
+  createTrip,
+  createTripFromTemplate,
+  getOrCreateTag,
+} from "@/lib/data";
+import { TripCurrency } from "@/types";
+
+const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
 function slugify(text: string) {
   return text
@@ -17,9 +25,16 @@ export async function createTripAction(formData: FormData) {
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");
   const instructions = String(formData.get("instructions") ?? "").trim() || undefined;
+  const rawCurrency = String(formData.get("currency") ?? "MXN") as TripCurrency;
+  const currency = validCurrencies.includes(rawCurrency) ? rawCurrency : "MXN";
+  const travelerCountRaw = Number(formData.get("travelerCount"));
+  const travelerCount = Number.isFinite(travelerCountRaw) && travelerCountRaw >= 1
+    ? Math.floor(travelerCountRaw)
+    : 1;
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
   const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
+  const templateId = String(formData.get("templateId") ?? "").trim() || undefined;
 
   const newClientName = String(formData.get("newClientName") ?? "").trim();
   if (newClientName) {
@@ -46,6 +61,19 @@ export async function createTripAction(formData: FormData) {
   const slugBase = slugify(title) || "viaje";
   const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-  const trip = await createTrip({ clientIds, title, slug, startDate, endDate, instructions, tagIds });
+  const tripInput = {
+    clientIds,
+    title,
+    slug,
+    startDate,
+    endDate,
+    instructions,
+    travelerCount,
+    tagIds,
+    currency,
+  };
+  const trip = templateId
+    ? await createTripFromTemplate(templateId, tripInput)
+    : await createTrip(tripInput);
   redirect(`/dashboard/trips/${trip.id}`);
 }
