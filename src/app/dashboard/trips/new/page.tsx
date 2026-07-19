@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getClients, getTags } from "@/lib/data";
+import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags } from "@/lib/data";
 import { NewTripForm } from "@/components/NewTripForm";
 
 export default async function NewTripPage({
@@ -7,8 +7,8 @@ export default async function NewTripPage({
 }: {
   searchParams: Promise<{ error?: string; clientId?: string }>;
 }) {
-  const [clients, tags, { error, clientId }] = await Promise.all([
-    getClients(),
+  const [{ items: clients }, tags, { error, clientId }] = await Promise.all([
+    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
     getTags(),
     searchParams,
   ]);
