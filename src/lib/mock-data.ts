@@ -135,12 +135,12 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
     .map((tt) => mockTags.find((t) => t.id === tt.tagId))
     .filter((t): t is Tag => Boolean(t));
   const days = mockTripDays
-    .filter((d) => d.tripId === trip.id)
+    .filter((d) => d.tripId === trip.id && !d.deletedAt)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((day) => ({
       ...day,
       items: mockItems
-        .filter((i) => i.tripDayId === day.id)
+        .filter((i) => i.tripDayId === day.id && !i.deletedAt)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
   return { ...trip, clients, client, tags, days };

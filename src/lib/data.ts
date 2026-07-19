@@ -477,6 +477,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     .from("trip_days")
     .select("*")
     .eq("trip_id", trip.id)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true });
   if (daysError) throw daysError;
 
@@ -487,6 +488,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
       .from("items")
       .select("*")
       .in("trip_day_id", dayIds)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true });
     if (itemsError) throw itemsError;
     itemRows = data ?? [];
@@ -772,17 +774,33 @@ export async function updateTripDay(id: string, input: UpdateTripDayInput): Prom
   return rowToTripDay(data);
 }
 
+// Soft delete (issue #23): marca deleted_at en vez de borrar la fila, para
+// poder deshacer dentro de la misma sesión (toast "Deshacer"). Los items de
+// ese día NO se marcan individualmente: quedan ocultos porque las consultas
+// de lectura (assembleTripWithDetails / mock getTripWithDetails) ya excluyen
+// items cuyo trip_day padre está soft-deleted.
 export async function deleteTripDay(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
-    const idx = mockTripDays.findIndex((d) => d.id === id);
-    if (idx >= 0) mockTripDays.splice(idx, 1);
-    for (let i = mockItems.length - 1; i >= 0; i--) {
-      if (mockItems[i].tripDayId === id) mockItems.splice(i, 1);
-    }
+    const day = mockTripDays.find((d) => d.id === id);
+    if (day) day.deletedAt = new Date().toISOString();
     return;
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("trip_days").delete().eq("id", id);
+  const { error } = await supabase
+    .from("trip_days")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function restoreTripDay(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const day = mockTripDays.find((d) => d.id === id);
+    if (day) day.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("trip_days").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
 
@@ -880,14 +898,29 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   return rowToItem(data);
 }
 
+// Soft delete (issue #23): ver comentario de deleteTripDay.
 export async function deleteItem(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
-    const idx = mockItems.findIndex((i) => i.id === id);
-    if (idx >= 0) mockItems.splice(idx, 1);
+    const item = mockItems.find((i) => i.id === id);
+    if (item) item.deletedAt = new Date().toISOString();
     return;
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("items").delete().eq("id", id);
+  const { error } = await supabase
+    .from("items")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function restoreItem(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const item = mockItems.find((i) => i.id === id);
+    if (item) item.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("items").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
 

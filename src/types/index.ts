@@ -42,6 +42,7 @@ export interface TripDay {
   date: string;
   notes?: string;
   sortOrder: number;
+  deletedAt?: string;
 }
 
 export interface ItemDocument {
@@ -66,6 +67,7 @@ export interface Item {
   notes?: string;
   sortOrder: number;
   documents?: ItemDocument[];
+  deletedAt?: string;
 }
 
 export interface TripWithDetails extends Trip {

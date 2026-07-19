@@ -11,6 +11,8 @@ import {
   getOrCreateTag,
   reorderItems,
   reorderTripDays,
+  restoreItem,
+  restoreTripDay,
   setTripClients,
   setTripTags,
   updateItem,
@@ -46,6 +48,11 @@ export async function editDayAction(tripId: string, dayId: string, formData: For
 
 export async function deleteDayAction(tripId: string, dayId: string) {
   await deleteTripDay(dayId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreDayAction(tripId: string, dayId: string) {
+  await restoreTripDay(dayId);
   revalidateTrip(tripId);
 }
 
@@ -104,6 +111,11 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
 
 export async function deleteItemAction(tripId: string, itemId: string) {
   await deleteItem(itemId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreItemAction(tripId: string, itemId: string) {
+  await restoreItem(itemId);
   revalidateTrip(tripId);
 }
 
