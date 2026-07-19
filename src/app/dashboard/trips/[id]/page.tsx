@@ -9,12 +9,14 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import {
   addDayAction,
   addItemAction,
   deleteDayAction,
   deleteDocumentAction,
   deleteItemAction,
+  duplicateTripAction,
   editDayAction,
   editItemAction,
   getItemDocumentsAction,
@@ -131,6 +133,7 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <DuplicateTripButton onDuplicate={duplicateTripAction.bind(null, trip.id)} />
         </div>
       </div>
 
