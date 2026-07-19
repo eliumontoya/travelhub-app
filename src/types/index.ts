@@ -34,6 +34,8 @@ export interface Trip {
   instructions?: string;
   status: TripStatus;
   createdAt: string;
+  /** Timestamp del envío del recordatorio automático por email; undefined = aún no enviado. */
+  reminderSentAt?: string;
 }
 
 export interface TripDay {
