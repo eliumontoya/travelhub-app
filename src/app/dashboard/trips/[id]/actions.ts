@@ -5,18 +5,23 @@ import { revalidatePath } from "next/cache";
 import {
   createItem,
   createTrip,
+  createPackingItem,
   createTripDay,
   deleteDocument,
   deleteItem,
+  deletePackingItem,
   deleteTripDay,
   getItemDocuments,
   getOrCreateTag,
   getTripById,
   reorderItems,
   reorderTripDays,
+  restoreItem,
+  restoreTripDay,
   setTripClients,
   setTripTags,
   updateItem,
+  updatePackingItem,
   updateTrip,
   updateTripDay,
   uploadItemDocument,
@@ -35,6 +40,11 @@ function slugify(text: string) {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function parseCost(raw: FormDataEntryValue | null): number | undefined {
+  const value = String(raw ?? "").trim();
+  return value ? Number(value) : undefined;
 }
 
 function revalidateTrip(tripId: string) {
@@ -58,6 +68,11 @@ export async function editDayAction(tripId: string, dayId: string, formData: For
 
 export async function deleteDayAction(tripId: string, dayId: string) {
   await deleteTripDay(dayId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreDayAction(tripId: string, dayId: string) {
+  await restoreTripDay(dayId);
   revalidateTrip(tripId);
 }
 
@@ -95,6 +110,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
@@ -110,12 +126,18 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
 
 export async function deleteItemAction(tripId: string, itemId: string) {
   await deleteItem(itemId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreItemAction(tripId: string, itemId: string) {
+  await restoreItem(itemId);
   revalidateTrip(tripId);
 }
 
@@ -144,6 +166,16 @@ export async function publishTripStatusAction(tripId: string, status: "draft" | 
   revalidateTrip(tripId);
 }
 
+export async function setShowCostsToClientAction(
+  tripId: string,
+  slug: string,
+  showCostsToClient: boolean
+) {
+  await updateTrip(tripId, { showCostsToClient });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
 export async function updateTripInstructionsAction(
   tripId: string,
   slug: string,
@@ -153,6 +185,12 @@ export async function updateTripInstructionsAction(
   await updateTrip(tripId, { instructions: instructions || null });
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function updateTripBudgetAction(tripId: string, formData: FormData) {
+  const raw = String(formData.get("budget") ?? "").trim();
+  await updateTrip(tripId, { budget: raw ? Number(raw) : null });
+  revalidateTrip(tripId);
 }
 
 export async function setTripClientsAction(tripId: string, formData: FormData) {
@@ -174,6 +212,23 @@ export async function setTripTagsAction(tripId: string, formData: FormData) {
   await setTripTags(tripId, tagIds);
   revalidateTrip(tripId);
   revalidatePath("/dashboard");
+}
+
+export async function addPackingItemAction(tripId: string, formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  if (!label) return;
+  await createPackingItem({ tripId, label });
+  revalidateTrip(tripId);
+}
+
+export async function togglePackingItemAction(tripId: string, itemId: string, checked: boolean) {
+  await updatePackingItem(itemId, { checked });
+  revalidateTrip(tripId);
+}
+
+export async function deletePackingItemAction(tripId: string, itemId: string) {
+  await deletePackingItem(itemId);
+  revalidateTrip(tripId);
 }
 
 export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {
