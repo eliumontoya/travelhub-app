@@ -48,6 +48,14 @@ export function TagMultiCombobox({
       .slice(0, 8);
   }, [tags, normalizedQuery, selectedIds]);
 
+  const recentTags = useMemo(() => {
+    if (trimmedQuery) return []; // Only show when query is empty
+    return [...tags]
+      .filter((t) => !selectedIds.includes(t.id))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+  }, [tags, trimmedQuery, selectedIds]);
+
   // Solo se muestra "Crear '{query}'" si no hay ningún match case-insensitive
   // exacto ni entre tags existentes ni entre nombres ya en staging.
   const hasExactMatch =
@@ -142,8 +150,27 @@ export function TagMultiCombobox({
           autoComplete="off"
         />
 
-        {isOpen && (results.length > 0 || showCreateAffordance) && (
+        {isOpen && (results.length > 0 || recentTags.length > 0 || showCreateAffordance) && (
           <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
+            {recentTags.length > 0 && results.length === 0 && (
+              <>
+                <li className="px-3 pt-2 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide pointer-events-none select-none">
+                  Recientes
+                </li>
+                {recentTags.map((t) => (
+                  <li key={`recent-${t.id}`}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelectExisting(t)}
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                    >
+                      {t.name}
+                    </button>
+                  </li>
+                ))}
+              </>
+            )}
             {results.map((t) => (
               <li key={t.id}>
                 <button
