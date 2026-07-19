@@ -77,3 +77,13 @@ export function computeTripCompleteness(trip: TripWithDetails): TripCompleteness
 
   return { totalItems, itemsWithDocuments, documentPercentage, emptyDays };
 }
+
+// Formato genérico de moneda para el resumen de costos (issue #35). Sin
+// símbolo de divisa fijo en el dominio (la app no modela multi-moneda aún),
+// por lo que se usa un formato numérico simple con separador de miles.
+export function formatCost(value: number): string {
+  return new Intl.NumberFormat("es-MX", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}

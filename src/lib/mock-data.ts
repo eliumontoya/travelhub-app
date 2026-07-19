@@ -32,6 +32,7 @@ export const mockTrips: Trip[] = [
     instructions:
       "¡Bienvenidos! Llegada al hotel a partir de las 15:00. Contacto de emergencia 24/7: +39 06 1234 5678. Lleven documento de identidad para el check-in.",
     status: "published",
+    showCostsToClient: true,
     createdAt: "2026-07-01T09:00:00Z",
   },
   {
@@ -42,6 +43,7 @@ export const mockTrips: Trip[] = [
     startDate: "2026-12-15",
     endDate: "2026-12-20",
     status: "draft",
+    showCostsToClient: false,
     createdAt: "2026-07-05T09:00:00Z",
   },
 ];
@@ -72,6 +74,13 @@ export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[
   { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
 ];
 
+// Fuente de verdad mock para la asignación many-to-many client<->tag, espejo
+// de la tabla client_tags (ver supabase/migrations/0008_client_tags.sql).
+// Igual que mockTripTags, 0 tags es válido.
+export const mockClientTags: { clientId: string; tagId: string; createdAt: string }[] = [
+  { clientId: "c1", tagId: "tg1", createdAt: "2026-07-01T09:00:00Z" },
+];
+
 export const mockItems: Item[] = [
   {
     id: "i1",
@@ -82,6 +91,7 @@ export const mockItems: Item[] = [
     endTime: "14:20",
     location: "Aeropuerto Internacional CDMX",
     confirmationCode: "XJ4K9P",
+    cost: 12500,
     sortOrder: 0,
   },
   {
@@ -94,6 +104,7 @@ export const mockItems: Item[] = [
     lat: 41.9028,
     lng: 12.4964,
     confirmationCode: "HTL-88213",
+    cost: 3200,
     sortOrder: 1,
   },
   {
@@ -107,6 +118,7 @@ export const mockItems: Item[] = [
     lat: 41.8902,
     lng: 12.4922,
     notes: "Guía en español, punto de encuentro en la entrada norte.",
+    cost: 900,
     sortOrder: 0,
   },
   {
