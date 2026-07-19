@@ -1,4 +1,4 @@
-import { Client, Trip, TripDay, Item, Tag, TripWithDetails, SiteSettings } from "@/types";
+import { Client, Trip, TripDay, Item, Tag, TripWithDetails, SiteSettings, PackingItem } from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -72,6 +72,13 @@ export const mockTags: Tag[] = [
 export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[] = [
   { tripId: "t1", tagId: "tg1", createdAt: "2026-07-01T09:00:00Z" },
   { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
+];
+
+// Checklist de equipaje mock, espejo de la tabla packing_items (ver
+// supabase/migrations/0009_packing_items.sql). 0 items es válido.
+export const mockPackingItems: PackingItem[] = [
+  { id: "p1", tripId: "t1", label: "Pasaportes", checked: true, sortOrder: 0 },
+  { id: "p2", tripId: "t1", label: "Adaptador de corriente EU", checked: false, sortOrder: 1 },
 ];
 
 // Fuente de verdad mock para la asignación many-to-many client<->tag, espejo
@@ -155,7 +162,10 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
         .filter((i) => i.tripDayId === day.id && !i.deletedAt)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
-  return { ...trip, clients, client, tags, days };
+  const packingItems = mockPackingItems
+    .filter((p) => p.tripId === trip.id)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return { ...trip, clients, client, tags, days, packingItems };
 }
 
 export function getTripById(id: string): TripWithDetails | null {

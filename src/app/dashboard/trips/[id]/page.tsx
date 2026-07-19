@@ -14,6 +14,7 @@ import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
+import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import { UndoToastHost } from "@/components/UndoToast";
@@ -21,9 +22,11 @@ import { PrintButton } from "@/components/PrintButton";
 import {
   addDayAction,
   addItemAction,
+  addPackingItemAction,
   deleteDayAction,
   deleteDocumentAction,
   deleteItemAction,
+  deletePackingItemAction,
   editDayAction,
   editItemAction,
   getItemDocumentsAction,
@@ -35,6 +38,7 @@ import {
   setShowCostsToClientAction,
   setTripClientsAction,
   setTripTagsAction,
+  togglePackingItemAction,
   updateTripInstructionsAction,
   uploadDocumentAction,
 } from "./actions";
@@ -186,6 +190,15 @@ export default async function TripEditorPage({
                   .join(", ")}`}
           </p>
         )}
+      </div>
+
+      <div className="mb-6 print:hidden">
+        <PackingListManager
+          items={trip.packingItems}
+          onAdd={addPackingItemAction.bind(null, trip.id)}
+          onToggle={togglePackingItemAction.bind(null, trip.id)}
+          onDelete={deletePackingItemAction.bind(null, trip.id)}
+        />
       </div>
 
       <div className="space-y-6 print:space-y-3">

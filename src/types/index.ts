@@ -73,6 +73,14 @@ export interface Item {
   deletedAt?: string;
 }
 
+export interface PackingItem {
+  id: string;
+  tripId: string;
+  label: string;
+  checked: boolean;
+  sortOrder: number;
+}
+
 export interface TripWithDetails extends Trip {
   /** Fuente de verdad: todos los clientes asignados (orden = asignación, created_at asc). */
   clients: Client[];
@@ -81,6 +89,8 @@ export interface TripWithDetails extends Trip {
   /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
   tags: Tag[];
   days: (TripDay & { items: Item[] })[];
+  /** Checklist de equipaje del viaje (0..N), ordenado por sortOrder. */
+  packingItems: PackingItem[];
 }
 
 export interface SiteSettings {

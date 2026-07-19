@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import {
   createItem,
+  createPackingItem,
   createTripDay,
   deleteDocument,
   deleteItem,
+  deletePackingItem,
   deleteTripDay,
   getItemDocuments,
   getOrCreateTag,
@@ -16,6 +18,7 @@ import {
   setTripClients,
   setTripTags,
   updateItem,
+  updatePackingItem,
   updateTrip,
   updateTripDay,
   uploadItemDocument,
@@ -191,6 +194,23 @@ export async function setTripTagsAction(tripId: string, formData: FormData) {
   await setTripTags(tripId, tagIds);
   revalidateTrip(tripId);
   revalidatePath("/dashboard");
+}
+
+export async function addPackingItemAction(tripId: string, formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  if (!label) return;
+  await createPackingItem({ tripId, label });
+  revalidateTrip(tripId);
+}
+
+export async function togglePackingItemAction(tripId: string, itemId: string, checked: boolean) {
+  await updatePackingItem(itemId, { checked });
+  revalidateTrip(tripId);
+}
+
+export async function deletePackingItemAction(tripId: string, itemId: string) {
+  await deletePackingItem(itemId);
+  revalidateTrip(tripId);
 }
 
 export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {

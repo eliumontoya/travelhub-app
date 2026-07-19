@@ -1,4 +1,4 @@
-import { Client, Item, ItemDocument, SiteSettings, Tag, Trip, TripDay, TripWithDetails } from "@/types";
+import { Client, Item, ItemDocument, PackingItem, SiteSettings, Tag, Trip, TripDay, TripWithDetails } from "@/types";
 import {
   mockClients,
   mockTrips,
@@ -8,6 +8,7 @@ import {
   mockTripClients,
   mockTags,
   mockTripTags,
+  mockPackingItems,
   mockClientTags,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
@@ -678,12 +679,21 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     return { ...day, items };
   });
 
+  const { data: packingRows, error: packingError } = await supabase
+    .from("packing_items")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (packingError) throw packingError;
+  const packingItems = (packingRows ?? []).map(rowToPackingItem);
+
   return {
     ...trip,
     clients,
     client,
     tags,
     days,
+    packingItems,
   };
 }
 
@@ -876,6 +886,86 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     status: row.status as Trip["status"],
     showCostsToClient: Boolean(row.show_costs_to_client),
     createdAt: row.created_at as string,
+  };
+}
+
+// ---------- Packing list (issue #24) ----------
+
+export type CreatePackingItemInput = { tripId: string; label: string; sortOrder?: number };
+export type UpdatePackingItemInput = Partial<{ label: string; checked: boolean; sortOrder: number }>;
+
+export async function createPackingItem(input: CreatePackingItemInput): Promise<PackingItem> {
+  if (!isSupabaseConfigured()) {
+    const item: PackingItem = {
+      id: uid(),
+      tripId: input.tripId,
+      label: input.label,
+      checked: false,
+      sortOrder:
+        input.sortOrder ?? mockPackingItems.filter((p) => p.tripId === input.tripId).length,
+    };
+    mockPackingItems.push(item);
+    return item;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("packing_items")
+    .insert({
+      trip_id: input.tripId,
+      label: input.label,
+      sort_order: input.sortOrder ?? 0,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToPackingItem(data);
+}
+
+export async function updatePackingItem(
+  id: string,
+  input: UpdatePackingItemInput
+): Promise<PackingItem> {
+  if (!isSupabaseConfigured()) {
+    const item = mockPackingItems.find((p) => p.id === id);
+    if (!item) throw new Error("Item de equipaje no encontrado");
+    if (input.label !== undefined) item.label = input.label;
+    if (input.checked !== undefined) item.checked = input.checked;
+    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
+    return item;
+  }
+  const supabase = await createServerSupabase();
+  const patch: Record<string, unknown> = {};
+  if (input.label !== undefined) patch.label = input.label;
+  if (input.checked !== undefined) patch.checked = input.checked;
+  if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
+  const { data, error } = await supabase
+    .from("packing_items")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToPackingItem(data);
+}
+
+export async function deletePackingItem(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const idx = mockPackingItems.findIndex((p) => p.id === id);
+    if (idx >= 0) mockPackingItems.splice(idx, 1);
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("packing_items").delete().eq("id", id);
+  if (error) throw error;
+}
+
+function rowToPackingItem(row: Record<string, unknown>): PackingItem {
+  return {
+    id: row.id as string,
+    tripId: row.trip_id as string,
+    label: row.label as string,
+    checked: row.checked as boolean,
+    sortOrder: row.sort_order as number,
   };
 }
 
