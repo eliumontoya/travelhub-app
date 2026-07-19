@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { itemTypeMeta, formatDateLong, formatAssignedClients, formatCost, formatTags } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -21,6 +21,7 @@ import {
   moveDayAction,
   moveItemAction,
   publishTripStatusAction,
+  setShowCostsToClientAction,
   setTripClientsAction,
   setTripTagsAction,
   updateTripInstructionsAction,
@@ -83,6 +84,18 @@ export default async function TripEditorPage({
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
+            </button>
+          </form>
+          <form
+            action={setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient)}
+          >
+            <button
+              type="submit"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {trip.showCostsToClient
+                ? "Ocultar costos al cliente"
+                : "Mostrar costos al cliente"}
             </button>
           </form>
           <TripClientsManager
@@ -184,6 +197,9 @@ export default async function TripEditorPage({
                         </div>
                         {item.location && (
                           <p className="text-sm text-gray-500">{item.location}</p>
+                        )}
+                        {item.cost !== undefined && (
+                          <p className="text-xs text-gray-400">Costo: {formatCost(item.cost)}</p>
                         )}
                         {item.confirmationCode && (
                           <p className="text-xs text-gray-400">
