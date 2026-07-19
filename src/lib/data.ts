@@ -28,6 +28,7 @@ export type CreateClientInput = {
   email?: string;
   phone?: string;
   notes?: string;
+  birthDate?: string;
 };
 
 export async function getClients(): Promise<Client[]> {
@@ -71,6 +72,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       email: input.email ?? "",
       phone: input.phone ?? "",
       notes: input.notes,
+      birthDate: input.birthDate,
       createdAt: new Date().toISOString(),
     };
     mockClients.unshift(client);
@@ -79,7 +81,13 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name: input.name, email: input.email, phone: input.phone, notes: input.notes })
+    .insert({
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      notes: input.notes,
+      birth_date: input.birthDate || null,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -94,6 +102,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
     if (input.notes !== undefined) client.notes = input.notes;
+    if (input.birthDate !== undefined) client.birthDate = input.birthDate;
     return client;
   }
   const supabase = await createServerSupabase();
@@ -102,6 +111,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
   if (input.email !== undefined) patch.email = input.email;
   if (input.phone !== undefined) patch.phone = input.phone;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.birthDate !== undefined) patch.birth_date = input.birthDate || null;
   const { data, error } = await supabase.from("clients").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToClient(data);
@@ -114,8 +124,46 @@ function rowToClient(row: Record<string, unknown>): Client {
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
     notes: (row.notes as string) ?? undefined,
+    birthDate: (row.birth_date as string) ?? undefined,
     createdAt: row.created_at as string,
   };
+}
+
+// Calcula en cuántos días cae la próxima ocurrencia del cumpleaños (solo
+// mes/día, ignorando el año de nacimiento) a partir de `from`. Si el
+// mes/día ya pasó este año, se proyecta al año siguiente (wraparound
+// dic->ene). Usa Date.UTC para comparar solo fechas de calendario, sin
+// que la hora/zona horaria del server desplace el resultado en ±1 día.
+function daysUntilNextBirthday(birthDate: string, from: Date): number {
+  const [, month, day] = birthDate.split("-").map(Number);
+  const fromUTC = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  let nextUTC = Date.UTC(from.getFullYear(), month - 1, day);
+  if (nextUTC < fromUTC) {
+    nextUTC = Date.UTC(from.getFullYear() + 1, month - 1, day);
+  }
+  return Math.round((nextUTC - fromUTC) / 86_400_000);
+}
+
+export type ClientWithUpcomingBirthday = Omit<Client, "birthDate"> & {
+  birthDate: string;
+  daysUntilBirthday: number;
+};
+
+// Clientes con birth_date cuyo cumpleaños (mes/día) cae dentro de los
+// próximos `daysAhead` días (incluye hoy = 0). Se apoya en getClients(),
+// que ya cubre el modo dual mock/Supabase, en vez de duplicar ese
+// branching: esta función es una derivación pura sobre esos datos.
+export async function getUpcomingBirthdays(daysAhead = 30): Promise<ClientWithUpcomingBirthday[]> {
+  const clients = await getClients();
+  const today = new Date();
+  return clients
+    .filter((client): client is Client & { birthDate: string } => Boolean(client.birthDate))
+    .map((client) => ({
+      ...client,
+      daysUntilBirthday: daysUntilNextBirthday(client.birthDate, today),
+    }))
+    .filter((client) => client.daysUntilBirthday <= daysAhead)
+    .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday);
 }
 
 // ---------- Tags ----------

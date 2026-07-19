@@ -14,6 +14,7 @@ export interface Client {
   email: string;
   phone: string;
   notes?: string;
+  birthDate?: string;
   createdAt: string;
 }
 

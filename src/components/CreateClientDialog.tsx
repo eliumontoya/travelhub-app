@@ -94,6 +94,18 @@ export function CreateClientDialog({
           />
         </div>
 
+        <div>
+          <label htmlFor="client-birth-date" className="block text-sm font-medium text-gray-700">
+            Fecha de nacimiento
+          </label>
+          <input
+            id="client-birth-date"
+            name="birthDate"
+            type="date"
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </div>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex items-center justify-end gap-2 pt-2">

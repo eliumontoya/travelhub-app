@@ -80,6 +80,15 @@ export default async function ClientDetailPage({
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Fecha de nacimiento</label>
+              <input
+                name="birthDate"
+                type="date"
+                defaultValue={client.birthDate}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Notas</label>

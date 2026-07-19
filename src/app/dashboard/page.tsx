@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getClients, getTripsWithClients } from "@/lib/data";
+import { getClients, getTripsWithClients, getUpcomingBirthdays } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
 
 const statusMeta = {
@@ -9,7 +9,11 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+  const [clients, trips, upcomingBirthdays] = await Promise.all([
+    getClients(),
+    getTripsWithClients(),
+    getUpcomingBirthdays(),
+  ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -22,6 +26,32 @@ export default async function DashboardPage() {
           + Nuevo viaje
         </Link>
       </div>
+
+      {upcomingBirthdays.length > 0 && (
+        <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="mb-3 text-sm font-semibold text-amber-800">
+            🎂 Cumpleaños próximos (30 días)
+          </h2>
+          <ul className="space-y-2">
+            {upcomingBirthdays.map((client) => (
+              <li key={client.id} className="flex items-center justify-between text-sm">
+                <Link href={`/dashboard/clients/${client.id}`} className="font-medium text-gray-900 hover:underline">
+                  {client.name}
+                </Link>
+                <span className="text-amber-700">
+                  {formatDateShort(client.birthDate)}
+                  {" · "}
+                  {client.daysUntilBirthday === 0
+                    ? "hoy"
+                    : client.daysUntilBirthday === 1
+                      ? "mañana"
+                      : `en ${client.daysUntilBirthday} días`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {trips.map((trip) => {
