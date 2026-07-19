@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateClient } from "@/lib/data";
+import { getOrCreateTag, setClientTags, updateClient } from "@/lib/data";
 
 export async function updateClientAction(clientId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -13,4 +13,17 @@ export async function updateClientAction(clientId: string, formData: FormData) {
     notes: String(formData.get("notes") ?? "").trim() || undefined,
   });
   revalidatePath(`/dashboard/clients/${clientId}`);
+}
+
+export async function setClientTagsAction(clientId: string, formData: FormData) {
+  const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
+  const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
+  for (const name of newTagNames) {
+    const tag = await getOrCreateTag(name);
+    tagIds.push(tag.id);
+  }
+  // 0 tags es válido (mismo patrón que setTripTagsAction).
+  await setClientTags(clientId, tagIds);
+  revalidatePath(`/dashboard/clients/${clientId}`);
+  revalidatePath("/dashboard");
 }

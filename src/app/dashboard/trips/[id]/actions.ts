@@ -13,6 +13,8 @@ import {
   getOrCreateTag,
   reorderItems,
   reorderTripDays,
+  restoreItem,
+  restoreTripDay,
   setTripClients,
   setTripTags,
   updateItem,
@@ -24,6 +26,11 @@ import {
 import { ItemType } from "@/types";
 
 function parseCoord(raw: FormDataEntryValue | null): number | undefined {
+  const value = String(raw ?? "").trim();
+  return value ? Number(value) : undefined;
+}
+
+function parseCost(raw: FormDataEntryValue | null): number | undefined {
   const value = String(raw ?? "").trim();
   return value ? Number(value) : undefined;
 }
@@ -49,6 +56,11 @@ export async function editDayAction(tripId: string, dayId: string, formData: For
 
 export async function deleteDayAction(tripId: string, dayId: string) {
   await deleteTripDay(dayId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreDayAction(tripId: string, dayId: string) {
+  await restoreTripDay(dayId);
   revalidateTrip(tripId);
 }
 
@@ -86,6 +98,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
@@ -101,12 +114,18 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
 
 export async function deleteItemAction(tripId: string, itemId: string) {
   await deleteItem(itemId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreItemAction(tripId: string, itemId: string) {
+  await restoreItem(itemId);
   revalidateTrip(tripId);
 }
 
@@ -133,6 +152,16 @@ export async function moveItemAction(
 export async function publishTripStatusAction(tripId: string, status: "draft" | "published" | "archived") {
   await updateTrip(tripId, { status });
   revalidateTrip(tripId);
+}
+
+export async function setShowCostsToClientAction(
+  tripId: string,
+  slug: string,
+  showCostsToClient: boolean
+) {
+  await updateTrip(tripId, { showCostsToClient });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
 }
 
 export async function updateTripInstructionsAction(

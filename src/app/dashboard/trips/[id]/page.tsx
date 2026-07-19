@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import {
+  itemTypeMeta,
+  formatDateLong,
+  formatAssignedClients,
+  formatCost,
+  formatTags,
+  computeTripCompleteness,
+} from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -10,6 +17,8 @@ import { TripTagsManager } from "@/components/TripTagsManager";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { UndoToastHost } from "@/components/UndoToast";
+import { PrintButton } from "@/components/PrintButton";
 import {
   addDayAction,
   addItemAction,
@@ -24,6 +33,9 @@ import {
   moveDayAction,
   moveItemAction,
   publishTripStatusAction,
+  restoreDayAction,
+  restoreItemAction,
+  setShowCostsToClientAction,
   setTripClientsAction,
   setTripTagsAction,
   togglePackingItemAction,
@@ -51,24 +63,25 @@ export default async function TripEditorPage({
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+  const completeness = computeTripCompleteness(trip);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
+    <main className="mx-auto max-w-3xl px-4 py-8 print:py-0">
+      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline print:hidden">
         ← Volver
       </Link>
 
-      <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:mt-0">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta[trip.status].color}`}>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium print:hidden ${statusMeta[trip.status].color}`}>
               {statusMeta[trip.status].label}
             </span>
           </div>
           <p className="text-sm text-gray-500">{formatAssignedClients(trip.clients)}</p>
           {trip.tags.length > 0 && (
-            <ul className="mt-1 flex flex-wrap gap-1.5">
+            <ul className="mt-1 flex flex-wrap gap-1.5 print:hidden">
               {formatTags(trip.tags).map((name) => (
                 <li
                   key={name}
@@ -80,13 +93,25 @@ export default async function TripEditorPage({
             </ul>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 print:hidden">
           <form action={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}>
             <button
               type="submit"
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
+            </button>
+          </form>
+          <form
+            action={setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient)}
+          >
+            <button
+              type="submit"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {trip.showCostsToClient
+                ? "Ocultar costos al cliente"
+                : "Mostrar costos al cliente"}
             </button>
           </form>
           <TripClientsManager
@@ -135,10 +160,39 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <PrintButton />
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:hidden">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-gray-900">Completitud del itinerario</h3>
+          <span className="text-sm font-medium text-gray-700">
+            {completeness.documentPercentage}% con documentos
+          </span>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full rounded-full bg-blue-500"
+            style={{ width: `${completeness.documentPercentage}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          {completeness.itemsWithDocuments} de {completeness.totalItems} items tienen al menos un
+          documento adjunto.
+        </p>
+        {completeness.emptyDays.length > 0 && (
+          <p className="mt-2 text-xs font-medium text-amber-700">
+            {completeness.emptyDays.length === 1
+              ? `1 día sin items: ${formatDateLong(completeness.emptyDays[0].date)}`
+              : `${completeness.emptyDays.length} días sin items: ${completeness.emptyDays
+                  .map((d) => formatDateLong(d.date))
+                  .join(", ")}`}
+          </p>
+        )}
+      </div>
+
+      <div className="mb-6 print:hidden">
         <PackingListManager
           items={trip.packingItems}
           onAdd={addPackingItemAction.bind(null, trip.id)}
@@ -147,18 +201,21 @@ export default async function TripEditorPage({
         />
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 print:space-y-3">
         {trip.days.map((day) => {
           const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
           const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
 
           return (
-            <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+            <div
+              key={day.id}
+              className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:break-inside-avoid print:shadow-none print:border-gray-300"
+            >
               <div className="mb-4 flex items-center justify-between gap-2">
                 <h3 className="font-semibold capitalize text-gray-900">
                   {formatDateLong(day.date)}
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 print:hidden">
                   <ReorderButtons
                     disableUp={dayIdx === 0}
                     disableDown={dayIdx === dayOrder.length - 1}
@@ -172,6 +229,7 @@ export default async function TripEditorPage({
                     }
                     onSubmit={editDayAction.bind(null, trip.id, day.id)}
                     onDelete={deleteDayAction.bind(null, trip.id, day.id)}
+                    onUndoDelete={restoreDayAction.bind(null, trip.id, day.id)}
                   />
                 </div>
               </div>
@@ -183,7 +241,7 @@ export default async function TripEditorPage({
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col gap-2 rounded-lg border border-gray-100 p-3 sm:flex-row sm:items-start"
+                      className="flex flex-col gap-2 rounded-lg border border-gray-100 p-3 sm:flex-row sm:items-start print:break-inside-avoid"
                     >
                       <span className={`w-fit rounded-full px-2 py-1 text-lg ${meta.color}`}>
                         {meta.icon}
@@ -198,13 +256,16 @@ export default async function TripEditorPage({
                         {item.location && (
                           <p className="text-sm text-gray-500">{item.location}</p>
                         )}
+                        {item.cost !== undefined && (
+                          <p className="text-xs text-gray-400">Costo: {formatCost(item.cost)}</p>
+                        )}
                         {item.confirmationCode && (
                           <p className="text-xs text-gray-400">
                             Confirmación: {item.confirmationCode}
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 self-end sm:self-start">
+                      <div className="flex items-center gap-2 self-end sm:self-start print:hidden">
                         <ReorderButtons
                           disableUp={itemIdx === 0}
                           disableDown={itemIdx === itemOrder.length - 1}
@@ -220,6 +281,7 @@ export default async function TripEditorPage({
                           }
                           onSubmit={editItemAction.bind(null, trip.id, item.id)}
                           onDelete={deleteItemAction.bind(null, trip.id, item.id)}
+                          onUndoDelete={restoreItemAction.bind(null, trip.id, item.id)}
                           documentsEnabled={documentsEnabled}
                           onLoadDocuments={getItemDocumentsAction.bind(null, item.id)}
                           onUploadDocument={uploadDocumentAction.bind(null, trip.id, item.id)}
@@ -232,7 +294,7 @@ export default async function TripEditorPage({
 
                 <ItemFormDialog
                   trigger={
-                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50 print:hidden">
                       + Agregar item
                     </button>
                   }
@@ -245,13 +307,15 @@ export default async function TripEditorPage({
 
         <DayFormDialog
           trigger={
-            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50">
+            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 print:hidden">
               + Agregar día
             </button>
           }
           onSubmit={addDayAction.bind(null, trip.id)}
         />
       </div>
+
+      <UndoToastHost />
     </main>
   );
 }

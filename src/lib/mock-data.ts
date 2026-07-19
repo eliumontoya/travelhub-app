@@ -32,6 +32,7 @@ export const mockTrips: Trip[] = [
     instructions:
       "¡Bienvenidos! Llegada al hotel a partir de las 15:00. Contacto de emergencia 24/7: +39 06 1234 5678. Lleven documento de identidad para el check-in.",
     status: "published",
+    showCostsToClient: true,
     createdAt: "2026-07-01T09:00:00Z",
   },
   {
@@ -42,6 +43,7 @@ export const mockTrips: Trip[] = [
     startDate: "2026-12-15",
     endDate: "2026-12-20",
     status: "draft",
+    showCostsToClient: false,
     createdAt: "2026-07-05T09:00:00Z",
   },
 ];
@@ -73,10 +75,17 @@ export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[
 ];
 
 // Checklist de equipaje mock, espejo de la tabla packing_items (ver
-// supabase/migrations/0008_packing_items.sql). 0 items es válido.
+// supabase/migrations/0009_packing_items.sql). 0 items es válido.
 export const mockPackingItems: PackingItem[] = [
   { id: "p1", tripId: "t1", label: "Pasaportes", checked: true, sortOrder: 0 },
   { id: "p2", tripId: "t1", label: "Adaptador de corriente EU", checked: false, sortOrder: 1 },
+];
+
+// Fuente de verdad mock para la asignación many-to-many client<->tag, espejo
+// de la tabla client_tags (ver supabase/migrations/0008_client_tags.sql).
+// Igual que mockTripTags, 0 tags es válido.
+export const mockClientTags: { clientId: string; tagId: string; createdAt: string }[] = [
+  { clientId: "c1", tagId: "tg1", createdAt: "2026-07-01T09:00:00Z" },
 ];
 
 export const mockItems: Item[] = [
@@ -89,6 +98,7 @@ export const mockItems: Item[] = [
     endTime: "14:20",
     location: "Aeropuerto Internacional CDMX",
     confirmationCode: "XJ4K9P",
+    cost: 12500,
     sortOrder: 0,
   },
   {
@@ -101,6 +111,7 @@ export const mockItems: Item[] = [
     lat: 41.9028,
     lng: 12.4964,
     confirmationCode: "HTL-88213",
+    cost: 3200,
     sortOrder: 1,
   },
   {
@@ -114,6 +125,7 @@ export const mockItems: Item[] = [
     lat: 41.8902,
     lng: 12.4922,
     notes: "Guía en español, punto de encuentro en la entrada norte.",
+    cost: 900,
     sortOrder: 0,
   },
   {
@@ -142,12 +154,12 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
     .map((tt) => mockTags.find((t) => t.id === tt.tagId))
     .filter((t): t is Tag => Boolean(t));
   const days = mockTripDays
-    .filter((d) => d.tripId === trip.id)
+    .filter((d) => d.tripId === trip.id && !d.deletedAt)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((day) => ({
       ...day,
       items: mockItems
-        .filter((i) => i.tripDayId === day.id)
+        .filter((i) => i.tripDayId === day.id && !i.deletedAt)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
   const packingItems = mockPackingItems

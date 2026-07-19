@@ -9,6 +9,7 @@ import {
   mockTags,
   mockTripTags,
   mockPackingItems,
+  mockClientTags,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -117,6 +118,142 @@ function rowToClient(row: Record<string, unknown>): Client {
     notes: (row.notes as string) ?? undefined,
     createdAt: row.created_at as string,
   };
+}
+
+// Query batcheada para el dashboard/list: clients + UN solo client_tags.in()
+// + UN solo tags.in() (sin N+1 por fila), mismo patrón que getTripsWithClients.
+export async function getClientsWithTags(): Promise<(Client & { tags: Tag[] })[]> {
+  if (!isSupabaseConfigured()) {
+    return mockClients.map((client) => ({
+      ...client,
+      tags: mockClientTags
+        .filter((ct) => ct.clientId === client.id)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+        .filter((t): t is Tag => Boolean(t)),
+    }));
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: clientRows, error } = await supabase
+    .from("clients")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const clients = (clientRows ?? []).map(rowToClient);
+  const clientIds = clients.map((c) => c.id);
+  if (!clientIds.length) return [];
+
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("client_tags")
+    .select("client_id, tag_id, created_at")
+    .in("client_id", clientIds)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const tagIds = [...new Set((tagLinkRows ?? []).map((l) => l.tag_id as string))];
+  let tagsById = new Map<string, Tag>();
+  if (tagIds.length) {
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("tags")
+      .select("*")
+      .in("id", tagIds);
+    if (tagsError) throw tagsError;
+    tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  }
+
+  return clients.map((client) => ({
+    ...client,
+    tags: (tagLinkRows ?? [])
+      .filter((l) => l.client_id === client.id)
+      .map((l) => tagsById.get(l.tag_id as string))
+      .filter((t): t is Tag => Boolean(t)),
+  }));
+}
+
+// Tags asignados a un solo cliente (0..N), ordenados por created_at asc.
+export async function getClientTags(clientId: string): Promise<Tag[]> {
+  if (!isSupabaseConfigured()) {
+    return mockClientTags
+      .filter((ct) => ct.clientId === clientId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+      .filter((t): t is Tag => Boolean(t));
+  }
+  const supabase = await createServerSupabase();
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("client_tags")
+    .select("tag_id, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const orderedTagIds = (tagLinkRows ?? []).map((l) => l.tag_id as string);
+  if (!orderedTagIds.length) return [];
+  const { data: tagRows, error: tagsError } = await supabase
+    .from("tags")
+    .select("*")
+    .in("id", orderedTagIds);
+  if (tagsError) throw tagsError;
+  const tagById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  return orderedTagIds.map((id) => tagById.get(id)).filter((t): t is Tag => Boolean(t));
+}
+
+// Reemplaza el conjunto completo de tags asignados a un cliente mediante un
+// diff (borra los removidos + inserta los agregados), mismo patrón que
+// setTripTags. 0 tags es válido, no lanza.
+export async function setClientTags(clientId: string, tagIds: string[]): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const current = mockClientTags.filter((ct) => ct.clientId === clientId);
+    const currentIds = new Set(current.map((ct) => ct.tagId));
+    const nextIds = new Set(tagIds);
+
+    for (let i = mockClientTags.length - 1; i >= 0; i--) {
+      const ct = mockClientTags[i];
+      if (ct.clientId === clientId && !nextIds.has(ct.tagId)) {
+        mockClientTags.splice(i, 1);
+      }
+    }
+    const now = Date.now();
+    tagIds.forEach((tagId, idx) => {
+      if (!currentIds.has(tagId)) {
+        mockClientTags.push({ clientId, tagId, createdAt: new Date(now + idx).toISOString() });
+      }
+    });
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: currentRows, error: currentError } = await supabase
+    .from("client_tags")
+    .select("tag_id")
+    .eq("client_id", clientId);
+  if (currentError) throw currentError;
+
+  const currentIds = new Set((currentRows ?? []).map((r) => r.tag_id as string));
+  const nextIds = new Set(tagIds);
+  const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
+  const toAdd = tagIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    const { error: removeError } = await supabase
+      .from("client_tags")
+      .delete()
+      .eq("client_id", clientId)
+      .in("tag_id", toRemove);
+    if (removeError) throw removeError;
+  }
+
+  if (toAdd.length) {
+    const { error: addError } = await supabase
+      .from("client_tags")
+      .upsert(
+        toAdd.map((tagId) => ({ client_id: clientId, tag_id: tagId })),
+        { onConflict: "client_id,tag_id", ignoreDuplicates: true }
+      );
+    if (addError) throw addError;
+  }
 }
 
 // ---------- Tags ----------
@@ -273,6 +410,7 @@ export type UpdateTripInput = Partial<{
   coverImageUrl: string;
   instructions: string | null;
   status: Trip["status"];
+  showCostsToClient: boolean;
 }>;
 
 export async function getTrips(): Promise<Trip[]> {
@@ -367,6 +505,27 @@ export async function getTripsWithClients(): Promise<
       .map((l) => tagsById.get(l.tag_id as string))
       .filter((t): t is Tag => Boolean(t)),
   }));
+}
+
+// Viajes en estado "draft" cuya fecha de inicio cae dentro de los próximos
+// `withinDays` días (hoy incluido, pasado excluido). Reutiliza
+// getTripsWithClients (ya trae clients/tags batcheados) y filtra en JS: no
+// hay una columna derivada en la tabla, así que no se puede empujar el
+// filtro de fecha a Supabase sin una función/columna generada.
+export async function getUpcomingUnpublishedTrips(
+  withinDays = 7
+): Promise<(Trip & { clients: Client[]; tags: Tag[] })[]> {
+  const trips = await getTripsWithClients();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const limit = new Date(today);
+  limit.setDate(limit.getDate() + withinDays);
+
+  return trips.filter((trip) => {
+    if (trip.status !== "draft" || !trip.startDate) return false;
+    const start = new Date(trip.startDate + "T00:00:00");
+    return start >= today && start <= limit;
+  });
 }
 
 // Devuelve todos los viajes asignados a un cliente vía trip_clients (fuente
@@ -478,6 +637,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     .from("trip_days")
     .select("*")
     .eq("trip_id", trip.id)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true });
   if (daysError) throw daysError;
 
@@ -488,6 +648,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
       .from("items")
       .select("*")
       .in("trip_day_id", dayIds)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true });
     if (itemsError) throw itemsError;
     itemRows = data ?? [];
@@ -555,6 +716,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       coverImageUrl: input.coverImageUrl,
       instructions: input.instructions,
       status: "draft",
+      showCostsToClient: false,
       createdAt: new Date().toISOString(),
     };
     mockTrips.unshift(trip);
@@ -693,6 +855,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
     if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
+    if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
     return trip;
   }
   const supabase = await createServerSupabase();
@@ -704,6 +867,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl;
   if (input.instructions !== undefined) patch.instructions = input.instructions;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.showCostsToClient !== undefined) patch.show_costs_to_client = input.showCostsToClient;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToTrip(data);
@@ -720,6 +884,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     coverImageUrl: (row.cover_image_url as string) ?? undefined,
     instructions: (row.instructions as string) ?? undefined,
     status: row.status as Trip["status"],
+    showCostsToClient: Boolean(row.show_costs_to_client),
     createdAt: row.created_at as string,
   };
 }
@@ -862,17 +1027,33 @@ export async function updateTripDay(id: string, input: UpdateTripDayInput): Prom
   return rowToTripDay(data);
 }
 
+// Soft delete (issue #23): marca deleted_at en vez de borrar la fila, para
+// poder deshacer dentro de la misma sesión (toast "Deshacer"). Los items de
+// ese día NO se marcan individualmente: quedan ocultos porque las consultas
+// de lectura (assembleTripWithDetails / mock getTripWithDetails) ya excluyen
+// items cuyo trip_day padre está soft-deleted.
 export async function deleteTripDay(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
-    const idx = mockTripDays.findIndex((d) => d.id === id);
-    if (idx >= 0) mockTripDays.splice(idx, 1);
-    for (let i = mockItems.length - 1; i >= 0; i--) {
-      if (mockItems[i].tripDayId === id) mockItems.splice(i, 1);
-    }
+    const day = mockTripDays.find((d) => d.id === id);
+    if (day) day.deletedAt = new Date().toISOString();
     return;
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("trip_days").delete().eq("id", id);
+  const { error } = await supabase
+    .from("trip_days")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function restoreTripDay(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const day = mockTripDays.find((d) => d.id === id);
+    if (day) day.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("trip_days").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
 
@@ -899,6 +1080,7 @@ export type CreateItemInput = {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder?: number;
 };
 
@@ -918,6 +1100,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmationCode: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost,
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
     };
@@ -938,6 +1121,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmation_code: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost ?? null,
       sort_order: input.sortOrder ?? 0,
     })
     .select()
@@ -964,20 +1148,36 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.lng !== undefined) patch.lng = input.lng;
   if (input.confirmationCode !== undefined) patch.confirmation_code = input.confirmationCode;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.cost !== undefined) patch.cost = input.cost ?? null;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToItem(data);
 }
 
+// Soft delete (issue #23): ver comentario de deleteTripDay.
 export async function deleteItem(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
-    const idx = mockItems.findIndex((i) => i.id === id);
-    if (idx >= 0) mockItems.splice(idx, 1);
+    const item = mockItems.find((i) => i.id === id);
+    if (item) item.deletedAt = new Date().toISOString();
     return;
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("items").delete().eq("id", id);
+  const { error } = await supabase
+    .from("items")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function restoreItem(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const item = mockItems.find((i) => i.id === id);
+    if (item) item.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("items").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
 
@@ -1026,6 +1226,7 @@ function rowToItem(row: Record<string, unknown>): Item {
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
     confirmationCode: (row.confirmation_code as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
+    cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     sortOrder: row.sort_order as number,
   };
 }

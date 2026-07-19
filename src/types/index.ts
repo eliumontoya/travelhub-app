@@ -33,6 +33,8 @@ export interface Trip {
   coverImageUrl?: string;
   instructions?: string;
   status: TripStatus;
+  /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */
+  showCostsToClient: boolean;
   createdAt: string;
 }
 
@@ -42,6 +44,7 @@ export interface TripDay {
   date: string;
   notes?: string;
   sortOrder: number;
+  deletedAt?: string;
 }
 
 export interface ItemDocument {
@@ -64,8 +67,10 @@ export interface Item {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder: number;
   documents?: ItemDocument[];
+  deletedAt?: string;
 }
 
 export interface PackingItem {
