@@ -23,6 +23,30 @@ function uid() {
   return crypto.randomUUID();
 }
 
+// ---------- Pagination ----------
+
+export const DEFAULT_PAGE_SIZE = 20;
+
+// Para selectores que necesitan el catálogo completo de clientes (asignar
+// cliente a un viaje), no la página paginada del dashboard. Un solo agente
+// de viajes no maneja miles de clientes, así que un límite alto basta.
+export const ALL_CLIENTS_PAGE_SIZE = 1000;
+
+// Mismo criterio que ALL_CLIENTS_PAGE_SIZE, para agregados internos
+// (KPIs, alertas) que necesitan escanear todos los viajes en memoria.
+export const ALL_TRIPS_PAGE_SIZE = 1000;
+
+export type PaginationParams = { page?: number; pageSize?: number };
+export type PaginatedResult<T> = { items: T[]; totalCount: number };
+
+function paginationBounds(params: PaginationParams) {
+  const page = params.page && params.page > 0 ? params.page : 1;
+  const pageSize = params.pageSize && params.pageSize > 0 ? params.pageSize : DEFAULT_PAGE_SIZE;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  return { page, pageSize, from, to };
+}
+
 // ---------- Clients ----------
 
 export type CreateClientInput = {
@@ -32,15 +56,19 @@ export type CreateClientInput = {
   notes?: string;
 };
 
-export async function getClients(): Promise<Client[]> {
-  if (!isSupabaseConfigured()) return mockClients;
+export async function getClients(params: PaginationParams = {}): Promise<PaginatedResult<Client>> {
+  const { from, to, pageSize } = paginationBounds(params);
+  if (!isSupabaseConfigured()) {
+    return { items: mockClients.slice(from, from + pageSize), totalCount: mockClients.length };
+  }
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("clients")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return data.map(rowToClient);
+  return { items: data.map(rowToClient), totalCount: count ?? 0 };
 }
 
 export async function getClientById(id: string): Promise<Client | null> {
@@ -122,28 +150,38 @@ function rowToClient(row: Record<string, unknown>): Client {
 
 // Query batcheada para el dashboard/list: clients + UN solo client_tags.in()
 // + UN solo tags.in() (sin N+1 por fila), mismo patrón que getTripsWithClients.
-export async function getClientsWithTags(): Promise<(Client & { tags: Tag[] })[]> {
+export async function getClientsWithTags(
+  params: PaginationParams = {}
+): Promise<PaginatedResult<Client & { tags: Tag[] }>> {
+  const { from, to, pageSize } = paginationBounds(params);
+
   if (!isSupabaseConfigured()) {
-    return mockClients.map((client) => ({
-      ...client,
-      tags: mockClientTags
-        .filter((ct) => ct.clientId === client.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((ct) => mockTags.find((t) => t.id === ct.tagId))
-        .filter((t): t is Tag => Boolean(t)),
-    }));
+    const pageClients = mockClients.slice(from, from + pageSize);
+    return {
+      items: pageClients.map((client) => ({
+        ...client,
+        tags: mockClientTags
+          .filter((ct) => ct.clientId === client.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+          .filter((t): t is Tag => Boolean(t)),
+      })),
+      totalCount: mockClients.length,
+    };
   }
 
   const supabase = await createServerSupabase();
-  const { data: clientRows, error } = await supabase
+  const { data: clientRows, error, count } = await supabase
     .from("clients")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
 
   const clients = (clientRows ?? []).map(rowToClient);
   const clientIds = clients.map((c) => c.id);
-  if (!clientIds.length) return [];
+  const totalCount = count ?? 0;
+  if (!clientIds.length) return { items: [], totalCount };
 
   const { data: tagLinkRows, error: tagLinksError } = await supabase
     .from("client_tags")
@@ -163,13 +201,16 @@ export async function getClientsWithTags(): Promise<(Client & { tags: Tag[] })[]
     tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
   }
 
-  return clients.map((client) => ({
-    ...client,
-    tags: (tagLinkRows ?? [])
-      .filter((l) => l.client_id === client.id)
-      .map((l) => tagsById.get(l.tag_id as string))
-      .filter((t): t is Tag => Boolean(t)),
-  }));
+  return {
+    items: clients.map((client) => ({
+      ...client,
+      tags: (tagLinkRows ?? [])
+        .filter((l) => l.client_id === client.id)
+        .map((l) => tagsById.get(l.tag_id as string))
+        .filter((t): t is Tag => Boolean(t)),
+    })),
+    totalCount,
+  };
 }
 
 // Tags asignados a un solo cliente (0..N), ordenados por created_at asc.
@@ -413,50 +454,62 @@ export type UpdateTripInput = Partial<{
   showCostsToClient: boolean;
 }>;
 
-export async function getTrips(): Promise<Trip[]> {
-  if (!isSupabaseConfigured()) return mockTrips;
+export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
+  const { from, to, pageSize } = paginationBounds(params);
+  if (!isSupabaseConfigured()) {
+    return { items: mockTrips.slice(from, from + pageSize), totalCount: mockTrips.length };
+  }
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return data.map(rowToTrip);
+  return { items: data.map(rowToTrip), totalCount: count ?? 0 };
 }
 
 // Query batcheada para el dashboard/list: trips + UN solo trip_clients.in()
 // + UN solo clients.in() (sin N+1 por fila) y SIN cargar days/items/documents
 // (solo lo que necesita la vista de lista). clients[] queda ordenado por
 // created_at asc (orden de asignación), igual que assembleTripWithDetails.
-export async function getTripsWithClients(): Promise<
-  (Trip & { clients: Client[]; tags: Tag[] })[]
-> {
+export async function getTripsWithClients(
+  params: PaginationParams = {}
+): Promise<PaginatedResult<Trip & { clients: Client[]; tags: Tag[] }>> {
+  const { from, to, pageSize } = paginationBounds(params);
+
   if (!isSupabaseConfigured()) {
-    return mockTrips.map((trip) => ({
-      ...trip,
-      clients: mockTripClients
-        .filter((tc) => tc.tripId === trip.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((tc) => mockClients.find((c) => c.id === tc.clientId))
-        .filter((c): c is Client => Boolean(c)),
-      tags: mockTripTags
-        .filter((tt) => tt.tripId === trip.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((tt) => mockTags.find((t) => t.id === tt.tagId))
-        .filter((t): t is Tag => Boolean(t)),
-    }));
+    const pageTrips = mockTrips.slice(from, from + pageSize);
+    return {
+      items: pageTrips.map((trip) => ({
+        ...trip,
+        clients: mockTripClients
+          .filter((tc) => tc.tripId === trip.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((tc) => mockClients.find((c) => c.id === tc.clientId))
+          .filter((c): c is Client => Boolean(c)),
+        tags: mockTripTags
+          .filter((tt) => tt.tripId === trip.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((tt) => mockTags.find((t) => t.id === tt.tagId))
+          .filter((t): t is Tag => Boolean(t)),
+      })),
+      totalCount: mockTrips.length,
+    };
   }
 
   const supabase = await createServerSupabase();
-  const { data: tripRows, error } = await supabase
+  const { data: tripRows, error, count } = await supabase
     .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
 
   const trips = (tripRows ?? []).map(rowToTrip);
+  const totalCount = count ?? 0;
   const tripIds = trips.map((t) => t.id);
-  if (!tripIds.length) return [];
+  if (!tripIds.length) return { items: [], totalCount };
 
   const { data: linkRows, error: linksError } = await supabase
     .from("trip_clients")
@@ -494,17 +547,20 @@ export async function getTripsWithClients(): Promise<
     tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
   }
 
-  return trips.map((trip) => ({
-    ...trip,
-    clients: (linkRows ?? [])
-      .filter((l) => l.trip_id === trip.id)
-      .map((l) => clientsById.get(l.client_id as string))
-      .filter((c): c is Client => Boolean(c)),
-    tags: (tagLinkRows ?? [])
-      .filter((l) => l.trip_id === trip.id)
-      .map((l) => tagsById.get(l.tag_id as string))
-      .filter((t): t is Tag => Boolean(t)),
-  }));
+  return {
+    items: trips.map((trip) => ({
+      ...trip,
+      clients: (linkRows ?? [])
+        .filter((l) => l.trip_id === trip.id)
+        .map((l) => clientsById.get(l.client_id as string))
+        .filter((c): c is Client => Boolean(c)),
+      tags: (tagLinkRows ?? [])
+        .filter((l) => l.trip_id === trip.id)
+        .map((l) => tagsById.get(l.tag_id as string))
+        .filter((t): t is Tag => Boolean(t)),
+    })),
+    totalCount,
+  };
 }
 
 // Viajes en estado "draft" cuya fecha de inicio cae dentro de los próximos
@@ -515,7 +571,7 @@ export async function getTripsWithClients(): Promise<
 export async function getUpcomingUnpublishedTrips(
   withinDays = 7
 ): Promise<(Trip & { clients: Client[]; tags: Tag[] })[]> {
-  const trips = await getTripsWithClients();
+  const { items: trips } = await getTripsWithClients({ pageSize: ALL_TRIPS_PAGE_SIZE });
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const limit = new Date(today);
@@ -1335,12 +1391,16 @@ export type TripStats = {
   unpublishedNearStart: number;
 };
 
-// Se apoya en getTrips()/getClients() (ya cubren el modo dual mock/Supabase)
-// y calcula los conteos en JS: al ser una sola cuenta de agente, el volumen
-// de trips/clients es bajo y no justifica duplicar el branching de
-// isSupabaseConfigured() con queries agregadas.
+// Se apoya en getTrips()/getClients() (ya cubren el modo dual mock/Supabase),
+// pidiendo el catálogo completo vía ALL_*_PAGE_SIZE, y calcula los conteos en
+// JS: al ser una sola cuenta de agente, el volumen de trips/clients es bajo y
+// no justifica duplicar el branching de isSupabaseConfigured() con queries
+// agregadas.
 export async function getTripStats(): Promise<TripStats> {
-  const [trips, clients] = await Promise.all([getTrips(), getClients()]);
+  const [{ items: trips }, { items: clients }] = await Promise.all([
+    getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE }),
+    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
+  ]);
 
   const now = new Date();
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);

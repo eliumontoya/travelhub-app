@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Client, Tag, TripStatus } from "@/types";
 import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-meta";
 
@@ -34,10 +34,14 @@ export function DashboardExplorer({
   trips,
   clients,
   tags,
+  tripsPagination,
+  clientsPagination,
 }: {
   trips: TripListItem[];
   clients: ClientListItem[];
   tags: Tag[];
+  tripsPagination?: ReactNode;
+  clientsPagination?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TripStatus | "all">("all");
@@ -142,6 +146,8 @@ export function DashboardExplorer({
         )}
       </div>
 
+      {tripsPagination}
+
       <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
       <div className="grid gap-3">
         {filteredClients.map((client) => (
@@ -172,6 +178,8 @@ export function DashboardExplorer({
           </p>
         )}
       </div>
+
+      {clientsPagination}
     </>
   );
 }

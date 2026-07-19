@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  DEFAULT_PAGE_SIZE,
   getClientsWithTags,
   getTags,
   getTripStats,
@@ -10,14 +11,36 @@ import { formatDateShort } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { DashboardExplorer } from "./DashboardExplorer";
 
-export default async function DashboardPage() {
-  const [clients, trips, tags, stats, upcomingUnpublishedTrips] = await Promise.all([
-    getClientsWithTags(),
-    getTripsWithClients(),
+function parsePage(value: string | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; clientsPage?: string }>;
+}) {
+  const { page, clientsPage } = await searchParams;
+  const tripsPage = parsePage(page);
+  const clientsPageNum = parsePage(clientsPage);
+
+  const [
+    { items: trips, totalCount: tripsTotal },
+    { items: clients, totalCount: clientsTotal },
+    tags,
+    stats,
+    upcomingUnpublishedTrips,
+  ] = await Promise.all([
+    getTripsWithClients({ page: tripsPage }),
+    getClientsWithTags({ page: clientsPageNum }),
     getTags(),
     getTripStats(),
     getUpcomingUnpublishedTrips(),
   ]);
+
+  const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
+  const clientsTotalPages = Math.max(1, Math.ceil(clientsTotal / DEFAULT_PAGE_SIZE));
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -56,7 +79,67 @@ export default async function DashboardPage() {
 
       <DashboardKpiCards stats={stats} />
 
-      <DashboardExplorer trips={trips} clients={clients} tags={tags} />
+      <DashboardExplorer
+        trips={trips}
+        clients={clients}
+        tags={tags}
+        tripsPagination={
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <Link
+              href={`/dashboard?page=${tripsPage - 1}&clientsPage=${clientsPageNum}`}
+              aria-disabled={tripsPage <= 1}
+              className={
+                tripsPage <= 1 ? "pointer-events-none text-gray-300" : "text-blue-600 hover:underline"
+              }
+            >
+              ← Anteriores
+            </Link>
+            <span className="text-gray-400">
+              Página {tripsPage} de {tripsTotalPages}
+            </span>
+            <Link
+              href={`/dashboard?page=${tripsPage + 1}&clientsPage=${clientsPageNum}`}
+              aria-disabled={tripsPage >= tripsTotalPages}
+              className={
+                tripsPage >= tripsTotalPages
+                  ? "pointer-events-none text-gray-300"
+                  : "text-blue-600 hover:underline"
+              }
+            >
+              Siguientes →
+            </Link>
+          </div>
+        }
+        clientsPagination={
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <Link
+              href={`/dashboard?page=${tripsPage}&clientsPage=${clientsPageNum - 1}`}
+              aria-disabled={clientsPageNum <= 1}
+              className={
+                clientsPageNum <= 1
+                  ? "pointer-events-none text-gray-300"
+                  : "text-blue-600 hover:underline"
+              }
+            >
+              ← Anteriores
+            </Link>
+            <span className="text-gray-400">
+              Página {clientsPageNum} de {clientsTotalPages}
+            </span>
+            <Link
+              href={`/dashboard?page=${tripsPage}&clientsPage=${clientsPageNum + 1}`}
+              aria-disabled={clientsPageNum >= clientsTotalPages}
+              className={
+                clientsPageNum >= clientsTotalPages
+                  ? "pointer-events-none text-gray-300"
+                  : "text-blue-600 hover:underline"
+              }
+            >
+              Siguientes →
+            </Link>
+          </div>
+        }
+      />
     </main>
   );
 }
