@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClientById, getClientTripSummary, getTripsByClientId } from "@/lib/data";
-import { formatDateShort } from "@/lib/item-meta";
-import { updateClientAction } from "./actions";
+import { getClientById, getClientTags, getClientTripSummary, getTags, getTripsByClientId } from "@/lib/data";
+import { formatDateShort, formatTags } from "@/lib/item-meta";
+import { TripTagsManager } from "@/components/TripTagsManager";
+import { setClientTagsAction, updateClientAction } from "./actions";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -19,8 +20,12 @@ export default async function ClientDetailPage({
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const trips = await getTripsByClientId(id);
-  const summary = await getClientTripSummary(id);
+  const [trips, tags, clientTags, summary] = await Promise.all([
+    getTripsByClientId(id),
+    getTags(),
+    getClientTags(id),
+    getClientTripSummary(id),
+  ]);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -38,13 +43,40 @@ export default async function ClientDetailPage({
           <p className="mt-1 text-xs text-gray-400">
             Alta: {new Date(client.createdAt).toLocaleDateString("es-MX")}
           </p>
+          {clientTags.length > 0 && (
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {formatTags(clientTags).map((name) => (
+                <li
+                  key={name}
+                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        <Link
-          href={`/dashboard/trips/new?clientId=${client.id}`}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Nuevo viaje para este cliente
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <TripTagsManager
+            tags={tags}
+            assignedTagIds={clientTags.map((t) => t.id)}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Gestionar tags
+              </button>
+            }
+            onSubmit={setClientTagsAction.bind(null, client.id)}
+          />
+          <Link
+            href={`/dashboard/trips/new?clientId=${client.id}`}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + Nuevo viaje para este cliente
+          </Link>
+        </div>
       </div>
 
       <details className="mb-8 rounded-lg border border-gray-200 bg-white p-4">

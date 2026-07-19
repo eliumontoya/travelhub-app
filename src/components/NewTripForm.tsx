@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Client, Tag } from "@/types";
+import { Client, Tag, Trip } from "@/types";
 import { createTripAction } from "@/app/dashboard/trips/new/actions";
 import { ClientMultiCombobox } from "@/components/ClientMultiCombobox";
 import { MinClientsGuard } from "@/components/MinClientsGuard";
@@ -10,11 +10,13 @@ import { TagMultiCombobox } from "@/components/TagMultiCombobox";
 export function NewTripForm({
   clients,
   tags,
+  templates,
   error,
   clientId,
 }: {
   clients: Client[];
   tags: Tag[];
+  templates: Trip[];
   error?: string;
   clientId?: string;
 }) {
@@ -61,6 +63,38 @@ export function NewTripForm({
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </div>
+      </div>
+
+      {templates.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Crear desde plantilla</label>
+          <select
+            name="templateId"
+            defaultValue=""
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="">Ninguna (viaje en blanco)</option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.title}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-400">
+            Copia los días e items de la plantilla elegida a este viaje nuevo.
+          </p>
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700"># Viajeros</label>
+        <input
+          type="number"
+          name="travelerCount"
+          min={1}
+          defaultValue={1}
+          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        />
       </div>
 
       <div>
