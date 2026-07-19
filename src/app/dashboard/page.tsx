@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getClients, getTripsWithClients } from "@/lib/data";
-import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { getClients, getRecentActivity, getTripsWithClients } from "@/lib/data";
+import { formatDateShort, formatAssignedClients, formatRelativeTime, formatTags } from "@/lib/item-meta";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -8,8 +8,22 @@ const statusMeta = {
   archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
 };
 
+const activityMeta = {
+  trip: { icon: "🧳", label: "viaje" },
+  client: { icon: "👤", label: "cliente" },
+};
+
+const activityActionLabel = {
+  created: "creado",
+  updated: "editado",
+};
+
 export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+  const [clients, trips, recentActivity] = await Promise.all([
+    getClients(),
+    getTripsWithClients(),
+    getRecentActivity(),
+  ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -22,6 +36,31 @@ export default async function DashboardPage() {
           + Nuevo viaje
         </Link>
       </div>
+
+      {recentActivity.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Actividad reciente</h2>
+          <ul className="grid gap-2">
+            {recentActivity.map((event) => (
+              <li key={`${event.entityType}-${event.id}`}>
+                <Link
+                  href={event.href}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm transition hover:shadow-md"
+                >
+                  <span className="flex items-center gap-2 text-gray-700">
+                    <span aria-hidden>{activityMeta[event.entityType].icon}</span>
+                    <span className="font-medium text-gray-900">{event.title}</span>
+                    <span className="text-gray-400">
+                      {activityActionLabel[event.action]} · {activityMeta[event.entityType].label}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-gray-400">{formatRelativeTime(event.timestamp)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-4">
         {trips.map((trip) => {

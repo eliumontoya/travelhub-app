@@ -65,13 +65,15 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
 
 export async function createClient(input: CreateClientInput): Promise<Client> {
   if (!isSupabaseConfigured()) {
+    const now = new Date().toISOString();
     const client: Client = {
       id: uid(),
       name: input.name,
       email: input.email ?? "",
       phone: input.phone ?? "",
       notes: input.notes,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
     mockClients.unshift(client);
     return client;
@@ -94,6 +96,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
     if (input.notes !== undefined) client.notes = input.notes;
+    client.updatedAt = new Date().toISOString();
     return client;
   }
   const supabase = await createServerSupabase();
@@ -115,6 +118,7 @@ function rowToClient(row: Record<string, unknown>): Client {
     phone: (row.phone as string) ?? "",
     notes: (row.notes as string) ?? undefined,
     createdAt: row.created_at as string,
+    updatedAt: (row.updated_at as string) ?? (row.created_at as string),
   };
 }
 
@@ -535,6 +539,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
     throw new Error("Se requiere al menos un cliente para crear el viaje");
   }
   if (!isSupabaseConfigured()) {
+    const now = new Date().toISOString();
     const trip: Trip = {
       id: uid(),
       clientId: input.clientIds[0],
@@ -545,10 +550,10 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       coverImageUrl: input.coverImageUrl,
       instructions: input.instructions,
       status: "draft",
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
     mockTrips.unshift(trip);
-    const now = new Date().toISOString();
     input.clientIds.forEach((clientId, idx) => {
       mockTripClients.push({
         tripId: trip.id,
@@ -683,6 +688,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
     if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
+    trip.updatedAt = new Date().toISOString();
     return trip;
   }
   const supabase = await createServerSupabase();
@@ -711,6 +717,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     instructions: (row.instructions as string) ?? undefined,
     status: row.status as Trip["status"],
     createdAt: row.created_at as string,
+    updatedAt: (row.updated_at as string) ?? (row.created_at as string),
   };
 }
 
@@ -1032,6 +1039,51 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
     fileName: row.file_name as string,
     uploadedAt: row.uploaded_at as string,
   };
+}
+
+// ---------- Actividad reciente (dashboard) ----------
+
+export type ActivityFeedItem = {
+  id: string;
+  entityType: "trip" | "client";
+  action: "created" | "updated";
+  title: string;
+  href: string;
+  timestamp: string;
+};
+
+// Feed combinado de los N eventos más recientes entre trips y clients,
+// ordenado por updated_at desc. No hay un log de eventos separado: se
+// clasifica cada fila como "updated" si updated_at se movió después de
+// created_at (con margen de 1s para tolerar el redondeo del insert inicial),
+// o "created" si no.
+export async function getRecentActivity(limit = 8): Promise<ActivityFeedItem[]> {
+  const [trips, clients] = await Promise.all([getTrips(), getClients()]);
+
+  const wasEdited = (createdAt: string, updatedAt: string) =>
+    Date.parse(updatedAt) - Date.parse(createdAt) > 1000;
+
+  const tripItems: ActivityFeedItem[] = trips.map((trip) => ({
+    id: trip.id,
+    entityType: "trip",
+    action: wasEdited(trip.createdAt, trip.updatedAt) ? "updated" : "created",
+    title: trip.title,
+    href: `/dashboard/trips/${trip.id}`,
+    timestamp: trip.updatedAt,
+  }));
+
+  const clientItems: ActivityFeedItem[] = clients.map((client) => ({
+    id: client.id,
+    entityType: "client",
+    action: wasEdited(client.createdAt, client.updatedAt) ? "updated" : "created",
+    title: client.name,
+    href: `/dashboard/clients/${client.id}`,
+    timestamp: client.updatedAt,
+  }));
+
+  return [...tripItems, ...clientItems]
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .slice(0, limit);
 }
 
 // ---------- Site settings (contacto público, fila singleton) ----------

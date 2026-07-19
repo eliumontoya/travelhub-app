@@ -15,6 +15,7 @@ export interface Client {
   phone: string;
   notes?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tag {
@@ -34,6 +35,7 @@ export interface Trip {
   instructions?: string;
   status: TripStatus;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface TripDay {
