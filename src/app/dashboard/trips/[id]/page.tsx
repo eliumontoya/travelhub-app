@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClients, getTags, getTripById } from "@/lib/data";
+import { getClients, getTags, getTripById, getTripFeedback } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
@@ -45,6 +45,7 @@ export default async function TripEditorPage({
   const { id } = await params;
   const [trip, clients, tags] = await Promise.all([getTripById(id), getClients(), getTags()]);
   if (!trip) notFound();
+  const feedback = await getTripFeedback(trip.id);
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
 
@@ -239,6 +240,26 @@ export default async function TripEditorPage({
           onSubmit={addDayAction.bind(null, trip.id)}
         />
       </div>
+
+      {feedback.length > 0 && (
+        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+          <h3 className="mb-4 font-semibold text-gray-900">Feedback del cliente</h3>
+          <div className="space-y-3">
+            {feedback.map((f) => (
+              <div key={f.id} className="rounded-lg border border-gray-100 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-amber-400">
+                    {"★".repeat(f.rating)}
+                    <span className="text-gray-300">{"★".repeat(5 - f.rating)}</span>
+                  </span>
+                  <span className="text-xs text-gray-400">{formatDateLong(f.createdAt.slice(0, 10))}</span>
+                </div>
+                {f.comment && <p className="mt-1 text-sm text-gray-600">{f.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -5,6 +5,8 @@ import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { TripFeedbackForm } from "@/components/TripFeedbackForm";
+import { submitTripFeedbackAction } from "./actions";
 
 export default async function PublicTripPage({
   params,
@@ -14,6 +16,9 @@ export default async function PublicTripPage({
   const { slug } = await params;
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
   if (!trip) notFound();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const tripEnded = Boolean(trip.endDate) && trip.endDate < today;
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16">
@@ -113,6 +118,12 @@ export default async function PublicTripPage({
               </div>
             ))}
           </div>
+
+          {tripEnded && (
+            <div className="mt-8">
+              <TripFeedbackForm onSubmit={submitTripFeedbackAction.bind(null, trip.id, trip.slug)} />
+            </div>
+          )}
         </div>
       </div>
     </main>
