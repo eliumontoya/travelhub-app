@@ -9,6 +9,7 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import {
   addDayAction,
   addItemAction,
@@ -131,6 +132,7 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
         </div>
       </div>
 
