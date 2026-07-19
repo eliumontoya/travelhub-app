@@ -4,16 +4,68 @@ import { useRef, useState, useTransition } from "react";
 import { Item, ItemDocument, ItemType } from "@/types";
 import { itemTypeMeta } from "@/lib/item-meta";
 import { LocationInput } from "@/components/LocationInput";
+import { showUndoToast } from "@/components/UndoToast";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
 type DocWithUrl = ItemDocument & { url: string | null };
+
+function DocumentPreview({ doc }: { doc: DocWithUrl }) {
+  if (!doc.url) {
+    return <span className="truncate text-gray-700">{doc.fileName}</span>;
+  }
+
+  if (doc.mimeType?.startsWith("image/")) {
+    return (
+      <a
+        href={doc.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex min-w-0 items-center gap-2 text-blue-600 hover:underline"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={doc.url}
+          alt={doc.fileName}
+          className="h-8 w-8 shrink-0 rounded object-cover"
+        />
+        <span className="truncate">{doc.fileName}</span>
+      </a>
+    );
+  }
+
+  if (doc.mimeType === "application/pdf") {
+    return (
+      <a
+        href={doc.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex min-w-0 items-center gap-2 text-blue-600 hover:underline"
+      >
+        <span aria-hidden className="shrink-0 text-lg">📄</span>
+        <span className="truncate">{doc.fileName}</span>
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={doc.url}
+      target="_blank"
+      rel="noreferrer"
+      className="truncate text-blue-600 hover:underline"
+    >
+      {doc.fileName}
+    </a>
+  );
+}
 
 export function ItemFormDialog({
   trigger,
   item,
   onSubmit,
   onDelete,
+  onUndoDelete,
   onLoadDocuments,
   onUploadDocument,
   onDeleteDocument,
@@ -23,6 +75,7 @@ export function ItemFormDialog({
   item?: Item;
   onSubmit: (formData: FormData) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onUndoDelete?: () => Promise<void>;
   onLoadDocuments?: () => Promise<DocWithUrl[]>;
   onUploadDocument?: (formData: FormData) => Promise<void>;
   onDeleteDocument?: (documentId: string) => Promise<void>;
@@ -69,6 +122,9 @@ export function ItemFormDialog({
     startTransition(async () => {
       await onDelete();
       close();
+      if (onUndoDelete) {
+        showUndoToast({ message: "Item eliminado", onUndo: onUndoDelete });
+      }
     });
   }
 
@@ -160,15 +216,29 @@ export function ItemFormDialog({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Código de confirmación
-            </label>
-            <input
-              name="confirmationCode"
-              defaultValue={item?.confirmationCode}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Código de confirmación
+              </label>
+              <input
+                name="confirmationCode"
+                defaultValue={item?.confirmationCode}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Costo</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="cost"
+                defaultValue={item?.cost}
+                placeholder="Opcional"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           <div>
@@ -177,6 +247,19 @@ export function ItemFormDialog({
               name="notes"
               defaultValue={item?.notes}
               rows={2}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Costo</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              name="cost"
+              defaultValue={item?.cost}
+              placeholder="Solo visible internamente salvo que actives el resumen de costos"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
@@ -191,18 +274,7 @@ export function ItemFormDialog({
                 <ul className="mb-3 space-y-1">
                   {docs.map((doc) => (
                     <li key={doc.id} className="flex items-center justify-between gap-2 text-sm">
-                      {doc.url ? (
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="truncate text-blue-600 hover:underline"
-                        >
-                          {doc.fileName}
-                        </a>
-                      ) : (
-                        <span className="truncate text-gray-700">{doc.fileName}</span>
-                      )}
+                      <DocumentPreview doc={doc} />
                       <button
                         type="button"
                         onClick={() => handleDeleteDocument(doc.id)}
