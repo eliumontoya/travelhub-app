@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Client, Tag, TripStatus } from "@/types";
 import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-meta";
 import { bulkUpdateTripStatusAction } from "@/app/dashboard/actions";
+import { ExportClientsCsvButton } from "@/components/export-clients-csv-button";
 
 const statusMeta: Record<TripStatus, { label: string; color: string }> = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
@@ -211,7 +212,10 @@ export function DashboardExplorer({
 
       {tripsPagination}
 
-      <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Clientes</h2>
+      <div className="mt-10 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Clientes</h2>
+        <ExportClientsCsvButton clients={filteredClients} />
+      </div>
       <div className="grid gap-3">
         {filteredClients.map((client) => (
           <Link
