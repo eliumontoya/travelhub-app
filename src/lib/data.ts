@@ -8,6 +8,7 @@ import {
   mockTripClients,
   mockTags,
   mockTripTags,
+  mockClientTags,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -116,6 +117,142 @@ function rowToClient(row: Record<string, unknown>): Client {
     notes: (row.notes as string) ?? undefined,
     createdAt: row.created_at as string,
   };
+}
+
+// Query batcheada para el dashboard/list: clients + UN solo client_tags.in()
+// + UN solo tags.in() (sin N+1 por fila), mismo patrón que getTripsWithClients.
+export async function getClientsWithTags(): Promise<(Client & { tags: Tag[] })[]> {
+  if (!isSupabaseConfigured()) {
+    return mockClients.map((client) => ({
+      ...client,
+      tags: mockClientTags
+        .filter((ct) => ct.clientId === client.id)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+        .filter((t): t is Tag => Boolean(t)),
+    }));
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: clientRows, error } = await supabase
+    .from("clients")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const clients = (clientRows ?? []).map(rowToClient);
+  const clientIds = clients.map((c) => c.id);
+  if (!clientIds.length) return [];
+
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("client_tags")
+    .select("client_id, tag_id, created_at")
+    .in("client_id", clientIds)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const tagIds = [...new Set((tagLinkRows ?? []).map((l) => l.tag_id as string))];
+  let tagsById = new Map<string, Tag>();
+  if (tagIds.length) {
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("tags")
+      .select("*")
+      .in("id", tagIds);
+    if (tagsError) throw tagsError;
+    tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  }
+
+  return clients.map((client) => ({
+    ...client,
+    tags: (tagLinkRows ?? [])
+      .filter((l) => l.client_id === client.id)
+      .map((l) => tagsById.get(l.tag_id as string))
+      .filter((t): t is Tag => Boolean(t)),
+  }));
+}
+
+// Tags asignados a un solo cliente (0..N), ordenados por created_at asc.
+export async function getClientTags(clientId: string): Promise<Tag[]> {
+  if (!isSupabaseConfigured()) {
+    return mockClientTags
+      .filter((ct) => ct.clientId === clientId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+      .filter((t): t is Tag => Boolean(t));
+  }
+  const supabase = await createServerSupabase();
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("client_tags")
+    .select("tag_id, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const orderedTagIds = (tagLinkRows ?? []).map((l) => l.tag_id as string);
+  if (!orderedTagIds.length) return [];
+  const { data: tagRows, error: tagsError } = await supabase
+    .from("tags")
+    .select("*")
+    .in("id", orderedTagIds);
+  if (tagsError) throw tagsError;
+  const tagById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  return orderedTagIds.map((id) => tagById.get(id)).filter((t): t is Tag => Boolean(t));
+}
+
+// Reemplaza el conjunto completo de tags asignados a un cliente mediante un
+// diff (borra los removidos + inserta los agregados), mismo patrón que
+// setTripTags. 0 tags es válido, no lanza.
+export async function setClientTags(clientId: string, tagIds: string[]): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const current = mockClientTags.filter((ct) => ct.clientId === clientId);
+    const currentIds = new Set(current.map((ct) => ct.tagId));
+    const nextIds = new Set(tagIds);
+
+    for (let i = mockClientTags.length - 1; i >= 0; i--) {
+      const ct = mockClientTags[i];
+      if (ct.clientId === clientId && !nextIds.has(ct.tagId)) {
+        mockClientTags.splice(i, 1);
+      }
+    }
+    const now = Date.now();
+    tagIds.forEach((tagId, idx) => {
+      if (!currentIds.has(tagId)) {
+        mockClientTags.push({ clientId, tagId, createdAt: new Date(now + idx).toISOString() });
+      }
+    });
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: currentRows, error: currentError } = await supabase
+    .from("client_tags")
+    .select("tag_id")
+    .eq("client_id", clientId);
+  if (currentError) throw currentError;
+
+  const currentIds = new Set((currentRows ?? []).map((r) => r.tag_id as string));
+  const nextIds = new Set(tagIds);
+  const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
+  const toAdd = tagIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    const { error: removeError } = await supabase
+      .from("client_tags")
+      .delete()
+      .eq("client_id", clientId)
+      .in("tag_id", toRemove);
+    if (removeError) throw removeError;
+  }
+
+  if (toAdd.length) {
+    const { error: addError } = await supabase
+      .from("client_tags")
+      .upsert(
+        toAdd.map((tagId) => ({ client_id: clientId, tag_id: tagId })),
+        { onConflict: "client_id,tag_id", ignoreDuplicates: true }
+      );
+    if (addError) throw addError;
+  }
 }
 
 // ---------- Tags ----------

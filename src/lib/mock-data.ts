@@ -74,6 +74,13 @@ export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[
   { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
 ];
 
+// Fuente de verdad mock para la asignación many-to-many client<->tag, espejo
+// de la tabla client_tags (ver supabase/migrations/0008_client_tags.sql).
+// Igual que mockTripTags, 0 tags es válido.
+export const mockClientTags: { clientId: string; tagId: string; createdAt: string }[] = [
+  { clientId: "c1", tagId: "tg1", createdAt: "2026-07-01T09:00:00Z" },
+];
+
 export const mockItems: Item[] = [
   {
     id: "i1",
