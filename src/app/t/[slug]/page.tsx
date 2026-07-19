@@ -1,24 +1,50 @@
 import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
-import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
+import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { WeatherBadge } from "@/components/WeatherBadge";
+import { getDailyWeather } from "@/lib/weather";
+import { PrintButton } from "@/components/PrintButton";
 
 export default async function PublicTripPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const lang = getLangFromSearchParams(resolvedSearchParams) ?? DEFAULT_LANG;
+  const t = dictionary[lang];
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
-  if (!trip) notFound();
+  if (!trip || trip.status !== "published") notFound();
+
+  const totalCost = trip.showCostsToClient
+    ? trip.days.reduce(
+        (sum, day) => sum + day.items.reduce((daySum, item) => daySum + (item.cost ?? 0), 0),
+        0
+      )
+    : 0;
+
+  const dayWeather = await Promise.all(
+    trip.days.map((day) => {
+      const withLocation = day.items.find((item) => item.lat !== undefined && item.lng !== undefined);
+      return getDailyWeather(withLocation?.lat, withLocation?.lng, day.date);
+    })
+  );
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-16">
+    <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0 dark:bg-gray-950">
+      <ThemeToggle className="fixed right-4 top-4 z-20 print:hidden" />
       <div
-        className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72"
+        className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72 print:hidden"
         style={{
           backgroundImage: trip.coverImageUrl
             ? `linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.1)), url(${trip.coverImageUrl})`
@@ -26,11 +52,14 @@ export default async function PublicTripPage({
         }}
       >
         <div className="mx-auto w-full max-w-2xl px-4 pb-6 text-white">
+          <div className="mb-2 flex justify-end">
+            <LanguageToggle lang={lang} />
+          </div>
           <h1 className="text-3xl font-bold">{trip.title}</h1>
           <p className="mt-1 text-sm text-white/80">
-            {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
+            {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
             {" · "}
-            {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
+            {trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}
           </p>
           <p className="mt-1 text-sm text-white/80">
             <a href={`mailto:${contact.email}`} className="hover:underline">
@@ -47,66 +76,116 @@ export default async function PublicTripPage({
         </div>
       </div>
 
+      <div className="hidden print:block px-4 pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
+        </p>
+      </div>
+
       <div className="mx-auto max-w-2xl px-4 lg:max-w-5xl lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-x-8">
         <TripDaySidebar
           days={trip.days}
-          className="hidden lg:block lg:sticky lg:top-6 lg:self-start"
+          className="hidden lg:block lg:sticky lg:top-6 lg:self-start print:hidden"
+          lang={lang}
         />
 
         <div className="lg:max-w-2xl">
           {trip.instructions && (
-            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-              <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
+            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:shadow-none print:border-gray-300 dark:border-gray-800 dark:bg-gray-900">
+              <p className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{trip.instructions}</p>
             </div>
           )}
 
-          <div className="my-6 flex justify-center">
-            <AddTripToCalendarButton trip={trip} />
+          <div className="my-6 flex justify-center gap-2 print:hidden">
+            <AddTripToCalendarButton trip={trip} lang={lang} />
+            <PrintButton />
           </div>
 
+          {trip.photos.length > 0 && (
+            <div className="mb-6 print:hidden">
+              <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Fotos</h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {trip.photos.map((photo) =>
+                  photo.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={photo.id}
+                      src={photo.url}
+                      alt={photo.fileName}
+                      className="aspect-square rounded-lg object-cover"
+                      loading="lazy"
+                    />
+                  ) : null
+                )}
+              </div>
+            </div>
+          )}
+
+          {trip.showCostsToClient && (
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCost(totalCost)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
+            </div>
+          )}
+
           <div className="space-y-8">
-            {trip.days.map((day) => (
-              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
-                <h2 className="mb-3 text-lg font-semibold capitalize text-gray-900">
-                  {formatDateLong(day.date)}
+            {trip.days.map((day, dayIdx) => (
+              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6 print:break-inside-avoid">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold capitalize text-gray-900 dark:text-gray-100">
+                  {formatDateLong(day.date, lang)}
+                  <WeatherBadge weather={dayWeather[dayIdx]} />
                 </h2>
-                <div className="space-y-3 border-l-2 border-gray-200 pl-4">
+                <div className="space-y-3 border-l-2 border-gray-200 pl-4 dark:border-gray-800">
                   {day.items.map((item) => {
                     const meta = itemTypeMeta[item.type];
                     return (
                       <div
                         key={item.id}
-                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid print:shadow-none print:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-3">
-                            <span className={`rounded-full px-2 py-1 text-lg ${meta.color}`}>
+                            <span
+                              className={`rounded-full px-2 py-1 text-lg ${meta.color}`}
+                              title={t.itemType[item.type]}
+                            >
                               {meta.icon}
                             </span>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{item.title}</span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
                                 {item.startTime && (
-                                  <span className="text-xs text-gray-400">{item.startTime}</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">{item.startTime}</span>
                                 )}
                               </div>
                               {item.location && (
-                                <p className="text-sm text-gray-500">{item.location}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                               )}
                               {item.notes && (
-                                <p className="mt-1 text-sm text-gray-400">{item.notes}</p>
+                                <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">{item.notes}</p>
                               )}
                               {item.confirmationCode && (
-                                <p className="mt-1 text-xs text-gray-400">
-                                  Confirmación: {item.confirmationCode}
+                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                  {t.confirmationLabel}: {item.confirmationCode}
+                                </p>
+                              )}
+                              {trip.showCostsToClient && item.cost !== undefined && (
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                  Costo: {formatCost(item.cost)}
                                 </p>
                               )}
                               {item.lat !== undefined && item.lng !== undefined && (
-                                <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                <div className="print:hidden">
+                                  <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                </div>
                               )}
                             </div>
                           </div>
-                          <AddToCalendarButton item={item} date={day.date} />
+                          <div className="print:hidden">
+                            <AddToCalendarButton item={item} date={day.date} lang={lang} />
+                          </div>
                         </div>
                       </div>
                     );
