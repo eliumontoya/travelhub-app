@@ -32,6 +32,7 @@ export interface Trip {
   endDate: string;
   coverImageUrl?: string;
   instructions?: string;
+  budget?: number;
   status: TripStatus;
   /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */
   showCostsToClient: boolean;

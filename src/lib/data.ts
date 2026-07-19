@@ -450,6 +450,7 @@ export type UpdateTripInput = Partial<{
   endDate: string;
   coverImageUrl: string;
   instructions: string | null;
+  budget: number | null;
   status: Trip["status"];
   showCostsToClient: boolean;
 }>;
@@ -910,6 +911,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.endDate !== undefined) trip.endDate = input.endDate;
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
     if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
+    if (input.budget !== undefined) trip.budget = input.budget ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
     if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
     return trip;
@@ -922,6 +924,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.endDate !== undefined) patch.end_date = input.endDate;
   if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl;
   if (input.instructions !== undefined) patch.instructions = input.instructions;
+  if (input.budget !== undefined) patch.budget = input.budget;
   if (input.status !== undefined) patch.status = input.status;
   if (input.showCostsToClient !== undefined) patch.show_costs_to_client = input.showCostsToClient;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
@@ -939,6 +942,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     endDate: (row.end_date as string) ?? "",
     coverImageUrl: (row.cover_image_url as string) ?? undefined,
     instructions: (row.instructions as string) ?? undefined,
+    budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
     status: row.status as Trip["status"],
     showCostsToClient: Boolean(row.show_costs_to_client),
     createdAt: row.created_at as string,

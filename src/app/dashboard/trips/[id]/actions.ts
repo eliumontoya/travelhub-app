@@ -175,6 +175,12 @@ export async function updateTripInstructionsAction(
   revalidatePath(`/t/${slug}`);
 }
 
+export async function updateTripBudgetAction(tripId: string, formData: FormData) {
+  const raw = String(formData.get("budget") ?? "").trim();
+  await updateTrip(tripId, { budget: raw ? Number(raw) : null });
+  revalidateTrip(tripId);
+}
+
 export async function setTripClientsAction(tripId: string, formData: FormData) {
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   if (clientIds.length < 1) return; // no-op: server-side "mínimo 1 cliente" (defensa en profundidad)
