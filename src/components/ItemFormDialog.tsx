@@ -235,7 +235,7 @@ export function ItemFormDialog({
                 min="0"
                 name="cost"
                 defaultValue={item?.cost}
-                placeholder="Opcional"
+                placeholder="Solo visible internamente salvo que actives el resumen de costos"
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
@@ -247,19 +247,6 @@ export function ItemFormDialog({
               name="notes"
               defaultValue={item?.notes}
               rows={2}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Costo</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              name="cost"
-              defaultValue={item?.cost}
-              placeholder="Solo visible internamente salvo que actives el resumen de costos"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>

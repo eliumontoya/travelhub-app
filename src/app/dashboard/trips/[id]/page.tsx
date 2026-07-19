@@ -242,6 +242,12 @@ export default async function TripEditorPage({
           >
             Vista previa
           </Link>
+          <Link
+            href={`/dashboard/trips/${trip.id}/quote`}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Cotización
+          </Link>
           <CopyUrlButtonClient slug={trip.slug} />
           <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
           <SaveAsTemplateDialog
