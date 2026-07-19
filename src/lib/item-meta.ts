@@ -9,6 +9,14 @@ export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color
   note: { label: "Nota", icon: "📝", color: "bg-gray-100 text-gray-700" },
 };
 
+export const REFERRAL_SOURCE_OPTIONS = [
+  "Referido",
+  "Redes sociales",
+  "Recurrente",
+  "Búsqueda web",
+  "Otro",
+] as const;
+
 export function formatDateLong(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
     weekday: "long",

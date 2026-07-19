@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClientById, getTripsByClientId } from "@/lib/data";
-import { formatDateShort } from "@/lib/item-meta";
+import { formatDateShort, REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
 import { updateClientAction } from "./actions";
 
 const statusMeta = {
@@ -89,6 +89,21 @@ export default async function ClientDetailPage({
               rows={3}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Cómo llegó el cliente</label>
+            <select
+              name="referralSource"
+              defaultValue={client.referralSource ?? ""}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">Sin especificar</option>
+              {REFERRAL_SOURCE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"

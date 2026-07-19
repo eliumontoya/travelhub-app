@@ -24,6 +24,7 @@ export async function createClientAction(
       name,
       email: email || undefined,
       phone: (formData.get("phone") as string)?.trim() || undefined,
+      referralSource: (formData.get("referralSource") as string)?.trim() || undefined,
     });
     return { client };
   } catch {

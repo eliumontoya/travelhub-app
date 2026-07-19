@@ -28,6 +28,7 @@ export type CreateClientInput = {
   email?: string;
   phone?: string;
   notes?: string;
+  referralSource?: string;
 };
 
 export async function getClients(): Promise<Client[]> {
@@ -71,6 +72,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       email: input.email ?? "",
       phone: input.phone ?? "",
       notes: input.notes,
+      referralSource: input.referralSource ?? null,
       createdAt: new Date().toISOString(),
     };
     mockClients.unshift(client);
@@ -79,7 +81,13 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name: input.name, email: input.email, phone: input.phone, notes: input.notes })
+    .insert({
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      notes: input.notes,
+      referral_source: input.referralSource,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -94,6 +102,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
     if (input.notes !== undefined) client.notes = input.notes;
+    if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
     return client;
   }
   const supabase = await createServerSupabase();
@@ -102,6 +111,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
   if (input.email !== undefined) patch.email = input.email;
   if (input.phone !== undefined) patch.phone = input.phone;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.referralSource !== undefined) patch.referral_source = input.referralSource || null;
   const { data, error } = await supabase.from("clients").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToClient(data);
@@ -114,8 +124,22 @@ function rowToClient(row: Record<string, unknown>): Client {
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
     notes: (row.notes as string) ?? undefined,
+    referralSource: (row.referral_source as string) ?? null,
     createdAt: row.created_at as string,
   };
+}
+
+// Cuenta clientes por referral_source para el widget de desglose del
+// dashboard. null/"" se agrupa bajo la clave "" (el caller la muestra como
+// "Sin especificar").
+export async function getClientReferralSourceCounts(): Promise<Record<string, number>> {
+  const clients = await getClients();
+  const counts: Record<string, number> = {};
+  for (const client of clients) {
+    const key = client.referralSource?.trim() || "";
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
 }
 
 // ---------- Tags ----------

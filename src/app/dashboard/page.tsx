@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getClients, getTripsWithClients } from "@/lib/data";
+import { getClients, getClientReferralSourceCounts, getTripsWithClients } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import { ClientsByReferralSourceCard } from "@/components/ClientsByReferralSourceCard";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -9,7 +10,11 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+  const [clients, trips, referralSourceCounts] = await Promise.all([
+    getClients(),
+    getTripsWithClients(),
+    getClientReferralSourceCounts(),
+  ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -61,6 +66,8 @@ export default async function DashboardPage() {
           );
         })}
       </div>
+
+      <ClientsByReferralSourceCard counts={referralSourceCounts} />
 
       <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
       <div className="grid gap-3">
