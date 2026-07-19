@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
@@ -15,6 +16,31 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
 import { PrintButton } from "@/components/PrintButton";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const trip = await getTripWithDetails(slug);
+
+  if (!trip) {
+    return { title: "Itinerario no encontrado" };
+  }
+
+  const description = `${formatDateLong(trip.startDate)} – ${formatDateLong(trip.endDate)}`;
+
+  return {
+    title: trip.title,
+    description,
+    openGraph: {
+      title: trip.title,
+      description,
+      images: trip.coverImageUrl ? [{ url: trip.coverImageUrl }] : undefined,
+    },
+  };
+}
 
 export default async function PublicTripPage({
   params,
