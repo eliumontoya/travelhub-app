@@ -13,7 +13,7 @@ export default async function PublicTripPage({
 }) {
   const { slug } = await params;
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
-  if (!trip) notFound();
+  if (!trip || trip.status !== "published") notFound();
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16">
