@@ -7,18 +7,10 @@ import {
   createTripFromTemplate,
   getOrCreateTag,
 } from "@/lib/data";
+import { slugify } from "@/lib/slugify";
 import { TripCurrency } from "@/types";
 
 const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 export async function createTripAction(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();

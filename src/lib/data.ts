@@ -15,6 +15,7 @@ import {
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
+import { slugify } from "@/lib/slugify";
 
 // Capa de acceso a datos. Si Supabase está configurado (NEXT_PUBLIC_SUPABASE_URL
 // presente), todo se lee/escribe de Postgres. Si no, se usan los mocks en
@@ -95,12 +96,22 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
   return data ? rowToClient(data) : null;
 }
 
+// Genera el slug público (/c/{slug}) con el mismo helper y patrón que el
+// slug de viajes (slugBase + "-" + timestamp base36), ver
+// src/app/dashboard/trips/new/actions.ts. Sin backfill para clientes
+// existentes: solo se asigna al crear.
+function generateClientSlug(name: string): string {
+  const base = slugify(name) || "cliente";
+  return `${base}-${Date.now().toString(36)}`;
+}
+
 export async function createClient(input: CreateClientInput): Promise<Client> {
   if (!isSupabaseConfigured()) {
     const now = new Date().toISOString();
     const client: Client = {
       id: uid(),
       name: input.name,
+      slug: generateClientSlug(input.name),
       email: input.email ?? "",
       phone: input.phone ?? "",
       notes: input.notes,
@@ -113,7 +124,13 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name: input.name, email: input.email, phone: input.phone, notes: input.notes })
+    .insert({
+      name: input.name,
+      slug: generateClientSlug(input.name),
+      email: input.email,
+      phone: input.phone,
+      notes: input.notes,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -146,6 +163,7 @@ function rowToClient(row: Record<string, unknown>): Client {
   return {
     id: row.id as string,
     name: row.name as string,
+    slug: (row.slug as string) ?? undefined,
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
     notes: (row.notes as string) ?? undefined,
@@ -701,6 +719,53 @@ export async function getTripWithDetails(slug: string): Promise<TripWithDetails 
   if (error) throw error;
   if (!tripRow) return null;
   return assembleTripWithDetails(tripRow);
+}
+
+export type ClientTripHistory = {
+  client: Pick<Client, "name" | "slug">;
+  trips: Trip[];
+};
+
+// Vista pública /c/{clientSlug} (issue #47): nombre del cliente + sus viajes
+// publicados. Usa trips.client_id (espejo de compatibilidad, ver
+// setTripClients/0006_trip_clients.sql) en vez de trip_clients, porque
+// trip_clients no tiene ninguna política de lectura pública (por diseño) y
+// la RLS de "clients_public_read_published_trips" (0008 migration) se apoya
+// en trips.client_id, ya legible por anon vía trips_public_read_published.
+// Limitación conocida: en un viaje con 2+ clientes asignados, solo aparece
+// bajo el slug del primer cliente (client_id espejo), no de todos.
+export async function getClientPublishedTripsBySlug(
+  clientSlug: string
+): Promise<ClientTripHistory | null> {
+  if (!isSupabaseConfigured()) {
+    const client = mockClients.find((c) => c.slug === clientSlug);
+    if (!client) return null;
+    const trips = mockTrips
+      .filter((t) => t.clientId === client.id && t.status === "published")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return { client: { name: client.name, slug: client.slug }, trips };
+  }
+  const supabase = await createServerSupabase();
+  const { data: clientRow, error: clientError } = await supabase
+    .from("clients")
+    .select("id, slug, name")
+    .eq("slug", clientSlug)
+    .maybeSingle();
+  if (clientError) throw clientError;
+  if (!clientRow) return null;
+
+  const { data: tripRows, error: tripsError } = await supabase
+    .from("trips")
+    .select("*")
+    .eq("client_id", clientRow.id as string)
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+  if (tripsError) throw tripsError;
+
+  return {
+    client: { name: clientRow.name as string, slug: clientRow.slug as string },
+    trips: (tripRows ?? []).map(rowToTrip),
+  };
 }
 
 async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promise<TripWithDetails> {

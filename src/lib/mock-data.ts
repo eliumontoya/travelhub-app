@@ -4,6 +4,7 @@ export const mockClients: Client[] = [
   {
     id: "c1",
     name: "Ana y Roberto Pérez",
+    slug: "ana-y-roberto-perez",
     email: "ana.perez@example.com",
     phone: "+52 55 1234 5678",
     notes: "Luna de miel, prefieren hoteles boutique.",
@@ -13,6 +14,7 @@ export const mockClients: Client[] = [
   {
     id: "c2",
     name: "Familia Gómez",
+    slug: "familia-gomez",
     email: "gomez.family@example.com",
     phone: "+52 33 9876 5432",
     notes: "4 personas, 2 niños, buscan actividades familiares.",
