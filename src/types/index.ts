@@ -32,6 +32,7 @@ export interface Trip {
   endDate: string;
   coverImageUrl?: string;
   instructions?: string;
+  travelerCount: number;
   budget?: number;
   status: TripStatus;
   /** Viajes plantilla (issue #31) no tienen cliente y se excluyen de los listados normales. */

@@ -12,6 +12,8 @@ export const dictionary = {
     addTripToCalendar: "📅 Agregar viaje completo a mi calendario",
     confirmationLabel: "Confirmación",
     daysNav: "Días del viaje",
+    traveler: "viajero",
+    travelers: "viajeros",
     itemType: {
       flight: "Vuelo",
       hotel: "Hotel",
@@ -26,6 +28,8 @@ export const dictionary = {
     addTripToCalendar: "📅 Add full trip to my calendar",
     confirmationLabel: "Confirmation",
     daysNav: "Trip days",
+    traveler: "traveler",
+    travelers: "travelers",
     itemType: {
       flight: "Flight",
       hotel: "Hotel",

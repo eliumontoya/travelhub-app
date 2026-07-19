@@ -20,6 +20,7 @@ type TripListItem = {
   status: TripStatus;
   startDate: string;
   endDate: string;
+  travelerCount: number;
   clients: Client[];
   tags: Tag[];
 };
@@ -124,6 +125,8 @@ export function DashboardExplorer({
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
                 <p className="text-sm text-gray-400 dark:text-gray-500">
                   {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
+                  {" · "}
+                  {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
                 </p>
                 {trip.tags.length > 0 && (
                   <ul className="mt-1.5 flex flex-wrap gap-1.5">

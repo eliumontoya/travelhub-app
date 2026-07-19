@@ -12,6 +12,7 @@ import {
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripTravelerCountDialog } from "@/components/TripTravelerCountDialog";
 import { TripBudgetDialog } from "@/components/TripBudgetDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
@@ -50,6 +51,7 @@ import {
   togglePackingItemAction,
   updateTripBudgetAction,
   updateTripInstructionsAction,
+  updateTripTravelerCountAction,
   uploadDocumentAction,
   uploadTripPhotoAction,
 } from "./actions";
@@ -109,7 +111,11 @@ export default async function TripEditorPage({
               {statusMeta[trip.status].label}
             </span>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {formatAssignedClients(trip.clients)}
+            {" · "}
+            {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
+          </p>
           {trip.tags.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1.5 print:hidden">
               {formatTags(trip.tags).map((name) => (
@@ -182,12 +188,24 @@ export default async function TripEditorPage({
             }
             onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
           />
+          <TripTravelerCountDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                # Viajeros
+              </button>
+            }
+            onSubmit={updateTripTravelerCountAction.bind(null, trip.id, trip.slug)}
+          />
           <TripBudgetDialog
             trip={trip}
             trigger={
               <button
                 type="button"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Presupuesto
               </button>

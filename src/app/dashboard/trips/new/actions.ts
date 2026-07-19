@@ -22,6 +22,10 @@ export async function createTripAction(formData: FormData) {
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");
   const instructions = String(formData.get("instructions") ?? "").trim() || undefined;
+  const travelerCountRaw = Number(formData.get("travelerCount"));
+  const travelerCount = Number.isFinite(travelerCountRaw) && travelerCountRaw >= 1
+    ? Math.floor(travelerCountRaw)
+    : 1;
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
   const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
@@ -52,7 +56,16 @@ export async function createTripAction(formData: FormData) {
   const slugBase = slugify(title) || "viaje";
   const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-  const tripInput = { clientIds, title, slug, startDate, endDate, instructions, tagIds };
+  const tripInput = {
+    clientIds,
+    title,
+    slug,
+    startDate,
+    endDate,
+    instructions,
+    travelerCount,
+    tagIds,
+  };
   const trip = templateId
     ? await createTripFromTemplate(templateId, tripInput)
     : await createTrip(tripInput);

@@ -190,6 +190,19 @@ export async function updateTripInstructionsAction(
   revalidatePath(`/t/${slug}`);
 }
 
+export async function updateTripTravelerCountAction(
+  tripId: string,
+  slug: string,
+  formData: FormData
+) {
+  const raw = Number(formData.get("travelerCount"));
+  if (!Number.isFinite(raw) || raw < 1) return;
+  await updateTrip(tripId, { travelerCount: Math.floor(raw) });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+  revalidatePath("/dashboard");
+}
+
 export async function updateTripBudgetAction(tripId: string, formData: FormData) {
   const raw = String(formData.get("budget") ?? "").trim();
   await updateTrip(tripId, { budget: raw ? Number(raw) : null });
@@ -291,6 +304,7 @@ export async function duplicateTripAction(tripId: string) {
     endDate: trip.endDate,
     coverImageUrl: trip.coverImageUrl,
     instructions: trip.instructions,
+    travelerCount: trip.travelerCount,
     tagIds: trip.tags.map((t) => t.id),
   });
 
