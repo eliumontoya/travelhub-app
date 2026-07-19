@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { Item, ItemDocument, ItemType } from "@/types";
 import { itemTypeMeta } from "@/lib/item-meta";
 import { LocationInput } from "@/components/LocationInput";
+import { showUndoToast } from "@/components/UndoToast";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
@@ -64,6 +65,7 @@ export function ItemFormDialog({
   item,
   onSubmit,
   onDelete,
+  onUndoDelete,
   onLoadDocuments,
   onUploadDocument,
   onDeleteDocument,
@@ -73,6 +75,7 @@ export function ItemFormDialog({
   item?: Item;
   onSubmit: (formData: FormData) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onUndoDelete?: () => Promise<void>;
   onLoadDocuments?: () => Promise<DocWithUrl[]>;
   onUploadDocument?: (formData: FormData) => Promise<void>;
   onDeleteDocument?: (documentId: string) => Promise<void>;
@@ -119,6 +122,9 @@ export function ItemFormDialog({
     startTransition(async () => {
       await onDelete();
       close();
+      if (onUndoDelete) {
+        showUndoToast({ message: "Item eliminado", onUndo: onUndoDelete });
+      }
     });
   }
 
@@ -210,15 +216,29 @@ export function ItemFormDialog({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Código de confirmación
-            </label>
-            <input
-              name="confirmationCode"
-              defaultValue={item?.confirmationCode}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Código de confirmación
+              </label>
+              <input
+                name="confirmationCode"
+                defaultValue={item?.confirmationCode}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Costo</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="cost"
+                defaultValue={item?.cost}
+                placeholder="Opcional"
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           <div>
@@ -227,6 +247,19 @@ export function ItemFormDialog({
               name="notes"
               defaultValue={item?.notes}
               rows={2}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Costo</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              name="cost"
+              defaultValue={item?.cost}
+              placeholder="Solo visible internamente salvo que actives el resumen de costos"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
