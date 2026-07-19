@@ -1,9 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClientById, getClientTags, getClientTripSummary, getTags, getTripsByClientId } from "@/lib/data";
+import {
+  getClientById,
+  getClientDocuments,
+  getClientTags,
+  getClientTripSummary,
+  getTags,
+  getTripsByClientId,
+} from "@/lib/data";
 import { formatDateShort, formatTags, REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
+import { ClientDocuments } from "@/components/ClientDocuments";
 import { TripTagsManager } from "@/components/TripTagsManager";
-import { setClientTagsAction, updateClientAction } from "./actions";
+import {
+  deleteClientDocumentAction,
+  getClientDocumentsAction,
+  setClientTagsAction,
+  updateClientAction,
+  uploadClientDocumentAction,
+} from "./actions";
+
+const documentsEnabled = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -20,11 +38,12 @@ export default async function ClientDetailPage({
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const [trips, tags, clientTags, summary] = await Promise.all([
+  const [trips, tags, clientTags, summary, documents] = await Promise.all([
     getTripsByClientId(id),
     getTags(),
     getClientTags(id),
     getClientTripSummary(id),
+    getClientDocuments(id),
   ]);
 
   return (
@@ -182,6 +201,16 @@ export default async function ClientDetailPage({
             <p className="text-xs text-gray-500">Archivados</p>
           </div>
         )}
+      </div>
+
+      <div className="mb-8">
+        <ClientDocuments
+          documents={documents}
+          documentsEnabled={documentsEnabled}
+          onUpload={uploadClientDocumentAction.bind(null, client.id)}
+          onDelete={deleteClientDocumentAction.bind(null, client.id)}
+          onRefresh={getClientDocumentsAction.bind(null, client.id)}
+        />
       </div>
 
       <h2 className="mb-4 text-lg font-semibold text-gray-900">Viajes</h2>

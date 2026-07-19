@@ -1,5 +1,6 @@
 import {
   Client,
+  ClientDocument,
   Item,
   ItemDocument,
   PackingItem,
@@ -1941,6 +1942,83 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
     fileName: row.file_name as string,
     mimeType: (row.mime_type as string | null) ?? undefined,
     uploadedAt: row.uploaded_at as string,
+  };
+}
+
+// ---------- Client documents (pasaporte/ID, no atados a un viaje) ----------
+// Reutiliza el bucket privado "trip-documents" (ver 0002_storage_bucket.sql)
+// bajo el prefijo "clients/{clientId}/...", registrados en la tabla
+// client_documents (ver 0026_client_documents.sql). RLS restringe estas
+// filas y este bucket al dueño autenticado únicamente: nunca se exponen en
+// la vista pública /t/{slug}.
+
+export async function uploadClientDocument(clientId: string, file: File): Promise<ClientDocument> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se pueden subir documentos.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `clients/${clientId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+  const { data, error } = await supabase
+    .from("client_documents")
+    .insert({
+      client_id: clientId,
+      file_path: path,
+      filename: file.name,
+      mime_type: file.type || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToClientDocument(data);
+}
+
+export async function getClientDocuments(
+  clientId: string
+): Promise<(ClientDocument & { url: string | null })[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("client_documents")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return Promise.all(
+    (data ?? []).map(async (row) => {
+      const doc = rowToClientDocument(row);
+      const url = await getSignedDocumentUrl(doc.filePath);
+      return { ...doc, url };
+    })
+  );
+}
+
+export async function deleteClientDocument(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = await createServerSupabase();
+  const { data: row } = await supabase
+    .from("client_documents")
+    .select("file_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (row?.file_path) {
+    await supabase.storage.from(DOCUMENTS_BUCKET).remove([row.file_path as string]);
+  }
+  const { error } = await supabase.from("client_documents").delete().eq("id", id);
+  if (error) throw error;
+}
+
+function rowToClientDocument(row: Record<string, unknown>): ClientDocument {
+  return {
+    id: row.id as string,
+    clientId: row.client_id as string,
+    filePath: row.file_path as string,
+    filename: row.filename as string,
+    mimeType: (row.mime_type as string) ?? undefined,
+    createdAt: row.created_at as string,
   };
 }
 

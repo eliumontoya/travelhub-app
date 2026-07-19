@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getOrCreateTag, setClientTags, updateClient } from "@/lib/data";
+import {
+  deleteClientDocument,
+  getClientDocuments,
+  getOrCreateTag,
+  setClientTags,
+  updateClient,
+  uploadClientDocument,
+} from "@/lib/data";
 
 export async function updateClientAction(clientId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -15,6 +22,22 @@ export async function updateClientAction(clientId: string, formData: FormData) {
     birthDate: String(formData.get("birthDate") ?? "").trim() || undefined,
   });
   revalidatePath(`/dashboard/clients/${clientId}`);
+}
+
+export async function uploadClientDocumentAction(clientId: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadClientDocument(clientId, file);
+  revalidatePath(`/dashboard/clients/${clientId}`);
+}
+
+export async function deleteClientDocumentAction(clientId: string, documentId: string) {
+  await deleteClientDocument(documentId);
+  revalidatePath(`/dashboard/clients/${clientId}`);
+}
+
+export async function getClientDocumentsAction(clientId: string) {
+  return getClientDocuments(clientId);
 }
 
 export async function setClientTagsAction(clientId: string, formData: FormData) {
