@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Client, Tag, TripStatus } from "@/types";
 import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-meta";
+import { bulkUpdateTripStatusAction } from "@/app/dashboard/actions";
 
 const statusMeta: Record<TripStatus, { label: string; color: string }> = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
@@ -50,6 +51,26 @@ export function DashboardExplorer({
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TripStatus | "all">("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isPending, startTransition] = useTransition();
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function runBulkAction(status: "published" | "archived") {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      await bulkUpdateTripStatusAction(ids, status);
+      setSelected(new Set());
+    });
+  }
 
   const normalizedQuery = normalize(query.trim());
 
@@ -106,43 +127,79 @@ export function DashboardExplorer({
         </select>
       </div>
 
+      {selected.size > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950">
+          <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
+            {selected.size} viaje{selected.size === 1 ? "" : "s"} seleccionado
+            {selected.size === 1 ? "" : "s"}
+          </span>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => runBulkAction("published")}
+            className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
+          >
+            Publicar seleccionados
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => runBulkAction("archived")}
+            className="rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600"
+          >
+            Archivar seleccionados
+          </button>
+        </div>
+      )}
+
       <div className="grid gap-4">
         {filteredTrips.map((trip) => {
           const status = statusMeta[trip.status];
           return (
-            <Link
+            <div
               key={trip.id}
-              href={`/dashboard/trips/${trip.id}`}
-              className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
+              className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
             >
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">{trip.title}</h2>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
-                    {status.label}
-                  </span>
+              <input
+                type="checkbox"
+                checked={selected.has(trip.id)}
+                onChange={() => toggleSelected(trip.id)}
+                className="h-4 w-4 shrink-0 rounded border-gray-300 dark:border-gray-600"
+                aria-label={`Seleccionar ${trip.title}`}
+              />
+              <Link
+                href={`/dashboard/trips/${trip.id}`}
+                className="flex flex-1 items-center justify-between"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-semibold text-gray-900 dark:text-gray-100">{trip.title}</h2>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
+                    {" · "}
+                    {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
+                  </p>
+                  {trip.tags.length > 0 && (
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {formatTags(trip.tags).map((name) => (
+                        <li
+                          key={name}
+                          className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        >
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500">
-                  {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
-                  {" · "}
-                  {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
-                </p>
-                {trip.tags.length > 0 && (
-                  <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                    {formatTags(trip.tags).map((name) => (
-                      <li
-                        key={name}
-                        className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                      >
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <span className="text-gray-300 dark:text-gray-600">→</span>
-            </Link>
+                <span className="text-gray-300 dark:text-gray-600">→</span>
+              </Link>
+            </div>
           );
         })}
         {filteredTrips.length === 0 && (
