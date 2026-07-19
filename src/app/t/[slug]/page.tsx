@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
+import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -146,6 +147,7 @@ export default async function PublicTripPage({
                 <div className="space-y-3 border-l-2 border-gray-200 pl-4 dark:border-gray-800">
                   {day.items.map((item) => {
                     const meta = itemTypeMeta[item.type];
+                    const tzLabel = getApproxUtcOffsetLabel(item.lat, item.lng);
                     return (
                       <div
                         key={item.id}
@@ -163,7 +165,10 @@ export default async function PublicTripPage({
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
                                 {item.startTime && (
-                                  <span className="text-xs text-gray-400 dark:text-gray-500">{item.startTime}</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                                    {item.startTime}
+                                    {tzLabel && ` · ${tzLabel}`}
+                                  </span>
                                 )}
                                 {item.type === "flight" && (
                                   <FlightStatusBadge title={item.title} />
