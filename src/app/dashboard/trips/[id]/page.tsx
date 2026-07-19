@@ -20,6 +20,7 @@ import {
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
+import { GenerateDaysButton } from "@/components/GenerateDaysButton";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripInternalNotesDialog } from "@/components/TripInternalNotesDialog";
 import { TripCommissionDialog } from "@/components/TripCommissionDialog";
@@ -58,6 +59,7 @@ import {
   deletePackingItemAction,
   editDayAction,
   editItemAction,
+  generateTripDaysAction,
   getItemDocumentsAction,
   moveDayAction,
   moveItemAction,
@@ -106,6 +108,7 @@ export default async function TripEditorPage({
   const feedback = await getTripFeedback(trip.id);
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+  const tripDateRangeDays = countDaysInRange(trip.startDate, trip.endDate);
   const completeness = computeTripCompleteness(trip);
 
   const totalCost = trip.days.reduce(
@@ -529,17 +532,25 @@ export default async function TripEditorPage({
           );
         })}
 
-        <DayFormDialog
-          trigger={
-            <button
-              id={ADD_DAY_TRIGGER_ID}
-              className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-            >
-              + Agregar día
-            </button>
-          }
-          onSubmit={addDayAction.bind(null, trip.id)}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <DayFormDialog
+            trigger={
+              <button
+                id={ADD_DAY_TRIGGER_ID}
+                className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                + Agregar día
+              </button>
+            }
+            onSubmit={addDayAction.bind(null, trip.id)}
+          />
+          {tripDateRangeDays !== null && (
+            <GenerateDaysButton
+              totalDays={tripDateRangeDays}
+              onGenerate={generateTripDaysAction.bind(null, trip.id)}
+            />
+          )}
+        </div>
       </div>
 
       {feedback.length > 0 && (
@@ -566,5 +577,13 @@ export default async function TripEditorPage({
       <UndoToastHost />
     </main>
   );
+}
+
+function countDaysInRange(startDate: string, endDate: string): number | null {
+  if (!startDate || !endDate) return null;
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return null;
+  return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 }
 
