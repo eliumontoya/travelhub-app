@@ -9,6 +9,7 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import {
   addDayAction,
   addItemAction,
@@ -180,6 +181,9 @@ export default async function TripEditorPage({
                           <span className="font-medium text-gray-900">{item.title}</span>
                           {item.startTime && (
                             <span className="text-xs text-gray-400">{item.startTime}</span>
+                          )}
+                          {item.type === "flight" && (
+                            <FlightStatusBadge title={item.title} />
                           )}
                         </div>
                         {item.location && (
