@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClientById, getClientTags, getTags, getTripsByClientId } from "@/lib/data";
+import { getClientById, getClientTags, getClientTripSummary, getTags, getTripsByClientId } from "@/lib/data";
 import { formatDateShort, formatTags } from "@/lib/item-meta";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { setClientTagsAction, updateClientAction } from "./actions";
@@ -20,10 +20,11 @@ export default async function ClientDetailPage({
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const [trips, tags, clientTags] = await Promise.all([
+  const [trips, tags, clientTags, summary] = await Promise.all([
     getTripsByClientId(id),
     getTags(),
     getClientTags(id),
+    getClientTripSummary(id),
   ]);
 
   return (
@@ -130,6 +131,34 @@ export default async function ClientDetailPage({
           </button>
         </form>
       </details>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+          <p className="text-xl font-bold text-gray-900">{summary.totalTrips}</p>
+          <p className="text-xs text-gray-500">Viajes totales</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+          <p className="text-xl font-bold text-green-700">{summary.publishedCount}</p>
+          <p className="text-xs text-gray-500">Publicados</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+          <p className="text-xl font-bold text-gray-600">{summary.draftCount}</p>
+          <p className="text-xs text-gray-500">Borradores</p>
+        </div>
+        {summary.totalCost !== null ? (
+          <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+            <p className="text-xl font-bold text-gray-900">
+              {summary.totalCost.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
+            </p>
+            <p className="text-xs text-gray-500">Gasto total</p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+            <p className="text-xl font-bold text-gray-400">{summary.archivedCount}</p>
+            <p className="text-xs text-gray-500">Archivados</p>
+          </div>
+        )}
+      </div>
 
       <h2 className="mb-4 text-lg font-semibold text-gray-900">Viajes</h2>
       {trips.length === 0 ? (

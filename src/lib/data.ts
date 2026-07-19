@@ -650,6 +650,30 @@ export async function getTripsByClientId(clientId: string): Promise<Trip[]> {
   return data.map(rowToTrip);
 }
 
+export type ClientTripSummary = {
+  totalTrips: number;
+  publishedCount: number;
+  draftCount: number;
+  archivedCount: number;
+  // Null porque items/trips no tienen un campo de costo hoy (ver issue #25,
+  // aún no mergeado). Si ese campo llega a existir, sumarlo aquí.
+  totalCost: number | null;
+};
+
+// Resumen agregado para la vista de detalle de cliente (issue #41). Se apoya
+// en getTripsByClientId para respetar el modo mock/Supabase sin duplicar
+// lógica de acceso a datos.
+export async function getClientTripSummary(clientId: string): Promise<ClientTripSummary> {
+  const trips = await getTripsByClientId(clientId);
+  return {
+    totalTrips: trips.length,
+    publishedCount: trips.filter((t) => t.status === "published").length,
+    draftCount: trips.filter((t) => t.status === "draft").length,
+    archivedCount: trips.filter((t) => t.status === "archived").length,
+    totalCost: null,
+  };
+}
+
 export async function getTripById(id: string): Promise<TripWithDetails | null> {
   if (!isSupabaseConfigured()) return mockGetTripWithDetails(mockTrips.find((t) => t.id === id)?.slug ?? "");
   const supabase = await createServerSupabase();
