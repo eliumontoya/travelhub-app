@@ -506,6 +506,27 @@ export async function getTripsWithClients(): Promise<
   }));
 }
 
+// Viajes en estado "draft" cuya fecha de inicio cae dentro de los próximos
+// `withinDays` días (hoy incluido, pasado excluido). Reutiliza
+// getTripsWithClients (ya trae clients/tags batcheados) y filtra en JS: no
+// hay una columna derivada en la tabla, así que no se puede empujar el
+// filtro de fecha a Supabase sin una función/columna generada.
+export async function getUpcomingUnpublishedTrips(
+  withinDays = 7
+): Promise<(Trip & { clients: Client[]; tags: Tag[] })[]> {
+  const trips = await getTripsWithClients();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const limit = new Date(today);
+  limit.setDate(limit.getDate() + withinDays);
+
+  return trips.filter((trip) => {
+    if (trip.status !== "draft" || !trip.startDate) return false;
+    const start = new Date(trip.startDate + "T00:00:00");
+    return start >= today && start <= limit;
+  });
+}
+
 // Devuelve todos los viajes asignados a un cliente vía trip_clients (fuente
 // de verdad many-to-many), no solo los que tienen trips.client_id === clientId.
 // Batch query (.in) para evitar N+1 al resolver los trips encontrados.
