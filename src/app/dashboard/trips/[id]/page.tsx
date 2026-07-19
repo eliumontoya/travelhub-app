@@ -27,6 +27,11 @@ import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
 import { PrintButton } from "@/components/PrintButton";
 import {
+  TripEditorShortcuts,
+  ADD_DAY_TRIGGER_ID,
+  ADD_ITEM_LAST_DAY_TRIGGER_ID,
+} from "@/components/TripEditorShortcuts";
+import {
   addDayAction,
   addItemAction,
   addPackingItemAction,
@@ -318,6 +323,7 @@ export default async function TripEditorPage({
         {trip.days.map((day, dayWeatherIdx) => {
           const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
           const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
+          const isLastDay = dayIdx === dayOrder.length - 1;
 
           return (
             <div
@@ -408,7 +414,10 @@ export default async function TripEditorPage({
 
                 <ItemFormDialog
                   trigger={
-                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800">
+                    <button
+                      id={isLastDay ? ADD_ITEM_LAST_DAY_TRIGGER_ID : undefined}
+                      className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
                       + Agregar item
                     </button>
                   }
@@ -421,7 +430,10 @@ export default async function TripEditorPage({
 
         <DayFormDialog
           trigger={
-            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800">
+            <button
+              id={ADD_DAY_TRIGGER_ID}
+              className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
               + Agregar día
             </button>
           }
@@ -429,6 +441,7 @@ export default async function TripEditorPage({
         />
       </div>
 
+      <TripEditorShortcuts />
       <UndoToastHost />
     </main>
   );
