@@ -42,6 +42,8 @@ export default async function DashboardPage() {
                 <p className="mt-1 text-sm text-gray-500">{formatAssignedClients(trip.clients)}</p>
                 <p className="text-sm text-gray-400">
                   {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
+                  {" · "}
+                  {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
                 </p>
                 {trip.tags.length > 0 && (
                   <ul className="mt-1.5 flex flex-wrap gap-1.5">

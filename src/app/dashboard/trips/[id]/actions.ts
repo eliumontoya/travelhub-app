@@ -143,6 +143,19 @@ export async function updateTripInstructionsAction(
   revalidatePath(`/t/${slug}`);
 }
 
+export async function updateTripTravelerCountAction(
+  tripId: string,
+  slug: string,
+  formData: FormData
+) {
+  const raw = Number(formData.get("travelerCount"));
+  if (!Number.isFinite(raw) || raw < 1) return;
+  await updateTrip(tripId, { travelerCount: Math.floor(raw) });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+  revalidatePath("/dashboard");
+}
+
 export async function setTripClientsAction(tripId: string, formData: FormData) {
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   if (clientIds.length < 1) return; // no-op: server-side "mínimo 1 cliente" (defensa en profundidad)

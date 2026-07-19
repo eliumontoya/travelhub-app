@@ -64,6 +64,17 @@ export function NewTripForm({
       </div>
 
       <div>
+        <label className="block text-sm font-medium text-gray-700"># Viajeros</label>
+        <input
+          type="number"
+          name="travelerCount"
+          min={1}
+          defaultValue={1}
+          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div>
         <label className="block text-sm font-medium text-gray-700">Clientes existentes</label>
         <ClientMultiCombobox
           clients={clients}

@@ -29,6 +29,8 @@ export default async function PublicTripPage({
           <h1 className="text-3xl font-bold">{trip.title}</h1>
           <p className="mt-1 text-sm text-white/80">
             {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
+            {" · "}
+            {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
           </p>
           <p className="mt-1 text-sm text-white/80">
             <a href={`mailto:${contact.email}`} className="hover:underline">
