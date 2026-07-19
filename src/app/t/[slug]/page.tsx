@@ -100,6 +100,26 @@ export default async function PublicTripPage({
             <PrintButton />
           </div>
 
+          {trip.photos.length > 0 && (
+            <div className="mb-6 print:hidden">
+              <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Fotos</h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {trip.photos.map((photo) =>
+                  photo.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={photo.id}
+                      src={photo.url}
+                      alt={photo.fileName}
+                      className="aspect-square rounded-lg object-cover"
+                      loading="lazy"
+                    />
+                  ) : null
+                )}
+              </div>
+            </div>
+          )}
+
           {trip.showCostsToClient && (
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
