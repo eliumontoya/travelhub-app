@@ -25,6 +25,16 @@ export function formatDateShort(dateStr: string) {
   });
 }
 
+export function formatDateTime(isoStr: string) {
+  return new Date(isoStr).toLocaleString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatDateCompact(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
     weekday: "short",

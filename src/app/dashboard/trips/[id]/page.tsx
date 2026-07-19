@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import {
+  itemTypeMeta,
+  formatDateLong,
+  formatDateTime,
+  formatAssignedClients,
+  formatTags,
+} from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -133,6 +139,36 @@ export default async function TripEditorPage({
           <CopyUrlButtonClient slug={trip.slug} />
         </div>
       </div>
+
+      {trip.statusHistory.length > 0 && (
+        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+          <h2 className="mb-2 text-sm font-semibold text-gray-900">Historial de estado</h2>
+          <ul className="space-y-1.5">
+            {[...trip.statusHistory].reverse().map((entry) => (
+              <li key={entry.id} className="flex flex-wrap items-center gap-1.5 text-sm text-gray-600">
+                <span className="text-gray-400">{formatDateTime(entry.changedAt)}</span>
+                <span>
+                  {entry.fromStatus ? (
+                    <>
+                      {statusMeta[entry.fromStatus].label} →{" "}
+                      <span className="font-medium text-gray-900">
+                        {statusMeta[entry.toStatus].label}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Creado como{" "}
+                      <span className="font-medium text-gray-900">
+                        {statusMeta[entry.toStatus].label}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="space-y-6">
         {trip.days.map((day) => {

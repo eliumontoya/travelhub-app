@@ -36,6 +36,14 @@ export interface Trip {
   createdAt: string;
 }
 
+export interface TripStatusHistoryEntry {
+  id: string;
+  tripId: string;
+  fromStatus: TripStatus | null;
+  toStatus: TripStatus;
+  changedAt: string;
+}
+
 export interface TripDay {
   id: string;
   tripId: string;
@@ -75,6 +83,8 @@ export interface TripWithDetails extends Trip {
   client: Client;
   /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
   tags: Tag[];
+  /** Historial de transiciones de status, orden ascendente por changedAt. */
+  statusHistory: TripStatusHistoryEntry[];
   days: (TripDay & { items: Item[] })[];
 }
 

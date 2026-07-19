@@ -1,4 +1,13 @@
-import { Client, Trip, TripDay, Item, Tag, TripWithDetails, SiteSettings } from "@/types";
+import {
+  Client,
+  Trip,
+  TripDay,
+  Item,
+  Tag,
+  TripWithDetails,
+  TripStatusHistoryEntry,
+  SiteSettings,
+} from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -72,6 +81,27 @@ export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[
   { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
 ];
 
+// Historial mock de transiciones de status por viaje (issue #55), espejo de
+// la tabla trip_status_history (ver
+// supabase/migrations/0008_trip_status_history.sql). Append-only: nunca se
+// muta ni se borra una fila existente, solo se agregan nuevas.
+export const mockTripStatusHistory: TripStatusHistoryEntry[] = [
+  {
+    id: "tsh1",
+    tripId: "t1",
+    fromStatus: null,
+    toStatus: "draft",
+    changedAt: "2026-07-01T09:00:00Z",
+  },
+  {
+    id: "tsh2",
+    tripId: "t1",
+    fromStatus: "draft",
+    toStatus: "published",
+    changedAt: "2026-07-02T09:00:00Z",
+  },
+];
+
 export const mockItems: Item[] = [
   {
     id: "i1",
@@ -143,7 +173,10 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
         .filter((i) => i.tripDayId === day.id)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
-  return { ...trip, clients, client, tags, days };
+  const statusHistory = mockTripStatusHistory
+    .filter((h) => h.tripId === trip.id)
+    .sort((a, b) => a.changedAt.localeCompare(b.changedAt));
+  return { ...trip, clients, client, tags, statusHistory, days };
 }
 
 export function getTripById(id: string): TripWithDetails | null {
