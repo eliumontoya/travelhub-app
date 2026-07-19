@@ -49,6 +49,7 @@ export interface ItemDocument {
   itemId: string;
   fileUrl: string;
   fileName: string;
+  mimeType?: string;
   uploadedAt: string;
 }
 
