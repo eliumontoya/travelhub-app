@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { signOutAction } from "@/app/dashboard/settings/actions";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -24,7 +25,10 @@ export default async function DashboardLayout({
           <Link href="/dashboard" className="text-sm font-semibold text-gray-900">
             TravelHub
           </Link>
-          <ProfileMenu email={email} signOutAction={signOutAction} />
+          <div className="flex items-center gap-2">
+            <ChangelogDialog />
+            <ProfileMenu email={email} signOutAction={signOutAction} />
+          </div>
         </div>
       </header>
       {children}
