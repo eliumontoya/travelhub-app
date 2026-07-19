@@ -5,6 +5,7 @@ import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
 import { PrintButton } from "@/components/PrintButton";
@@ -33,7 +34,8 @@ export default async function PublicTripPage({
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0">
+    <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0 dark:bg-gray-950">
+      <ThemeToggle className="fixed right-4 top-4 z-20 print:hidden" />
       <div
         className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72 print:hidden"
         style={{
@@ -77,8 +79,8 @@ export default async function PublicTripPage({
 
         <div className="lg:max-w-2xl">
           {trip.instructions && (
-            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:shadow-none print:border-gray-300">
-              <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
+            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:shadow-none print:border-gray-300 dark:border-gray-800 dark:bg-gray-900">
+              <p className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{trip.instructions}</p>
             </div>
           )}
 
@@ -88,27 +90,27 @@ export default async function PublicTripPage({
           </div>
 
           {trip.showCostsToClient && (
-            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-900">Resumen de costos</h2>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{formatCost(totalCost)}</p>
-              <p className="text-xs text-gray-400">Total estimado del viaje</p>
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCost(totalCost)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
             </div>
           )}
 
           <div className="space-y-8">
             {trip.days.map((day, dayIdx) => (
               <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6 print:break-inside-avoid">
-                <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold capitalize text-gray-900">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold capitalize text-gray-900 dark:text-gray-100">
                   {formatDateLong(day.date)}
                   <WeatherBadge weather={dayWeather[dayIdx]} />
                 </h2>
-                <div className="space-y-3 border-l-2 border-gray-200 pl-4">
+                <div className="space-y-3 border-l-2 border-gray-200 pl-4 dark:border-gray-800">
                   {day.items.map((item) => {
                     const meta = itemTypeMeta[item.type];
                     return (
                       <div
                         key={item.id}
-                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid print:shadow-none print:border-gray-300"
+                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid print:shadow-none print:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-3">
@@ -117,24 +119,24 @@ export default async function PublicTripPage({
                             </span>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{item.title}</span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
                                 {item.startTime && (
-                                  <span className="text-xs text-gray-400">{item.startTime}</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">{item.startTime}</span>
                                 )}
                               </div>
                               {item.location && (
-                                <p className="text-sm text-gray-500">{item.location}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                               )}
                               {item.notes && (
-                                <p className="mt-1 text-sm text-gray-400">{item.notes}</p>
+                                <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">{item.notes}</p>
                               )}
                               {item.confirmationCode && (
-                                <p className="mt-1 text-xs text-gray-400">
+                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                   Confirmación: {item.confirmationCode}
                                 </p>
                               )}
                               {trip.showCostsToClient && item.cost !== undefined && (
-                                <p className="mt-1 text-xs text-gray-500">
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                   Costo: {formatCost(item.cost)}
                                 </p>
                               )}

@@ -47,7 +47,7 @@ export default async function DashboardPage({
       {upcomingUnpublishedTrips.length > 0 && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+          className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
         >
           <p className="font-semibold">
             {upcomingUnpublishedTrips.length === 1
@@ -68,10 +68,10 @@ export default async function DashboardPage({
       )}
 
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Mis viajes</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mis viajes</h1>
         <Link
           href="/dashboard/trips/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
         >
           + Nuevo viaje
         </Link>
@@ -89,12 +89,14 @@ export default async function DashboardPage({
               href={`/dashboard?page=${tripsPage - 1}&clientsPage=${clientsPageNum}`}
               aria-disabled={tripsPage <= 1}
               className={
-                tripsPage <= 1 ? "pointer-events-none text-gray-300" : "text-blue-600 hover:underline"
+                tripsPage <= 1
+                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
+                  : "text-blue-600 hover:underline dark:text-blue-400"
               }
             >
               ← Anteriores
             </Link>
-            <span className="text-gray-400">
+            <span className="text-gray-400 dark:text-gray-500">
               Página {tripsPage} de {tripsTotalPages}
             </span>
             <Link
@@ -102,8 +104,8 @@ export default async function DashboardPage({
               aria-disabled={tripsPage >= tripsTotalPages}
               className={
                 tripsPage >= tripsTotalPages
-                  ? "pointer-events-none text-gray-300"
-                  : "text-blue-600 hover:underline"
+                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
+                  : "text-blue-600 hover:underline dark:text-blue-400"
               }
             >
               Siguientes →
@@ -117,13 +119,13 @@ export default async function DashboardPage({
               aria-disabled={clientsPageNum <= 1}
               className={
                 clientsPageNum <= 1
-                  ? "pointer-events-none text-gray-300"
-                  : "text-blue-600 hover:underline"
+                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
+                  : "text-blue-600 hover:underline dark:text-blue-400"
               }
             >
               ← Anteriores
             </Link>
-            <span className="text-gray-400">
+            <span className="text-gray-400 dark:text-gray-500">
               Página {clientsPageNum} de {clientsTotalPages}
             </span>
             <Link
@@ -131,8 +133,8 @@ export default async function DashboardPage({
               aria-disabled={clientsPageNum >= clientsTotalPages}
               className={
                 clientsPageNum >= clientsTotalPages
-                  ? "pointer-events-none text-gray-300"
-                  : "text-blue-600 hover:underline"
+                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
+                  : "text-blue-600 hover:underline dark:text-blue-400"
               }
             >
               Siguientes →
