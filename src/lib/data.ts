@@ -1417,6 +1417,7 @@ export async function createDocument(input: {
   itemId: string;
   fileUrl: string;
   fileName: string;
+  mimeType?: string;
 }): Promise<ItemDocument> {
   if (!isSupabaseConfigured()) {
     return {
@@ -1424,13 +1425,19 @@ export async function createDocument(input: {
       itemId: input.itemId,
       fileUrl: input.fileUrl,
       fileName: input.fileName,
+      mimeType: input.mimeType,
       uploadedAt: new Date().toISOString(),
     };
   }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("documents")
-    .insert({ item_id: input.itemId, file_url: input.fileUrl, file_name: input.fileName })
+    .insert({
+      item_id: input.itemId,
+      file_url: input.fileUrl,
+      file_name: input.fileName,
+      mime_type: input.mimeType ?? null,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -1462,7 +1469,7 @@ export async function uploadItemDocument(itemId: string, file: File): Promise<It
     .from(DOCUMENTS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
   if (uploadError) throw uploadError;
-  return createDocument({ itemId, fileUrl: path, fileName: file.name });
+  return createDocument({ itemId, fileUrl: path, fileName: file.name, mimeType: file.type || undefined });
 }
 
 // Genera una URL firmada de corta duración para descargar/ver un documento
@@ -1499,6 +1506,7 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
     itemId: row.item_id as string,
     fileUrl: row.file_url as string,
     fileName: row.file_name as string,
+    mimeType: (row.mime_type as string | null) ?? undefined,
     uploadedAt: row.uploaded_at as string,
   };
 }

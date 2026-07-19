@@ -10,6 +10,56 @@ const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
 type DocWithUrl = ItemDocument & { url: string | null };
 
+function DocumentPreview({ doc }: { doc: DocWithUrl }) {
+  if (!doc.url) {
+    return <span className="truncate text-gray-700">{doc.fileName}</span>;
+  }
+
+  if (doc.mimeType?.startsWith("image/")) {
+    return (
+      <a
+        href={doc.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex min-w-0 items-center gap-2 text-blue-600 hover:underline"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={doc.url}
+          alt={doc.fileName}
+          className="h-8 w-8 shrink-0 rounded object-cover"
+        />
+        <span className="truncate">{doc.fileName}</span>
+      </a>
+    );
+  }
+
+  if (doc.mimeType === "application/pdf") {
+    return (
+      <a
+        href={doc.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex min-w-0 items-center gap-2 text-blue-600 hover:underline"
+      >
+        <span aria-hidden className="shrink-0 text-lg">📄</span>
+        <span className="truncate">{doc.fileName}</span>
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={doc.url}
+      target="_blank"
+      rel="noreferrer"
+      className="truncate text-blue-600 hover:underline"
+    >
+      {doc.fileName}
+    </a>
+  );
+}
+
 export function ItemFormDialog({
   trigger,
   item,
@@ -224,18 +274,7 @@ export function ItemFormDialog({
                 <ul className="mb-3 space-y-1">
                   {docs.map((doc) => (
                     <li key={doc.id} className="flex items-center justify-between gap-2 text-sm">
-                      {doc.url ? (
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="truncate text-blue-600 hover:underline"
-                        >
-                          {doc.fileName}
-                        </a>
-                      ) : (
-                        <span className="truncate text-gray-700">{doc.fileName}</span>
-                      )}
+                      <DocumentPreview doc={doc} />
                       <button
                         type="button"
                         onClick={() => handleDeleteDocument(doc.id)}
