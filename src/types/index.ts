@@ -57,6 +57,14 @@ export interface Trip {
   commissionRate?: number;
 }
 
+export interface TripStatusHistoryEntry {
+  id: string;
+  tripId: string;
+  fromStatus: TripStatus | null;
+  toStatus: TripStatus;
+  changedAt: string;
+}
+
 export interface TripDay {
   id: string;
   tripId: string;
@@ -117,6 +125,8 @@ export interface TripWithDetails extends Trip {
   client: Client;
   /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
   tags: Tag[];
+  /** Historial de transiciones de status, orden ascendente por changedAt. */
+  statusHistory: TripStatusHistoryEntry[];
   /** Fotos de la galería del viaje (0..N), ordenadas por sortOrder. */
   photos: (TripPhoto & { url: string | null })[];
   days: (TripDay & { items: Item[] })[];

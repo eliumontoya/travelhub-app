@@ -4,6 +4,7 @@ import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags, getTripById, getTripFeedbac
 import {
   itemTypeMeta,
   formatDateLong,
+  formatDateTime,
   formatAssignedClients,
   formatCost,
   formatTags,
@@ -357,6 +358,36 @@ export default async function TripEditorPage({
           onDelete={deletePackingItemAction.bind(null, trip.id)}
         />
       </div>
+
+      {trip.statusHistory.length > 0 && (
+        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:hidden dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Historial de estado</h2>
+          <ul className="space-y-1.5">
+            {[...trip.statusHistory].reverse().map((entry) => (
+              <li key={entry.id} className="flex flex-wrap items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-gray-400 dark:text-gray-500">{formatDateTime(entry.changedAt)}</span>
+                <span>
+                  {entry.fromStatus ? (
+                    <>
+                      {statusMeta[entry.fromStatus].label} →{" "}
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {statusMeta[entry.toStatus].label}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Creado como{" "}
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {statusMeta[entry.toStatus].label}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="space-y-6 print:space-y-3">
         {trip.days.map((day, dayWeatherIdx) => {

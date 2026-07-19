@@ -1,4 +1,16 @@
-import { Client, Trip, TripDay, Item, Tag, TripPhoto, TripWithDetails, SiteSettings, PackingItem, TripFeedback } from "@/types";
+import {
+  Client,
+  Trip,
+  TripDay,
+  Item,
+  Tag,
+  TripPhoto,
+  TripWithDetails,
+  TripStatusHistoryEntry,
+  SiteSettings,
+  PackingItem,
+  TripFeedback,
+} from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -85,6 +97,27 @@ export const mockTags: Tag[] = [
 export const mockTripTags: { tripId: string; tagId: string; createdAt: string }[] = [
   { tripId: "t1", tagId: "tg1", createdAt: "2026-07-01T09:00:00Z" },
   { tripId: "t2", tagId: "tg2", createdAt: "2026-07-05T09:00:00Z" },
+];
+
+// Historial mock de transiciones de status por viaje (issue #55), espejo de
+// la tabla trip_status_history (ver
+// supabase/migrations/0024_trip_status_history.sql). Append-only: nunca se
+// muta ni se borra una fila existente, solo se agregan nuevas.
+export const mockTripStatusHistory: TripStatusHistoryEntry[] = [
+  {
+    id: "tsh1",
+    tripId: "t1",
+    fromStatus: null,
+    toStatus: "draft",
+    changedAt: "2026-07-01T09:00:00Z",
+  },
+  {
+    id: "tsh2",
+    tripId: "t1",
+    fromStatus: "draft",
+    toStatus: "published",
+    changedAt: "2026-07-02T09:00:00Z",
+  },
 ];
 
 // Galería mock de fotos por viaje, espejo de la tabla trip_photos (ver
@@ -194,10 +227,13 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
         .filter((i) => i.tripDayId === day.id && !i.deletedAt)
         .sort((a, b) => a.sortOrder - b.sortOrder),
     }));
+  const statusHistory = mockTripStatusHistory
+    .filter((h) => h.tripId === trip.id)
+    .sort((a, b) => a.changedAt.localeCompare(b.changedAt));
   const packingItems = mockPackingItems
     .filter((p) => p.tripId === trip.id)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  return { ...trip, clients, client, tags, photos, days, packingItems };
+  return { ...trip, clients, client, tags, statusHistory, photos, days, packingItems };
 }
 
 export function getTripById(id: string): TripWithDetails | null {

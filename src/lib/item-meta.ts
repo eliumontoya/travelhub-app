@@ -42,6 +42,18 @@ export function formatDateShort(dateStr: string, lang: Lang = DEFAULT_LANG) {
   });
 }
 
+// Timestamp legible para entradas del historial de status del viaje (issue
+// #55): siempre es-MX, sin depender del toggle ES/EN de la vista pública.
+export function formatDateTime(isoStr: string) {
+  return new Date(isoStr).toLocaleString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatDateCompact(dateStr: string, lang: Lang = DEFAULT_LANG) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString(localeFor(lang), {
     weekday: "short",

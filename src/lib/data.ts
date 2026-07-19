@@ -1,4 +1,17 @@
-import { Client, Item, ItemDocument, PackingItem, SiteSettings, Tag, Trip, TripDay, TripFeedback, TripPhoto, TripWithDetails } from "@/types";
+import {
+  Client,
+  Item,
+  ItemDocument,
+  PackingItem,
+  SiteSettings,
+  Tag,
+  Trip,
+  TripDay,
+  TripFeedback,
+  TripPhoto,
+  TripStatusHistoryEntry,
+  TripWithDetails,
+} from "@/types";
 import {
   mockClients,
   mockTrips,
@@ -8,6 +21,7 @@ import {
   mockTripClients,
   mockTags,
   mockTripTags,
+  mockTripStatusHistory,
   mockTripFeedback,
   mockTripPhotos,
   mockPackingItems,
@@ -950,6 +964,8 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     return { ...day, items };
   });
 
+  const statusHistory = await getTripStatusHistory(trip.id);
+
   const { data: packingRows, error: packingError } = await supabase
     .from("packing_items")
     .select("*")
@@ -963,6 +979,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     clients,
     client,
     tags,
+    statusHistory,
     photos,
     days,
     packingItems,
@@ -1192,6 +1209,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (!isSupabaseConfigured()) {
     const trip = mockTrips.find((t) => t.id === id);
     if (!trip) throw new Error("Trip no encontrado");
+    const previousStatus = trip.status;
     if (input.title !== undefined) trip.title = input.title;
     if (input.slug !== undefined) trip.slug = input.slug;
     if (input.startDate !== undefined) trip.startDate = input.startDate;
@@ -1205,10 +1223,31 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
     if (input.salePrice !== undefined) trip.salePrice = input.salePrice ?? undefined;
     if (input.commissionRate !== undefined) trip.commissionRate = input.commissionRate ?? undefined;
+    if (input.status !== undefined && input.status !== previousStatus) {
+      mockTripStatusHistory.push({
+        id: uid(),
+        tripId: trip.id,
+        fromStatus: previousStatus,
+        toStatus: input.status,
+        changedAt: new Date().toISOString(),
+      });
+    }
     trip.updatedAt = new Date().toISOString();
     return trip;
   }
   const supabase = await createServerSupabase();
+
+  let previousStatus: Trip["status"] | undefined;
+  if (input.status !== undefined) {
+    const { data: currentRow, error: currentError } = await supabase
+      .from("trips")
+      .select("status")
+      .eq("id", id)
+      .maybeSingle();
+    if (currentError) throw currentError;
+    previousStatus = currentRow?.status as Trip["status"] | undefined;
+  }
+
   const patch: Record<string, unknown> = {};
   if (input.title !== undefined) patch.title = input.title;
   if (input.slug !== undefined) patch.slug = input.slug;
@@ -1225,7 +1264,43 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.commissionRate !== undefined) patch.commission_rate = input.commissionRate;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
+
+  if (input.status !== undefined && input.status !== previousStatus) {
+    const { error: historyError } = await supabase.from("trip_status_history").insert({
+      trip_id: id,
+      from_status: previousStatus ?? null,
+      to_status: input.status,
+    });
+    if (historyError) throw historyError;
+  }
+
   return rowToTrip(data);
+}
+
+export async function getTripStatusHistory(tripId: string): Promise<TripStatusHistoryEntry[]> {
+  if (!isSupabaseConfigured()) {
+    return mockTripStatusHistory
+      .filter((h) => h.tripId === tripId)
+      .sort((a, b) => a.changedAt.localeCompare(b.changedAt));
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trip_status_history")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("changed_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(rowToTripStatusHistory);
+}
+
+function rowToTripStatusHistory(row: Record<string, unknown>): TripStatusHistoryEntry {
+  return {
+    id: row.id as string,
+    tripId: row.trip_id as string,
+    fromStatus: (row.from_status as Trip["status"] | null) ?? null,
+    toStatus: row.to_status as Trip["status"],
+    changedAt: row.changed_at as string,
+  };
 }
 
 export type MonthlyTripCount = { label: string; count: number };
