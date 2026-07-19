@@ -11,6 +11,8 @@ export type TripStatus = "draft" | "published" | "archived";
 export interface Client {
   id: string;
   name: string;
+  /** Slug público para /c/{slug} (historial de viajes publicados). Nullable: solo se genera para clientes nuevos, sin backfill. */
+  slug?: string;
   email: string;
   phone: string;
   notes?: string;

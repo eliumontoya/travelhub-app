@@ -2,15 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient as createClientRecord, createTrip, getOrCreateTag } from "@/lib/data";
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+import { slugify } from "@/lib/slugify";
 
 export async function createTripAction(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
