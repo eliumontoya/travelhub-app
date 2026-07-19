@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { CommandPalette } from "@/components/CommandPalette";
 import { signOutAction } from "@/app/dashboard/settings/actions";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getClients, getTripsWithClients } from "@/lib/data";
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +19,8 @@ export default async function DashboardLayout({
     email = user?.email ?? null;
   }
 
+  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
@@ -27,6 +31,10 @@ export default async function DashboardLayout({
           <ProfileMenu email={email} signOutAction={signOutAction} />
         </div>
       </header>
+      <CommandPalette
+        clients={clients.map((c) => ({ id: c.id, name: c.name }))}
+        trips={trips.map((t) => ({ id: t.id, title: t.title }))}
+      />
       {children}
     </div>
   );
