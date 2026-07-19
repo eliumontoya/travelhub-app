@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClients, getTags, getTripById } from "@/lib/data";
+import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags, getTripById } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
@@ -43,7 +43,11 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, clients, tags] = await Promise.all([getTripById(id), getClients(), getTags()]);
+  const [trip, { items: clients }, tags] = await Promise.all([
+    getTripById(id),
+    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
+    getTags(),
+  ]);
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));

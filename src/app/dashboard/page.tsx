@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getClients, getTripsWithClients } from "@/lib/data";
+import { DEFAULT_PAGE_SIZE, getClients, getTripsWithClients } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
 
 const statusMeta = {
@@ -8,8 +8,28 @@ const statusMeta = {
   archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
 };
 
-export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+function parsePage(value: string | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; clientsPage?: string }>;
+}) {
+  const { page, clientsPage } = await searchParams;
+  const tripsPage = parsePage(page);
+  const clientsPageNum = parsePage(clientsPage);
+
+  const [{ items: trips, totalCount: tripsTotal }, { items: clients, totalCount: clientsTotal }] =
+    await Promise.all([
+      getTripsWithClients({ page: tripsPage }),
+      getClients({ page: clientsPageNum }),
+    ]);
+
+  const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
+  const clientsTotalPages = Math.max(1, Math.ceil(clientsTotal / DEFAULT_PAGE_SIZE));
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -62,6 +82,32 @@ export default async function DashboardPage() {
         })}
       </div>
 
+      <div className="mt-4 flex items-center justify-between text-sm">
+        <Link
+          href={`/dashboard?page=${tripsPage - 1}&clientsPage=${clientsPageNum}`}
+          aria-disabled={tripsPage <= 1}
+          className={
+            tripsPage <= 1 ? "pointer-events-none text-gray-300" : "text-blue-600 hover:underline"
+          }
+        >
+          ← Anteriores
+        </Link>
+        <span className="text-gray-400">
+          Página {tripsPage} de {tripsTotalPages}
+        </span>
+        <Link
+          href={`/dashboard?page=${tripsPage + 1}&clientsPage=${clientsPageNum}`}
+          aria-disabled={tripsPage >= tripsTotalPages}
+          className={
+            tripsPage >= tripsTotalPages
+              ? "pointer-events-none text-gray-300"
+              : "text-blue-600 hover:underline"
+          }
+        >
+          Siguientes →
+        </Link>
+      </div>
+
       <h2 className="mt-10 mb-4 text-lg font-semibold text-gray-900">Clientes</h2>
       <div className="grid gap-3">
         {clients.map((client) => (
@@ -74,6 +120,34 @@ export default async function DashboardPage() {
             <p className="text-sm text-gray-500">{client.email} · {client.phone}</p>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-sm">
+        <Link
+          href={`/dashboard?page=${tripsPage}&clientsPage=${clientsPageNum - 1}`}
+          aria-disabled={clientsPageNum <= 1}
+          className={
+            clientsPageNum <= 1
+              ? "pointer-events-none text-gray-300"
+              : "text-blue-600 hover:underline"
+          }
+        >
+          ← Anteriores
+        </Link>
+        <span className="text-gray-400">
+          Página {clientsPageNum} de {clientsTotalPages}
+        </span>
+        <Link
+          href={`/dashboard?page=${tripsPage}&clientsPage=${clientsPageNum + 1}`}
+          aria-disabled={clientsPageNum >= clientsTotalPages}
+          className={
+            clientsPageNum >= clientsTotalPages
+              ? "pointer-events-none text-gray-300"
+              : "text-blue-600 hover:underline"
+          }
+        >
+          Siguientes →
+        </Link>
       </div>
     </main>
   );

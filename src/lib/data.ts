@@ -21,6 +21,26 @@ function uid() {
   return crypto.randomUUID();
 }
 
+// ---------- Pagination ----------
+
+export const DEFAULT_PAGE_SIZE = 20;
+
+// Para selectores que necesitan el catálogo completo de clientes (asignar
+// cliente a un viaje), no la página paginada del dashboard. Un solo agente
+// de viajes no maneja miles de clientes, así que un límite alto basta.
+export const ALL_CLIENTS_PAGE_SIZE = 1000;
+
+export type PaginationParams = { page?: number; pageSize?: number };
+export type PaginatedResult<T> = { items: T[]; totalCount: number };
+
+function paginationBounds(params: PaginationParams) {
+  const page = params.page && params.page > 0 ? params.page : 1;
+  const pageSize = params.pageSize && params.pageSize > 0 ? params.pageSize : DEFAULT_PAGE_SIZE;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  return { page, pageSize, from, to };
+}
+
 // ---------- Clients ----------
 
 export type CreateClientInput = {
@@ -30,15 +50,19 @@ export type CreateClientInput = {
   notes?: string;
 };
 
-export async function getClients(): Promise<Client[]> {
-  if (!isSupabaseConfigured()) return mockClients;
+export async function getClients(params: PaginationParams = {}): Promise<PaginatedResult<Client>> {
+  const { from, to, pageSize } = paginationBounds(params);
+  if (!isSupabaseConfigured()) {
+    return { items: mockClients.slice(from, from + pageSize), totalCount: mockClients.length };
+  }
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("clients")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return data.map(rowToClient);
+  return { items: data.map(rowToClient), totalCount: count ?? 0 };
 }
 
 export async function getClientById(id: string): Promise<Client | null> {
@@ -274,50 +298,62 @@ export type UpdateTripInput = Partial<{
   status: Trip["status"];
 }>;
 
-export async function getTrips(): Promise<Trip[]> {
-  if (!isSupabaseConfigured()) return mockTrips;
+export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
+  const { from, to, pageSize } = paginationBounds(params);
+  if (!isSupabaseConfigured()) {
+    return { items: mockTrips.slice(from, from + pageSize), totalCount: mockTrips.length };
+  }
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return data.map(rowToTrip);
+  return { items: data.map(rowToTrip), totalCount: count ?? 0 };
 }
 
 // Query batcheada para el dashboard/list: trips + UN solo trip_clients.in()
 // + UN solo clients.in() (sin N+1 por fila) y SIN cargar days/items/documents
 // (solo lo que necesita la vista de lista). clients[] queda ordenado por
 // created_at asc (orden de asignación), igual que assembleTripWithDetails.
-export async function getTripsWithClients(): Promise<
-  (Trip & { clients: Client[]; tags: Tag[] })[]
-> {
+export async function getTripsWithClients(
+  params: PaginationParams = {}
+): Promise<PaginatedResult<Trip & { clients: Client[]; tags: Tag[] }>> {
+  const { from, to, pageSize } = paginationBounds(params);
+
   if (!isSupabaseConfigured()) {
-    return mockTrips.map((trip) => ({
-      ...trip,
-      clients: mockTripClients
-        .filter((tc) => tc.tripId === trip.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((tc) => mockClients.find((c) => c.id === tc.clientId))
-        .filter((c): c is Client => Boolean(c)),
-      tags: mockTripTags
-        .filter((tt) => tt.tripId === trip.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((tt) => mockTags.find((t) => t.id === tt.tagId))
-        .filter((t): t is Tag => Boolean(t)),
-    }));
+    const pageTrips = mockTrips.slice(from, from + pageSize);
+    return {
+      items: pageTrips.map((trip) => ({
+        ...trip,
+        clients: mockTripClients
+          .filter((tc) => tc.tripId === trip.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((tc) => mockClients.find((c) => c.id === tc.clientId))
+          .filter((c): c is Client => Boolean(c)),
+        tags: mockTripTags
+          .filter((tt) => tt.tripId === trip.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((tt) => mockTags.find((t) => t.id === tt.tagId))
+          .filter((t): t is Tag => Boolean(t)),
+      })),
+      totalCount: mockTrips.length,
+    };
   }
 
   const supabase = await createServerSupabase();
-  const { data: tripRows, error } = await supabase
+  const { data: tripRows, error, count } = await supabase
     .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
 
   const trips = (tripRows ?? []).map(rowToTrip);
+  const totalCount = count ?? 0;
   const tripIds = trips.map((t) => t.id);
-  if (!tripIds.length) return [];
+  if (!tripIds.length) return { items: [], totalCount };
 
   const { data: linkRows, error: linksError } = await supabase
     .from("trip_clients")
@@ -355,17 +391,20 @@ export async function getTripsWithClients(): Promise<
     tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
   }
 
-  return trips.map((trip) => ({
-    ...trip,
-    clients: (linkRows ?? [])
-      .filter((l) => l.trip_id === trip.id)
-      .map((l) => clientsById.get(l.client_id as string))
-      .filter((c): c is Client => Boolean(c)),
-    tags: (tagLinkRows ?? [])
-      .filter((l) => l.trip_id === trip.id)
-      .map((l) => tagsById.get(l.tag_id as string))
-      .filter((t): t is Tag => Boolean(t)),
-  }));
+  return {
+    items: trips.map((trip) => ({
+      ...trip,
+      clients: (linkRows ?? [])
+        .filter((l) => l.trip_id === trip.id)
+        .map((l) => clientsById.get(l.client_id as string))
+        .filter((c): c is Client => Boolean(c)),
+      tags: (tagLinkRows ?? [])
+        .filter((l) => l.trip_id === trip.id)
+        .map((l) => tagsById.get(l.tag_id as string))
+        .filter((t): t is Tag => Boolean(t)),
+    })),
+    totalCount,
+  };
 }
 
 // Devuelve todos los viajes asignados a un cliente vía trip_clients (fuente
