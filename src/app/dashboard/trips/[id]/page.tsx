@@ -10,6 +10,11 @@ import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import {
+  TripEditorShortcuts,
+  ADD_DAY_TRIGGER_ID,
+  ADD_ITEM_LAST_DAY_TRIGGER_ID,
+} from "@/components/TripEditorShortcuts";
+import {
   addDayAction,
   addItemAction,
   deleteDayAction,
@@ -138,6 +143,7 @@ export default async function TripEditorPage({
         {trip.days.map((day) => {
           const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
           const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
+          const isLastDay = dayIdx === dayOrder.length - 1;
 
           return (
             <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
@@ -219,7 +225,10 @@ export default async function TripEditorPage({
 
                 <ItemFormDialog
                   trigger={
-                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                    <button
+                      id={isLastDay ? ADD_ITEM_LAST_DAY_TRIGGER_ID : undefined}
+                      className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50"
+                    >
                       + Agregar item
                     </button>
                   }
@@ -232,13 +241,18 @@ export default async function TripEditorPage({
 
         <DayFormDialog
           trigger={
-            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50">
+            <button
+              id={ADD_DAY_TRIGGER_ID}
+              className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50"
+            >
               + Agregar día
             </button>
           }
           onSubmit={addDayAction.bind(null, trip.id)}
         />
       </div>
+
+      <TripEditorShortcuts />
     </main>
   );
 }
