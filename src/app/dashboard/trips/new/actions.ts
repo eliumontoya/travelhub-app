@@ -7,6 +7,9 @@ import {
   createTripFromTemplate,
   getOrCreateTag,
 } from "@/lib/data";
+import { TripCurrency } from "@/types";
+
+const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
 function slugify(text: string) {
   return text
@@ -22,6 +25,8 @@ export async function createTripAction(formData: FormData) {
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");
   const instructions = String(formData.get("instructions") ?? "").trim() || undefined;
+  const rawCurrency = String(formData.get("currency") ?? "MXN") as TripCurrency;
+  const currency = validCurrencies.includes(rawCurrency) ? rawCurrency : "MXN";
   const travelerCountRaw = Number(formData.get("travelerCount"));
   const travelerCount = Number.isFinite(travelerCountRaw) && travelerCountRaw >= 1
     ? Math.floor(travelerCountRaw)
@@ -65,6 +70,7 @@ export async function createTripAction(formData: FormData) {
     instructions,
     travelerCount,
     tagIds,
+    currency,
   };
   const trip = templateId
     ? await createTripFromTemplate(templateId, tripInput)

@@ -449,6 +449,7 @@ export type CreateTripInput = {
   instructions?: string;
   travelerCount?: number;
   tagIds?: string[];
+  currency?: Trip["currency"];
   isTemplate?: boolean;
 };
 
@@ -462,6 +463,7 @@ export type UpdateTripInput = Partial<{
   travelerCount: number;
   budget: number | null;
   status: Trip["status"];
+  currency: Trip["currency"];
   showCostsToClient: boolean;
 }>;
 
@@ -850,6 +852,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       instructions: input.instructions,
       travelerCount: input.travelerCount ?? 1,
       status: "draft",
+      currency: input.currency ?? "MXN",
       isTemplate,
       showCostsToClient: false,
       createdAt: now,
@@ -883,6 +886,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       end_date: input.endDate || null,
       cover_image_url: input.coverImageUrl,
       instructions: input.instructions ?? null,
+      currency: input.currency ?? "MXN",
       traveler_count: input.travelerCount ?? 1,
       is_template: isTemplate,
     })
@@ -1057,6 +1061,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.travelerCount !== undefined) trip.travelerCount = input.travelerCount;
     if (input.budget !== undefined) trip.budget = input.budget ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
+    if (input.currency !== undefined) trip.currency = input.currency;
     if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
     trip.updatedAt = new Date().toISOString();
     return trip;
@@ -1072,6 +1077,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.travelerCount !== undefined) patch.traveler_count = input.travelerCount;
   if (input.budget !== undefined) patch.budget = input.budget;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.currency !== undefined) patch.currency = input.currency;
   if (input.showCostsToClient !== undefined) patch.show_costs_to_client = input.showCostsToClient;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
@@ -1125,6 +1131,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     travelerCount: (row.traveler_count as number) ?? 1,
     budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
     status: row.status as Trip["status"],
+    currency: (row.currency as Trip["currency"]) ?? "MXN",
     isTemplate: Boolean(row.is_template),
     showCostsToClient: Boolean(row.show_costs_to_client),
     createdAt: row.created_at as string,

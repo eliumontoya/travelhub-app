@@ -1,4 +1,4 @@
-import { Client, ItemType, Tag, TripWithDetails } from "@/types";
+import { Client, ItemType, Tag, TripCurrency, TripWithDetails } from "@/types";
 import { DEFAULT_LANG, Lang, localeFor } from "@/lib/i18n";
 
 // label es fijo en español: se usa en el dashboard interno (fuera del alcance
@@ -10,6 +10,12 @@ export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color
   restaurant: { label: "Restaurante", icon: "🍽️", color: "bg-rose-100 text-rose-700" },
   transport: { label: "Transporte", icon: "🚗", color: "bg-emerald-100 text-emerald-700" },
   note: { label: "Nota", icon: "📝", color: "bg-gray-100 text-gray-700" },
+};
+
+export const currencyMeta: Record<TripCurrency, { label: string; locale: string }> = {
+  MXN: { label: "MXN — Peso mexicano", locale: "es-MX" },
+  USD: { label: "USD — Dólar estadounidense", locale: "en-US" },
+  EUR: { label: "EUR — Euro", locale: "es-ES" },
 };
 
 export function formatDateLong(dateStr: string, lang: Lang = DEFAULT_LANG) {
@@ -106,12 +112,13 @@ export function computeTripCompleteness(trip: TripWithDetails): TripCompleteness
   return { totalItems, itemsWithDocuments, documentPercentage, emptyDays };
 }
 
-// Formato genérico de moneda para el resumen de costos (issue #35). Sin
-// símbolo de divisa fijo en el dominio (la app no modela multi-moneda aún),
-// por lo que se usa un formato numérico simple con separador de miles.
-export function formatCost(value: number): string {
-  return new Intl.NumberFormat("es-MX", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+// Formato de moneda para el resumen de costos (issue #35, extendido por
+// issue #44 con soporte multi-moneda). Sin conversión de tipo de cambio:
+// solo aplica el símbolo/locale de la moneda del viaje elegida.
+// `currency` es opcional y cae a "MXN" para datos mock/antiguos sin el campo.
+export function formatCost(value: number, currency: TripCurrency = "MXN"): string {
+  return new Intl.NumberFormat(currencyMeta[currency].locale, {
+    style: "currency",
+    currency,
   }).format(value);
 }

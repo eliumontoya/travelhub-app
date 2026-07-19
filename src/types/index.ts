@@ -8,6 +8,8 @@ export type ItemType =
 
 export type TripStatus = "draft" | "published" | "archived";
 
+export type TripCurrency = "MXN" | "USD" | "EUR";
+
 export interface Client {
   id: string;
   name: string;
@@ -36,6 +38,7 @@ export interface Trip {
   travelerCount: number;
   budget?: number;
   status: TripStatus;
+  currency: TripCurrency;
   /** Viajes plantilla (issue #31) no tienen cliente y se excluyen de los listados normales. */
   isTemplate: boolean;
   /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */

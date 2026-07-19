@@ -125,7 +125,7 @@ export default async function PublicTripPage({
           {trip.showCostsToClient && (
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
-              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCost(totalCost)}</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCost(totalCost, trip.currency)}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
             </div>
           )}
@@ -173,7 +173,7 @@ export default async function PublicTripPage({
                               )}
                               {trip.showCostsToClient && item.cost !== undefined && (
                                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                  Costo: {formatCost(item.cost)}
+                                  Costo: {formatCost(item.cost, trip.currency)}
                                 </p>
                               )}
                               {item.lat !== undefined && item.lng !== undefined && (

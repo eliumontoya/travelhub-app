@@ -12,6 +12,7 @@ import {
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripCurrencyDialog } from "@/components/TripCurrencyDialog";
 import { TripTravelerCountDialog } from "@/components/TripTravelerCountDialog";
 import { TripBudgetDialog } from "@/components/TripBudgetDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
@@ -56,6 +57,7 @@ import {
   setTripTagsAction,
   togglePackingItemAction,
   updateTripBudgetAction,
+  updateTripCurrencyAction,
   updateTripInstructionsAction,
   updateTripTravelerCountAction,
   uploadDocumentAction,
@@ -194,6 +196,18 @@ export default async function TripEditorPage({
             }
             onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
           />
+          <TripCurrencyDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Moneda ({trip.currency})
+              </button>
+            }
+            onSubmit={updateTripCurrencyAction.bind(null, trip.id)}
+          />
           <TripTravelerCountDialog
             trip={trip}
             trigger={
@@ -257,13 +271,13 @@ export default async function TripEditorPage({
         <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-sm sm:p-5 print:hidden dark:border-gray-800 dark:bg-gray-900">
           <div>
             <span className="text-gray-500 dark:text-gray-400">Costo total: </span>
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCost(totalCost)}</span>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCost(totalCost, trip.currency)}</span>
           </div>
           {trip.budget !== undefined && (
             <>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Presupuesto: </span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCost(trip.budget)}</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCost(trip.budget, trip.currency)}</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">
@@ -276,7 +290,7 @@ export default async function TripEditorPage({
                       : "text-green-700 dark:text-green-400"
                   }`}
                 >
-                  {formatCost(Math.abs(budgetDiff ?? 0))}
+                  {formatCost(Math.abs(budgetDiff ?? 0), trip.currency)}
                 </span>
               </div>
             </>
@@ -379,7 +393,7 @@ export default async function TripEditorPage({
                           <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                         )}
                         {item.cost !== undefined && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">Costo: {formatCost(item.cost)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Costo: {formatCost(item.cost, trip.currency)}</p>
                         )}
                         {item.confirmationCode && (
                           <p className="text-xs text-gray-400 dark:text-gray-500">
