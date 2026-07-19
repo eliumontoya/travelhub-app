@@ -96,6 +96,7 @@ relevantes (`.env.local` en dev, configuradas en Vercel para producción):
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — conexión pública a Supabase
 - `SUPABASE_SERVICE_ROLE_KEY` — uso server-side únicamente, nunca exponer al cliente
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — opcional, activa autocomplete de ubicación y mapa embebido
+- `FLIGHT_API_KEY` — opcional, server-side, activa el estado en vivo de vuelos (Aviationstack) en items tipo `flight`
 
 ## Deploy
 
