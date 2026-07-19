@@ -12,6 +12,7 @@ import {
 import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
+import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
 import { DashboardExplorer } from "./DashboardExplorer";
 
 function parsePage(value: string | undefined): number {
@@ -98,6 +99,10 @@ export default async function DashboardPage({
 
       <div className="mt-10">
         <TripsTrendChart data={tripsPerMonth} />
+      </div>
+
+      <div className="mt-8">
+        <IntegrationsStatusCard />
       </div>
 
       {recentActivity.length > 0 && (
