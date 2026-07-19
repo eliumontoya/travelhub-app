@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getClients, getTripsWithClients } from "@/lib/data";
+import { getClientsWithTags, getTripsWithClients } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
 
 const statusMeta = {
@@ -9,7 +9,7 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+  const [clients, trips] = await Promise.all([getClientsWithTags(), getTripsWithClients()]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -72,6 +72,18 @@ export default async function DashboardPage() {
           >
             <p className="font-medium text-gray-900">{client.name}</p>
             <p className="text-sm text-gray-500">{client.email} · {client.phone}</p>
+            {client.tags.length > 0 && (
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {formatTags(client.tags).map((name) => (
+                  <li
+                    key={name}
+                    className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Link>
         ))}
       </div>
