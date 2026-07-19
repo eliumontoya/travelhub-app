@@ -57,6 +57,7 @@ export type CreateClientInput = {
   email?: string;
   phone?: string;
   notes?: string;
+  referralSource?: string;
   birthDate?: string;
 };
 
@@ -116,6 +117,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       email: input.email ?? "",
       phone: input.phone ?? "",
       notes: input.notes,
+      referralSource: input.referralSource ?? null,
       birthDate: input.birthDate,
       createdAt: now,
       updatedAt: now,
@@ -132,6 +134,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       email: input.email,
       phone: input.phone,
       notes: input.notes,
+      referral_source: input.referralSource,
       birth_date: input.birthDate || null,
     })
     .select()
@@ -148,6 +151,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
     if (input.notes !== undefined) client.notes = input.notes;
+    if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
     if (input.birthDate !== undefined) client.birthDate = input.birthDate;
     client.updatedAt = new Date().toISOString();
     return client;
@@ -158,6 +162,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
   if (input.email !== undefined) patch.email = input.email;
   if (input.phone !== undefined) patch.phone = input.phone;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.referralSource !== undefined) patch.referral_source = input.referralSource || null;
   if (input.birthDate !== undefined) patch.birth_date = input.birthDate || null;
   const { data, error } = await supabase.from("clients").update(patch).eq("id", id).select().single();
   if (error) throw error;
@@ -172,10 +177,24 @@ function rowToClient(row: Record<string, unknown>): Client {
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
     notes: (row.notes as string) ?? undefined,
+    referralSource: (row.referral_source as string) ?? null,
     birthDate: (row.birth_date as string) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: (row.updated_at as string) ?? (row.created_at as string),
   };
+}
+
+// Cuenta clientes por referral_source para el widget de desglose del
+// dashboard. null/"" se agrupa bajo la clave "" (el caller la muestra como
+// "Sin especificar").
+export async function getClientReferralSourceCounts(): Promise<Record<string, number>> {
+  const { items: clients } = await getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE });
+  const counts: Record<string, number> = {};
+  for (const client of clients) {
+    const key = client.referralSource?.trim() || "";
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
 }
 
 // Calcula en cuántos días cae la próxima ocurrencia del cumpleaños (solo

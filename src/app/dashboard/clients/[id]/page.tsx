@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClientById, getClientTags, getClientTripSummary, getTags, getTripsByClientId } from "@/lib/data";
-import { formatDateShort, formatTags } from "@/lib/item-meta";
+import { formatDateShort, formatTags, REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { setClientTagsAction, updateClientAction } from "./actions";
 
@@ -131,6 +131,21 @@ export default async function ClientDetailPage({
               rows={3}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Cómo llegó el cliente</label>
+            <select
+              name="referralSource"
+              defaultValue={client.referralSource ?? ""}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">Sin especificar</option>
+              {REFERRAL_SOURCE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"

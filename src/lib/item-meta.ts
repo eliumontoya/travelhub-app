@@ -12,6 +12,14 @@ export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color
   note: { label: "Nota", icon: "📝", color: "bg-gray-100 text-gray-700" },
 };
 
+export const REFERRAL_SOURCE_OPTIONS = [
+  "Referido",
+  "Redes sociales",
+  "Recurrente",
+  "Búsqueda web",
+  "Otro",
+] as const;
+
 export const currencyMeta: Record<TripCurrency, { label: string; locale: string }> = {
   MXN: { label: "MXN — Peso mexicano", locale: "es-MX" },
   USD: { label: "USD — Dólar estadounidense", locale: "en-US" },

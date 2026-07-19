@@ -18,6 +18,7 @@ export interface Client {
   email: string;
   phone: string;
   notes?: string;
+  referralSource?: string | null;
   birthDate?: string;
   createdAt: string;
   updatedAt: string;

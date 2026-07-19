@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   DEFAULT_PAGE_SIZE,
+  getClientReferralSourceCounts,
   getClientsWithTags,
   getRecentActivity,
   getTags,
@@ -14,6 +15,7 @@ import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
 import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
+import { ClientsByReferralSourceCard } from "@/components/ClientsByReferralSourceCard";
 import { DashboardExplorer } from "./DashboardExplorer";
 
 function parsePage(value: string | undefined): number {
@@ -49,6 +51,7 @@ export default async function DashboardPage({
     recentActivity,
     tripsPerMonth,
     upcomingBirthdays,
+    referralSourceCounts,
   ] = await Promise.all([
     getTripsWithClients({ page: tripsPage }),
     getClientsWithTags({ page: clientsPageNum }),
@@ -58,6 +61,7 @@ export default async function DashboardPage({
     getRecentActivity(),
     getTripsPerMonth(),
     getUpcomingBirthdays(),
+    getClientReferralSourceCounts(),
   ]);
 
   const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
@@ -136,6 +140,8 @@ export default async function DashboardPage({
       <div className="mt-8">
         <IntegrationsStatusCard />
       </div>
+
+      <ClientsByReferralSourceCard counts={referralSourceCounts} />
 
       {recentActivity.length > 0 && (
         <section className="mb-8 mt-6">

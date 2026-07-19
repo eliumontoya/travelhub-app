@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Client } from "@/types";
 import { createClientAction } from "@/app/dashboard/clients/actions";
+import { REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
 
 export function CreateClientDialog({
   open,
@@ -92,6 +93,25 @@ export function CreateClientDialog({
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             placeholder="+54 11 1234-5678"
           />
+        </div>
+
+        <div>
+          <label htmlFor="client-referral-source" className="block text-sm font-medium text-gray-700">
+            Cómo llegó el cliente
+          </label>
+          <select
+            id="client-referral-source"
+            name="referralSource"
+            defaultValue=""
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="">Sin especificar</option>
+            {REFERRAL_SOURCE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
