@@ -33,6 +33,8 @@ export interface Trip {
   coverImageUrl?: string;
   instructions?: string;
   status: TripStatus;
+  /** Viajes plantilla (issue #31) no tienen cliente y se excluyen de los listados normales. */
+  isTemplate: boolean;
   createdAt: string;
 }
 

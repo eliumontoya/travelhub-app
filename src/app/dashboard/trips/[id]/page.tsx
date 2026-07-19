@@ -7,6 +7,7 @@ import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
+import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import {
@@ -21,6 +22,7 @@ import {
   moveDayAction,
   moveItemAction,
   publishTripStatusAction,
+  saveTripAsTemplateAction,
   setTripClientsAction,
   setTripTagsAction,
   updateTripInstructionsAction,
@@ -131,6 +133,18 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <SaveAsTemplateDialog
+            defaultTitle={trip.title}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Guardar como plantilla
+              </button>
+            }
+            onSubmit={saveTripAsTemplateAction.bind(null, trip.id)}
+          />
         </div>
       </div>
 

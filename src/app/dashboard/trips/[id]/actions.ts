@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   createItem,
@@ -11,6 +12,7 @@ import {
   getOrCreateTag,
   reorderItems,
   reorderTripDays,
+  saveTripAsTemplate,
   setTripClients,
   setTripTags,
   updateItem,
@@ -178,4 +180,12 @@ export async function deleteDocumentAction(tripId: string, documentId: string) {
 
 export async function getItemDocumentsAction(itemId: string) {
   return getItemDocuments(itemId);
+}
+
+export async function saveTripAsTemplateAction(tripId: string, formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return;
+  const template = await saveTripAsTemplate(tripId, title);
+  revalidatePath("/dashboard/trips/new");
+  redirect(`/dashboard/trips/${template.id}`);
 }
