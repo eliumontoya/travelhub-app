@@ -187,6 +187,19 @@ export function ItemFormDialog({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Costo</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              name="cost"
+              defaultValue={item?.cost}
+              placeholder="Solo visible internamente salvo que actives el resumen de costos"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+
           {item && (
             <div className="border-t border-gray-100 pt-4">
               <label className="mb-2 block text-sm font-medium text-gray-700">
