@@ -17,6 +17,7 @@ export interface Client {
   phone: string;
   notes?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tag {
@@ -34,9 +35,16 @@ export interface Trip {
   endDate: string;
   coverImageUrl?: string;
   instructions?: string;
+  travelerCount: number;
+  budget?: number;
   status: TripStatus;
   currency: TripCurrency;
+  /** Viajes plantilla (issue #31) no tienen cliente y se excluyen de los listados normales. */
+  isTemplate: boolean;
+  /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */
+  showCostsToClient: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface TripDay {
@@ -45,6 +53,7 @@ export interface TripDay {
   date: string;
   notes?: string;
   sortOrder: number;
+  deletedAt?: string;
 }
 
 export interface ItemDocument {
@@ -52,7 +61,17 @@ export interface ItemDocument {
   itemId: string;
   fileUrl: string;
   fileName: string;
+  mimeType?: string;
   uploadedAt: string;
+}
+
+export interface TripPhoto {
+  id: string;
+  tripId: string;
+  filePath: string;
+  fileName: string;
+  sortOrder: number;
+  createdAt: string;
 }
 
 export interface Item {
@@ -67,8 +86,18 @@ export interface Item {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder: number;
   documents?: ItemDocument[];
+  deletedAt?: string;
+}
+
+export interface PackingItem {
+  id: string;
+  tripId: string;
+  label: string;
+  checked: boolean;
+  sortOrder: number;
 }
 
 export interface TripWithDetails extends Trip {
@@ -78,7 +107,11 @@ export interface TripWithDetails extends Trip {
   client: Client;
   /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
   tags: Tag[];
+  /** Fotos de la galería del viaje (0..N), ordenadas por sortOrder. */
+  photos: (TripPhoto & { url: string | null })[];
   days: (TripDay & { items: Item[] })[];
+  /** Checklist de equipaje del viaje (0..N), ordenado por sortOrder. */
+  packingItems: PackingItem[];
 }
 
 export interface SiteSettings {
