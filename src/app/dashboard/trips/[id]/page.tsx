@@ -9,6 +9,8 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { WeatherBadge } from "@/components/WeatherBadge";
+import { getDailyWeather } from "@/lib/weather";
 import {
   addDayAction,
   addItemAction,
@@ -47,6 +49,13 @@ export default async function TripEditorPage({
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+
+  const dayWeather = await Promise.all(
+    trip.days.map((day) => {
+      const withLocation = day.items.find((item) => item.lat !== undefined && item.lng !== undefined);
+      return getDailyWeather(withLocation?.lat, withLocation?.lng, day.date);
+    })
+  );
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -135,15 +144,16 @@ export default async function TripEditorPage({
       </div>
 
       <div className="space-y-6">
-        {trip.days.map((day) => {
+        {trip.days.map((day, dayWeatherIdx) => {
           const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
           const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
 
           return (
             <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
               <div className="mb-4 flex items-center justify-between gap-2">
-                <h3 className="font-semibold capitalize text-gray-900">
+                <h3 className="flex items-center gap-2 font-semibold capitalize text-gray-900">
                   {formatDateLong(day.date)}
+                  <WeatherBadge weather={dayWeather[dayWeatherIdx]} />
                 </h3>
                 <div className="flex items-center gap-2">
                   <ReorderButtons
