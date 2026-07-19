@@ -1,0 +1,50 @@
+"use client";
+
+import { useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Lang, LANG_QUERY_PARAM, LANG_STORAGE_KEY, isLang } from "@/lib/i18n";
+
+export function LanguageToggle({ lang }: { lang: Lang }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get(LANG_QUERY_PARAM)) return;
+    const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
+    if (isLang(stored) && stored !== lang) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set(LANG_QUERY_PARAM, stored);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function setLang(next: Lang) {
+    window.localStorage.setItem(LANG_STORAGE_KEY, next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(LANG_QUERY_PARAM, next);
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
+  return (
+    <div className="inline-flex overflow-hidden rounded-md border border-white/40 text-xs">
+      <button
+        type="button"
+        onClick={() => setLang("es")}
+        aria-pressed={lang === "es"}
+        className={`px-2 py-1 ${lang === "es" ? "bg-white text-gray-900" : "text-white/80 hover:bg-white/10"}`}
+      >
+        ES
+      </button>
+      <button
+        type="button"
+        onClick={() => setLang("en")}
+        aria-pressed={lang === "en"}
+        className={`px-2 py-1 ${lang === "en" ? "bg-white text-gray-900" : "text-white/80 hover:bg-white/10"}`}
+      >
+        EN
+      </button>
+    </div>
+  );
+}
