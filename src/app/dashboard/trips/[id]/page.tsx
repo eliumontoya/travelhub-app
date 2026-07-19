@@ -32,9 +32,9 @@ const documentsEnabled = Boolean(
 );
 
 const statusMeta = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
-  published: { label: "Publicado", color: "bg-green-100 text-green-700" },
-  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
+  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
+  published: { label: "Publicado", color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" },
+  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500" },
 };
 
 export default async function TripEditorPage({
@@ -50,25 +50,25 @@ export default async function TripEditorPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
+      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline dark:text-gray-400">
         ← Volver
       </Link>
 
       <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{trip.title}</h1>
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta[trip.status].color}`}>
               {statusMeta[trip.status].label}
             </span>
           </div>
-          <p className="text-sm text-gray-500">{formatAssignedClients(trip.clients)}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
           {trip.tags.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1.5">
               {formatTags(trip.tags).map((name) => (
                 <li
                   key={name}
-                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                 >
                   {name}
                 </li>
@@ -80,7 +80,7 @@ export default async function TripEditorPage({
           <form action={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}>
             <button
               type="submit"
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
             >
               {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
             </button>
@@ -91,7 +91,7 @@ export default async function TripEditorPage({
             trigger={
               <button
                 type="button"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Gestionar clientes
               </button>
@@ -104,7 +104,7 @@ export default async function TripEditorPage({
             trigger={
               <button
                 type="button"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Gestionar tags
               </button>
@@ -116,7 +116,7 @@ export default async function TripEditorPage({
             trigger={
               <button
                 type="button"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Instrucciones
               </button>
@@ -126,7 +126,7 @@ export default async function TripEditorPage({
           <Link
             href={`/t/${trip.slug}`}
             target="_blank"
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             Vista previa
           </Link>
@@ -140,9 +140,9 @@ export default async function TripEditorPage({
           const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
 
           return (
-            <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+            <div key={day.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 dark:border-gray-800 dark:bg-gray-900">
               <div className="mb-4 flex items-center justify-between gap-2">
-                <h3 className="font-semibold capitalize text-gray-900">
+                <h3 className="font-semibold capitalize text-gray-900 dark:text-gray-100">
                   {formatDateLong(day.date)}
                 </h3>
                 <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export default async function TripEditorPage({
                   <DayFormDialog
                     day={day}
                     trigger={
-                      <button className="text-sm text-gray-400 hover:text-gray-600">✏️</button>
+                      <button className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">✏️</button>
                     }
                     onSubmit={editDayAction.bind(null, trip.id, day.id)}
                     onDelete={deleteDayAction.bind(null, trip.id, day.id)}
@@ -170,23 +170,23 @@ export default async function TripEditorPage({
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col gap-2 rounded-lg border border-gray-100 p-3 sm:flex-row sm:items-start"
+                      className="flex flex-col gap-2 rounded-lg border border-gray-100 p-3 sm:flex-row sm:items-start dark:border-gray-800"
                     >
                       <span className={`w-fit rounded-full px-2 py-1 text-lg ${meta.color}`}>
                         {meta.icon}
                       </span>
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-gray-900">{item.title}</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
                           {item.startTime && (
-                            <span className="text-xs text-gray-400">{item.startTime}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{item.startTime}</span>
                           )}
                         </div>
                         {item.location && (
-                          <p className="text-sm text-gray-500">{item.location}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                         )}
                         {item.confirmationCode && (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
                             Confirmación: {item.confirmationCode}
                           </p>
                         )}
@@ -201,7 +201,7 @@ export default async function TripEditorPage({
                         <ItemFormDialog
                           item={item}
                           trigger={
-                            <button className="text-sm text-gray-400 hover:text-gray-600">
+                            <button className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                               ✏️
                             </button>
                           }
@@ -219,7 +219,7 @@ export default async function TripEditorPage({
 
                 <ItemFormDialog
                   trigger={
-                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50">
+                    <button className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800">
                       + Agregar item
                     </button>
                   }
@@ -232,7 +232,7 @@ export default async function TripEditorPage({
 
         <DayFormDialog
           trigger={
-            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50">
+            <button className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800">
               + Agregar día
             </button>
           }
