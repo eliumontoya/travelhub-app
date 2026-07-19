@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { getClients, getTripStats, getTripsWithClients } from "@/lib/data";
+import {
+  getClientsWithTags,
+  getTripStats,
+  getTripsWithClients,
+  getUpcomingUnpublishedTrips,
+} from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 
@@ -10,14 +15,38 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips, stats] = await Promise.all([
-    getClients(),
+  const [clients, trips, stats, upcomingUnpublishedTrips] = await Promise.all([
+    getClientsWithTags(),
     getTripsWithClients(),
     getTripStats(),
+    getUpcomingUnpublishedTrips(),
   ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
+      {upcomingUnpublishedTrips.length > 0 && (
+        <div
+          role="alert"
+          className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          <p className="font-semibold">
+            {upcomingUnpublishedTrips.length === 1
+              ? "1 viaje empieza en menos de 7 días y sigue en borrador"
+              : `${upcomingUnpublishedTrips.length} viajes empiezan en menos de 7 días y siguen en borrador`}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {upcomingUnpublishedTrips.map((trip) => (
+              <li key={trip.id}>
+                <Link href={`/dashboard/trips/${trip.id}`} className="underline hover:no-underline">
+                  {trip.title}
+                </Link>{" "}
+                · inicia {formatDateShort(trip.startDate)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Mis viajes</h1>
         <Link
@@ -79,6 +108,18 @@ export default async function DashboardPage() {
           >
             <p className="font-medium text-gray-900">{client.name}</p>
             <p className="text-sm text-gray-500">{client.email} · {client.phone}</p>
+            {client.tags.length > 0 && (
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {formatTags(client.tags).map((name) => (
+                  <li
+                    key={name}
+                    className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Link>
         ))}
       </div>
