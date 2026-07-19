@@ -18,6 +18,7 @@ import { TripTagsManager } from "@/components/TripTagsManager";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
@@ -29,6 +30,7 @@ import {
   deleteDayAction,
   deleteDocumentAction,
   deleteItemAction,
+  duplicateTripAction,
   deletePackingItemAction,
   editDayAction,
   editItemAction,
@@ -194,6 +196,7 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <DuplicateTripButton onDuplicate={duplicateTripAction.bind(null, trip.id)} />
           <PrintButton />
         </div>
       </div>

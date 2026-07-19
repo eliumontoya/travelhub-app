@@ -1,8 +1,10 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   createItem,
+  createTrip,
   createPackingItem,
   createTripDay,
   deleteDocument,
@@ -11,6 +13,7 @@ import {
   deleteTripDay,
   getItemDocuments,
   getOrCreateTag,
+  getTripById,
   reorderItems,
   reorderTripDays,
   restoreItem,
@@ -28,6 +31,15 @@ import { ItemType } from "@/types";
 function parseCoord(raw: FormDataEntryValue | null): number | undefined {
   const value = String(raw ?? "").trim();
   return value ? Number(value) : undefined;
+}
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 function parseCost(raw: FormDataEntryValue | null): number | undefined {
@@ -233,4 +245,53 @@ export async function deleteDocumentAction(tripId: string, documentId: string) {
 
 export async function getItemDocumentsAction(itemId: string) {
   return getItemDocuments(itemId);
+}
+
+// Clona un viaje completo (días + items, sin documentos) en un nuevo viaje en
+// estado draft. Conserva los clientes asignados porque createTrip exige al
+// menos 1 (regla de negocio en data.ts); título y slug quedan marcados como
+// copia para que el usuario ajuste fechas/detalles del nuevo itinerario.
+export async function duplicateTripAction(tripId: string) {
+  const trip = await getTripById(tripId);
+  if (!trip) return;
+
+  const slugBase = slugify(trip.title) || "viaje";
+  const slug = `${slugBase}-copia-${Date.now().toString(36)}`;
+
+  const newTrip = await createTrip({
+    clientIds: trip.clients.map((c) => c.id),
+    title: `${trip.title} (copia)`,
+    slug,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    coverImageUrl: trip.coverImageUrl,
+    instructions: trip.instructions,
+    tagIds: trip.tags.map((t) => t.id),
+  });
+
+  for (const day of trip.days) {
+    const newDay = await createTripDay({
+      tripId: newTrip.id,
+      date: day.date,
+      notes: day.notes,
+      sortOrder: day.sortOrder,
+    });
+    for (const item of day.items) {
+      await createItem({
+        tripDayId: newDay.id,
+        type: item.type,
+        title: item.title,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        location: item.location,
+        lat: item.lat,
+        lng: item.lng,
+        confirmationCode: item.confirmationCode,
+        notes: item.notes,
+        sortOrder: item.sortOrder,
+      });
+    }
+  }
+
+  redirect(`/dashboard/trips/${newTrip.id}`);
 }
