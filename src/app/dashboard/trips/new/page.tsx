@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags } from "@/lib/data";
+import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags, getTemplates } from "@/lib/data";
 import { NewTripForm } from "@/components/NewTripForm";
 
 export default async function NewTripPage({
@@ -7,9 +7,10 @@ export default async function NewTripPage({
 }: {
   searchParams: Promise<{ error?: string; clientId?: string }>;
 }) {
-  const [{ items: clients }, tags, { error, clientId }] = await Promise.all([
+  const [{ items: clients }, tags, templates, { error, clientId }] = await Promise.all([
     getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
     getTags(),
+    getTemplates(),
     searchParams,
   ]);
 
@@ -21,7 +22,13 @@ export default async function NewTripPage({
 
       <h1 className="mt-4 mb-6 text-2xl font-bold text-gray-900">Nuevo viaje</h1>
 
-      <NewTripForm clients={clients} tags={tags} error={error} clientId={clientId} />
+      <NewTripForm
+        clients={clients}
+        tags={tags}
+        templates={templates}
+        error={error}
+        clientId={clientId}
+      />
     </main>
   );
 }

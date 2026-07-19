@@ -434,7 +434,9 @@ export async function setTripTags(tripId: string, tagIds: string[]): Promise<voi
 // ---------- Trips ----------
 
 export type CreateTripInput = {
-  clientIds: string[];
+  // Opcional solo para plantillas (isTemplate: true), que no tienen cliente
+  // asociado. Un viaje normal sigue requiriendo al menos un cliente.
+  clientIds?: string[];
   title: string;
   slug: string;
   startDate?: string;
@@ -442,6 +444,7 @@ export type CreateTripInput = {
   coverImageUrl?: string;
   instructions?: string;
   tagIds?: string[];
+  isTemplate?: boolean;
 };
 
 export type UpdateTripInput = Partial<{
@@ -459,16 +462,40 @@ export type UpdateTripInput = Partial<{
 export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
   const { from, to, pageSize } = paginationBounds(params);
   if (!isSupabaseConfigured()) {
-    return { items: mockTrips.slice(from, from + pageSize), totalCount: mockTrips.length };
+    const nonTemplateTrips = mockTrips.filter((t) => !t.isTemplate);
+    return {
+      items: nonTemplateTrips.slice(from, from + pageSize),
+      totalCount: nonTemplateTrips.length,
+    };
   }
   const supabase = await createServerSupabase();
   const { data, error, count } = await supabase
     .from("trips")
     .select("*", { count: "exact" })
+    .eq("is_template", false)
     .order("created_at", { ascending: false })
     .range(from, to);
   if (error) throw error;
   return { items: data.map(rowToTrip), totalCount: count ?? 0 };
+}
+
+// Viajes marcados como plantilla (issue #31): estructura de días/items
+// reusable, sin cliente asociado. Se listan aparte de getTrips() (que las
+// excluye) para el selector de "crear desde plantilla".
+export async function getTemplates(): Promise<Trip[]> {
+  if (!isSupabaseConfigured()) {
+    return mockTrips
+      .filter((t) => t.isTemplate)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trips")
+    .select("*")
+    .eq("is_template", true)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data.map(rowToTrip);
 }
 
 // Query batcheada para el dashboard/list: trips + UN solo trip_clients.in()
@@ -481,7 +508,8 @@ export async function getTripsWithClients(
   const { from, to, pageSize } = paginationBounds(params);
 
   if (!isSupabaseConfigured()) {
-    const pageTrips = mockTrips.slice(from, from + pageSize);
+    const nonTemplateTrips = mockTrips.filter((trip) => !trip.isTemplate);
+    const pageTrips = nonTemplateTrips.slice(from, from + pageSize);
     return {
       items: pageTrips.map((trip) => ({
         ...trip,
@@ -496,7 +524,7 @@ export async function getTripsWithClients(
           .map((tt) => mockTags.find((t) => t.id === tt.tagId))
           .filter((t): t is Tag => Boolean(t)),
       })),
-      totalCount: mockTrips.length,
+      totalCount: nonTemplateTrips.length,
     };
   }
 
@@ -504,6 +532,7 @@ export async function getTripsWithClients(
   const { data: tripRows, error, count } = await supabase
     .from("trips")
     .select("*", { count: "exact" })
+    .eq("is_template", false)
     .order("created_at", { ascending: false })
     .range(from, to);
   if (error) throw error;
@@ -773,13 +802,15 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
 // trips.client_id se sigue escribiendo como espejo de compatibilidad
 // (clientIds[0]); trip_clients es la fuente de verdad para lecturas.
 export async function createTrip(input: CreateTripInput): Promise<Trip> {
-  if (!input.clientIds || input.clientIds.length < 1) {
+  const isTemplate = input.isTemplate ?? false;
+  const clientIds = input.clientIds ?? [];
+  if (!isTemplate && clientIds.length < 1) {
     throw new Error("Se requiere al menos un cliente para crear el viaje");
   }
   if (!isSupabaseConfigured()) {
     const trip: Trip = {
       id: uid(),
-      clientId: input.clientIds[0],
+      clientId: clientIds[0] ?? "",
       title: input.title,
       slug: input.slug,
       startDate: input.startDate ?? "",
@@ -787,12 +818,13 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       coverImageUrl: input.coverImageUrl,
       instructions: input.instructions,
       status: "draft",
+      isTemplate,
       showCostsToClient: false,
       createdAt: new Date().toISOString(),
     };
     mockTrips.unshift(trip);
     const now = new Date().toISOString();
-    input.clientIds.forEach((clientId, idx) => {
+    clientIds.forEach((clientId, idx) => {
       mockTripClients.push({
         tripId: trip.id,
         clientId,
@@ -812,23 +844,26 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
   const { data, error } = await supabase
     .from("trips")
     .insert({
-      client_id: input.clientIds[0],
+      client_id: clientIds[0] ?? null,
       title: input.title,
       slug: input.slug,
       start_date: input.startDate || null,
       end_date: input.endDate || null,
       cover_image_url: input.coverImageUrl,
       instructions: input.instructions ?? null,
+      is_template: isTemplate,
     })
     .select()
     .single();
   if (error) throw error;
   const trip = rowToTrip(data);
 
-  const { error: linksError } = await supabase
-    .from("trip_clients")
-    .insert(input.clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
-  if (linksError) throw linksError;
+  if (clientIds.length) {
+    const { error: linksError } = await supabase
+      .from("trip_clients")
+      .insert(clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
+    if (linksError) throw linksError;
+  }
 
   if (input.tagIds?.length) {
     const { error: tagLinksError } = await supabase
@@ -837,6 +872,67 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
     if (tagLinksError) throw tagLinksError;
   }
 
+  return trip;
+}
+
+// Copia días + items (sin documentos, issue #31) de un viaje/plantilla origen
+// hacia un viaje destino recién creado. Reusa createTripDay/createItem (que
+// ya manejan mock/Supabase) en vez de duplicar esa lógica aquí.
+async function copyTripDaysAndItems(sourceTripId: string, destTripId: string): Promise<void> {
+  const source = await getTripById(sourceTripId);
+  if (!source) throw new Error("Viaje origen no encontrado");
+  for (const day of source.days) {
+    const newDay = await createTripDay({
+      tripId: destTripId,
+      date: day.date,
+      notes: day.notes,
+      sortOrder: day.sortOrder,
+    });
+    for (const item of day.items) {
+      await createItem({
+        tripDayId: newDay.id,
+        type: item.type,
+        title: item.title,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        location: item.location,
+        lat: item.lat,
+        lng: item.lng,
+        confirmationCode: item.confirmationCode,
+        notes: item.notes,
+        sortOrder: item.sortOrder,
+      });
+    }
+  }
+}
+
+function templateSlug(title: string): string {
+  const base =
+    title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "plantilla";
+  return `plantilla-${base}-${Date.now().toString(36)}`;
+}
+
+// Guarda la estructura de días/items de un viaje existente como una nueva
+// plantilla (is_template = true, sin cliente). No copia documentos.
+export async function saveTripAsTemplate(tripId: string, title: string): Promise<Trip> {
+  const template = await createTrip({ title, slug: templateSlug(title), isTemplate: true });
+  await copyTripDaysAndItems(tripId, template.id);
+  return template;
+}
+
+// Crea un viaje normal (requiere clientIds como createTrip) y le copia la
+// estructura de días/items de una plantilla existente.
+export async function createTripFromTemplate(
+  templateId: string,
+  input: CreateTripInput
+): Promise<Trip> {
+  const trip = await createTrip(input);
+  await copyTripDaysAndItems(templateId, trip.id);
   return trip;
 }
 
@@ -958,6 +1054,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     instructions: (row.instructions as string) ?? undefined,
     budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
     status: row.status as Trip["status"],
+    isTemplate: Boolean(row.is_template),
     showCostsToClient: Boolean(row.show_costs_to_client),
     createdAt: row.created_at as string,
   };

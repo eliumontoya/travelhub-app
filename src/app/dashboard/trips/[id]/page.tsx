@@ -15,6 +15,7 @@ import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripBudgetDialog } from "@/components/TripBudgetDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
+import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 import { TripPhotoGallery } from "@/components/TripPhotoGallery";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
@@ -42,6 +43,7 @@ import {
   publishTripStatusAction,
   restoreDayAction,
   restoreItemAction,
+  saveTripAsTemplateAction,
   setShowCostsToClientAction,
   setTripClientsAction,
   setTripTagsAction,
@@ -200,6 +202,18 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <SaveAsTemplateDialog
+            defaultTitle={trip.title}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Guardar como plantilla
+              </button>
+            }
+            onSubmit={saveTripAsTemplateAction.bind(null, trip.id)}
+          />
           <DuplicateTripButton onDuplicate={duplicateTripAction.bind(null, trip.id)} />
           <PrintButton />
         </div>

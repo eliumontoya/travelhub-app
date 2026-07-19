@@ -34,6 +34,8 @@ export interface Trip {
   instructions?: string;
   budget?: number;
   status: TripStatus;
+  /** Viajes plantilla (issue #31) no tienen cliente y se excluyen de los listados normales. */
+  isTemplate: boolean;
   /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */
   showCostsToClient: boolean;
   createdAt: string;
