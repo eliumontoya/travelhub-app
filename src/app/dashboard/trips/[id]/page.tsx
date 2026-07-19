@@ -21,6 +21,7 @@ import { TripPhotoGallery } from "@/components/TripPhotoGallery";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
@@ -225,6 +226,7 @@ export default async function TripEditorPage({
             Vista previa
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
+          <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
           <SaveAsTemplateDialog
             defaultTitle={trip.title}
             trigger={
