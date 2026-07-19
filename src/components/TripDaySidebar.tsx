@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatDateCompact } from "@/lib/item-meta";
+import { DEFAULT_LANG, Lang, dictionary } from "@/lib/i18n";
 
 export function TripDaySidebar({
   days,
   className,
+  lang = DEFAULT_LANG,
 }: {
   days: { id: string; date: string }[];
   className?: string;
+  lang?: Lang;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = useRef<string | null>(null);
@@ -76,7 +79,7 @@ export function TripDaySidebar({
   }
 
   return (
-    <nav className={className} aria-label="Días del viaje">
+    <nav className={className} aria-label={dictionary[lang].daysNav}>
       <ul className="space-y-1">
         {days.map((day) => (
           <li key={day.id}>
@@ -85,11 +88,11 @@ export function TripDaySidebar({
               onClick={(e) => handleClick(e, day.id)}
               className={`block rounded-md px-2 py-1 text-sm capitalize ${
                 activeId === day.id
-                  ? "font-semibold text-gray-900"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "font-semibold text-gray-900 dark:text-gray-100"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               }`}
             >
-              {formatDateCompact(day.date)}
+              {formatDateCompact(day.date, lang)}
             </a>
           </li>
         ))}
