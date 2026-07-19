@@ -8,6 +8,7 @@ export const mockClients: Client[] = [
     phone: "+52 55 1234 5678",
     notes: "Luna de miel, prefieren hoteles boutique.",
     createdAt: "2026-06-01T10:00:00Z",
+    updatedAt: "2026-06-01T10:00:00Z",
   },
   {
     id: "c2",
@@ -16,6 +17,7 @@ export const mockClients: Client[] = [
     phone: "+52 33 9876 5432",
     notes: "4 personas, 2 niños, buscan actividades familiares.",
     createdAt: "2026-06-10T10:00:00Z",
+    updatedAt: "2026-06-10T10:00:00Z",
   },
 ];
 
@@ -36,6 +38,7 @@ export const mockTrips: Trip[] = [
     isTemplate: false,
     showCostsToClient: true,
     createdAt: "2026-07-01T09:00:00Z",
+    updatedAt: "2026-07-01T09:00:00Z",
   },
   {
     id: "t2",
@@ -49,6 +52,7 @@ export const mockTrips: Trip[] = [
     isTemplate: false,
     showCostsToClient: false,
     createdAt: "2026-07-05T09:00:00Z",
+    updatedAt: "2026-07-05T09:00:00Z",
   },
 ];
 

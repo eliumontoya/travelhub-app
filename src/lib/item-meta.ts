@@ -55,6 +55,31 @@ export function formatTags(tags: Tag[]): string[] {
   return tags.map((t) => t.name);
 }
 
+const RELATIVE_TIME_UNITS: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
+  { unit: "year", seconds: 31536000 },
+  { unit: "month", seconds: 2592000 },
+  { unit: "day", seconds: 86400 },
+  { unit: "hour", seconds: 3600 },
+  { unit: "minute", seconds: 60 },
+];
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("es-MX", { numeric: "auto" });
+
+// Timestamp relativo tipo "hace 2 horas" para el feed de actividad reciente
+// del dashboard (issue #36). Usa Intl.RelativeTimeFormat en vez de armar el
+// string a mano para heredar pluralización/gramática de es-MX gratis.
+export function formatRelativeTime(isoTimestamp: string): string {
+  const diffSeconds = (Date.parse(isoTimestamp) - Date.now()) / 1000;
+  if (Math.abs(diffSeconds) < 60) return "justo ahora";
+
+  for (const { unit, seconds } of RELATIVE_TIME_UNITS) {
+    if (Math.abs(diffSeconds) >= seconds) {
+      return relativeTimeFormatter.format(Math.round(diffSeconds / seconds), unit);
+    }
+  }
+  return relativeTimeFormatter.format(Math.round(diffSeconds / 60), "minute");
+}
+
 export interface TripCompleteness {
   totalItems: number;
   itemsWithDocuments: number;

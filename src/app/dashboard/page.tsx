@@ -2,12 +2,13 @@ import Link from "next/link";
 import {
   DEFAULT_PAGE_SIZE,
   getClientsWithTags,
+  getRecentActivity,
   getTags,
   getTripStats,
   getTripsWithClients,
   getUpcomingUnpublishedTrips,
 } from "@/lib/data";
-import { formatDateShort } from "@/lib/item-meta";
+import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { DashboardExplorer } from "./DashboardExplorer";
 
@@ -15,6 +16,16 @@ function parsePage(value: string | undefined): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
 }
+
+const activityMeta = {
+  trip: { icon: "🧳", label: "viaje" },
+  client: { icon: "👤", label: "cliente" },
+};
+
+const activityActionLabel = {
+  created: "creado",
+  updated: "editado",
+};
 
 export default async function DashboardPage({
   searchParams,
@@ -31,12 +42,14 @@ export default async function DashboardPage({
     tags,
     stats,
     upcomingUnpublishedTrips,
+    recentActivity,
   ] = await Promise.all([
     getTripsWithClients({ page: tripsPage }),
     getClientsWithTags({ page: clientsPageNum }),
     getTags(),
     getTripStats(),
     getUpcomingUnpublishedTrips(),
+    getRecentActivity(),
   ]);
 
   const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
@@ -78,6 +91,35 @@ export default async function DashboardPage({
       </div>
 
       <DashboardKpiCards stats={stats} />
+
+      {recentActivity.length > 0 && (
+        <section className="mb-8 mt-6">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Actividad reciente
+          </h2>
+          <ul className="grid gap-2">
+            {recentActivity.map((event) => (
+              <li key={`${event.entityType}-${event.id}`}>
+                <Link
+                  href={event.href}
+                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 sm:p-5 text-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+                >
+                  <span className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <span aria-hidden>{activityMeta[event.entityType].icon}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{event.title}</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {activityActionLabel[event.action]} · {activityMeta[event.entityType].label}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-gray-500 dark:text-gray-400">
+                    {formatRelativeTime(event.timestamp)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <DashboardExplorer
         trips={trips}

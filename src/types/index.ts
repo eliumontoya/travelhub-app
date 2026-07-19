@@ -15,6 +15,7 @@ export interface Client {
   phone: string;
   notes?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tag {
@@ -40,6 +41,7 @@ export interface Trip {
   /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */
   showCostsToClient: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface TripDay {
