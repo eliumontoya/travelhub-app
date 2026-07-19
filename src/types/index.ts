@@ -118,3 +118,11 @@ export interface SiteSettings {
   email: string;
   phone: string;
 }
+
+export interface TripFeedback {
+  id: string;
+  tripId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}

@@ -6,6 +6,8 @@ import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { TripFeedbackForm } from "@/components/TripFeedbackForm";
+import { submitTripFeedbackAction } from "./actions";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -40,6 +42,9 @@ export default async function PublicTripPage({
       return getDailyWeather(withLocation?.lat, withLocation?.lng, day.date);
     })
   );
+
+  const today = new Date().toISOString().slice(0, 10);
+  const tripEnded = Boolean(trip.endDate) && trip.endDate < today;
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0 dark:bg-gray-950">
@@ -198,6 +203,12 @@ export default async function PublicTripPage({
               </div>
             ))}
           </div>
+
+          {tripEnded && (
+            <div className="mt-8">
+              <TripFeedbackForm onSubmit={submitTripFeedbackAction.bind(null, trip.id, trip.slug)} />
+            </div>
+          )}
         </div>
       </div>
     </main>

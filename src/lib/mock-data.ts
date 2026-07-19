@@ -1,4 +1,4 @@
-import { Client, Trip, TripDay, Item, Tag, TripPhoto, TripWithDetails, SiteSettings, PackingItem } from "@/types";
+import { Client, Trip, TripDay, Item, Tag, TripPhoto, TripWithDetails, SiteSettings, PackingItem, TripFeedback } from "@/types";
 
 export const mockClients: Client[] = [
   {
@@ -208,3 +208,7 @@ export const mockSiteSettings: SiteSettings = {
   email: "contacto@example.com",
   phone: "+52 000 000 0000",
 };
+
+// Feedback del cliente post-viaje (issue #46), espejo de la tabla
+// trip_feedback. Vacío por defecto: sin datos de prueba precargados.
+export const mockTripFeedback: TripFeedback[] = [];

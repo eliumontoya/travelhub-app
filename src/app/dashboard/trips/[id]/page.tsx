@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags, getTripById } from "@/lib/data";
+import { ALL_CLIENTS_PAGE_SIZE, getClients, getTags, getTripById, getTripFeedback } from "@/lib/data";
 import {
   itemTypeMeta,
   formatDateLong,
@@ -88,6 +88,7 @@ export default async function TripEditorPage({
     getTags(),
   ]);
   if (!trip) notFound();
+  const feedback = await getTripFeedback(trip.id);
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
   const completeness = computeTripCompleteness(trip);
@@ -460,6 +461,26 @@ export default async function TripEditorPage({
           onSubmit={addDayAction.bind(null, trip.id)}
         />
       </div>
+
+      {feedback.length > 0 && (
+        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:hidden dark:border-gray-800 dark:bg-gray-900">
+          <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">Feedback recibido</h3>
+          <div className="space-y-3">
+            {feedback.map((f) => (
+              <div key={f.id} className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-amber-400">
+                    {"★".repeat(f.rating)}
+                    <span className="text-gray-300 dark:text-gray-600">{"★".repeat(5 - f.rating)}</span>
+                  </span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(f.createdAt.slice(0, 10))}</span>
+                </div>
+                {f.comment && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{f.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <TripEditorShortcuts />
       <UndoToastHost />
