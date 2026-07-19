@@ -8,6 +8,8 @@ export type ItemType =
 
 export type TripStatus = "draft" | "published" | "archived";
 
+export type TripCurrency = "MXN" | "USD" | "EUR";
+
 export interface Client {
   id: string;
   name: string;
@@ -33,6 +35,7 @@ export interface Trip {
   coverImageUrl?: string;
   instructions?: string;
   status: TripStatus;
+  currency: TripCurrency;
   createdAt: string;
 }
 

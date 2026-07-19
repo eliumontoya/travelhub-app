@@ -18,7 +18,9 @@ import {
   updateTripDay,
   uploadItemDocument,
 } from "@/lib/data";
-import { ItemType } from "@/types";
+import { ItemType, TripCurrency } from "@/types";
+
+const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
 function parseCoord(raw: FormDataEntryValue | null): number | undefined {
   const value = String(raw ?? "").trim();
@@ -141,6 +143,13 @@ export async function updateTripInstructionsAction(
   await updateTrip(tripId, { instructions: instructions || null });
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function updateTripCurrencyAction(tripId: string, formData: FormData) {
+  const rawCurrency = String(formData.get("currency") ?? "MXN") as TripCurrency;
+  if (!validCurrencies.includes(rawCurrency)) return;
+  await updateTrip(tripId, { currency: rawCurrency });
+  revalidateTrip(tripId);
 }
 
 export async function setTripClientsAction(tripId: string, formData: FormData) {

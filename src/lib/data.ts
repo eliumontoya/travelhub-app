@@ -262,6 +262,7 @@ export type CreateTripInput = {
   coverImageUrl?: string;
   instructions?: string;
   tagIds?: string[];
+  currency?: Trip["currency"];
 };
 
 export type UpdateTripInput = Partial<{
@@ -272,6 +273,7 @@ export type UpdateTripInput = Partial<{
   coverImageUrl: string;
   instructions: string | null;
   status: Trip["status"];
+  currency: Trip["currency"];
 }>;
 
 export async function getTrips(): Promise<Trip[]> {
@@ -545,6 +547,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       coverImageUrl: input.coverImageUrl,
       instructions: input.instructions,
       status: "draft",
+      currency: input.currency ?? "MXN",
       createdAt: new Date().toISOString(),
     };
     mockTrips.unshift(trip);
@@ -576,6 +579,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       end_date: input.endDate || null,
       cover_image_url: input.coverImageUrl,
       instructions: input.instructions ?? null,
+      currency: input.currency ?? "MXN",
     })
     .select()
     .single();
@@ -683,6 +687,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
     if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
+    if (input.currency !== undefined) trip.currency = input.currency;
     return trip;
   }
   const supabase = await createServerSupabase();
@@ -694,6 +699,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl;
   if (input.instructions !== undefined) patch.instructions = input.instructions;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.currency !== undefined) patch.currency = input.currency;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToTrip(data);
@@ -710,6 +716,7 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     coverImageUrl: (row.cover_image_url as string) ?? undefined,
     instructions: (row.instructions as string) ?? undefined,
     status: row.status as Trip["status"],
+    currency: (row.currency as Trip["currency"]) ?? "MXN",
     createdAt: row.created_at as string,
   };
 }

@@ -5,6 +5,7 @@ import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from 
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripCurrencyDialog } from "@/components/TripCurrencyDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
@@ -23,6 +24,7 @@ import {
   publishTripStatusAction,
   setTripClientsAction,
   setTripTagsAction,
+  updateTripCurrencyAction,
   updateTripInstructionsAction,
   uploadDocumentAction,
 } from "./actions";
@@ -122,6 +124,18 @@ export default async function TripEditorPage({
               </button>
             }
             onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
+          />
+          <TripCurrencyDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Moneda ({trip.currency})
+              </button>
+            }
+            onSubmit={updateTripCurrencyAction.bind(null, trip.id)}
           />
           <Link
             href={`/t/${trip.slug}`}

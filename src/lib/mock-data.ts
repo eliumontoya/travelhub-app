@@ -32,6 +32,7 @@ export const mockTrips: Trip[] = [
     instructions:
       "¡Bienvenidos! Llegada al hotel a partir de las 15:00. Contacto de emergencia 24/7: +39 06 1234 5678. Lleven documento de identidad para el check-in.",
     status: "published",
+    currency: "EUR",
     createdAt: "2026-07-01T09:00:00Z",
   },
   {
@@ -42,6 +43,7 @@ export const mockTrips: Trip[] = [
     startDate: "2026-12-15",
     endDate: "2026-12-20",
     status: "draft",
+    currency: "MXN",
     createdAt: "2026-07-05T09:00:00Z",
   },
 ];

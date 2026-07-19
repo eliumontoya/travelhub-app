@@ -64,6 +64,19 @@ export function NewTripForm({
       </div>
 
       <div>
+        <label className="block text-sm font-medium text-gray-700">Moneda</label>
+        <select
+          name="currency"
+          defaultValue="MXN"
+          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        >
+          <option value="MXN">MXN — Peso mexicano</option>
+          <option value="USD">USD — Dólar estadounidense</option>
+          <option value="EUR">EUR — Euro</option>
+        </select>
+      </div>
+
+      <div>
         <label className="block text-sm font-medium text-gray-700">Clientes existentes</label>
         <ClientMultiCombobox
           clients={clients}

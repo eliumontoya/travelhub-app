@@ -1,4 +1,4 @@
-import { Client, ItemType, Tag } from "@/types";
+import { Client, ItemType, Tag, TripCurrency } from "@/types";
 
 export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color: string }> = {
   flight: { label: "Vuelo", icon: "✈️", color: "bg-sky-100 text-sky-700" },
@@ -8,6 +8,21 @@ export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color
   transport: { label: "Transporte", icon: "🚗", color: "bg-emerald-100 text-emerald-700" },
   note: { label: "Nota", icon: "📝", color: "bg-gray-100 text-gray-700" },
 };
+
+export const currencyMeta: Record<TripCurrency, { label: string; locale: string }> = {
+  MXN: { label: "MXN — Peso mexicano", locale: "es-MX" },
+  USD: { label: "USD — Dólar estadounidense", locale: "en-US" },
+  EUR: { label: "EUR — Euro", locale: "es-ES" },
+};
+
+// Sin conversión de tipo de cambio (fuera de alcance, issue #44): formatea el
+// monto tal cual con el símbolo/locale de la moneda elegida por el viaje.
+export function formatCurrency(amount: number, currency: TripCurrency): string {
+  return new Intl.NumberFormat(currencyMeta[currency].locale, {
+    style: "currency",
+    currency,
+  }).format(amount);
+}
 
 export function formatDateLong(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("es-MX", {
