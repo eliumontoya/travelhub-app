@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClients, getTags, getTripById } from "@/lib/data";
+import { getClients, getTags, getTripById, getTripInternalNotes } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
+import { TripInternalNotesDialog } from "@/components/TripInternalNotesDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
@@ -24,6 +25,7 @@ import {
   setTripClientsAction,
   setTripTagsAction,
   updateTripInstructionsAction,
+  updateTripInternalNotesAction,
   uploadDocumentAction,
 } from "./actions";
 
@@ -43,7 +45,12 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, clients, tags] = await Promise.all([getTripById(id), getClients(), getTags()]);
+  const [trip, clients, tags, internalNotes] = await Promise.all([
+    getTripById(id),
+    getClients(),
+    getTags(),
+    getTripInternalNotes(id),
+  ]);
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
@@ -122,6 +129,18 @@ export default async function TripEditorPage({
               </button>
             }
             onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
+          />
+          <TripInternalNotesDialog
+            internalNotes={internalNotes}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Notas internas
+              </button>
+            }
+            onSubmit={updateTripInternalNotesAction.bind(null, trip.id)}
           />
           <Link
             href={`/t/${trip.slug}`}

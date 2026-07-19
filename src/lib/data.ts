@@ -8,6 +8,7 @@ import {
   mockTripClients,
   mockTags,
   mockTripTags,
+  mockTripInternalNotes,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -697,6 +698,44 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToTrip(data);
+}
+
+// Notas privadas de agente (Tritones), NUNCA visibles en /t/[slug]. Se leen y
+// escriben a propósito por fuera de getTripById/getTripWithDetails/rowToTrip:
+// esa ruta compartida alimenta tanto el dashboard como la vista pública, así
+// que internal_notes jamás se selecciona/mapea ahí. En Supabase se hace un
+// SELECT de una sola columna (nunca select("*") junto al resto del trip); en
+// mock se guarda en un mapa aparte de mockTrips (ver mock-data.ts).
+export async function getTripInternalNotes(id: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) {
+    return mockTripInternalNotes[id] ?? null;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trips")
+    .select("internal_notes")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.internal_notes as string | null) ?? null;
+}
+
+export async function updateTripInternalNotes(id: string, internalNotes: string | null): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    if (!mockTrips.some((t) => t.id === id)) throw new Error("Trip no encontrado");
+    if (internalNotes) {
+      mockTripInternalNotes[id] = internalNotes;
+    } else {
+      delete mockTripInternalNotes[id];
+    }
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("trips")
+    .update({ internal_notes: internalNotes })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 function rowToTrip(row: Record<string, unknown>): Trip {

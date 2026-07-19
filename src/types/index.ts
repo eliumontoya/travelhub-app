@@ -32,6 +32,14 @@ export interface Trip {
   endDate: string;
   coverImageUrl?: string;
   instructions?: string;
+  /**
+   * Notas privadas para uso interno de agentes (Tritones). NUNCA se cargan
+   * en getTrips/getTripWithDetails/rowToTrip ni en TripWithDetails: se leen
+   * y escriben exclusivamente vía getTripInternalNotes/updateTripInternalNotes
+   * en src/lib/data.ts, usadas solo por el editor de dashboard. Este campo
+   * jamás debe llegar a /t/[slug].
+   */
+  internalNotes?: string;
   status: TripStatus;
   createdAt: string;
 }

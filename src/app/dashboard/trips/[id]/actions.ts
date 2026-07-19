@@ -16,6 +16,7 @@ import {
   updateItem,
   updateTrip,
   updateTripDay,
+  updateTripInternalNotes,
   uploadItemDocument,
 } from "@/lib/data";
 import { ItemType } from "@/types";
@@ -141,6 +142,12 @@ export async function updateTripInstructionsAction(
   await updateTrip(tripId, { instructions: instructions || null });
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function updateTripInternalNotesAction(tripId: string, formData: FormData) {
+  const internalNotes = String(formData.get("internalNotes") ?? "").trim();
+  await updateTripInternalNotes(tripId, internalNotes || null);
+  revalidateTrip(tripId);
 }
 
 export async function setTripClientsAction(tripId: string, formData: FormData) {
