@@ -30,7 +30,7 @@ export function ProfileMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Menú de cuenta"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -47,21 +47,21 @@ export function ProfileMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
-          <p className="truncate px-2 py-1.5 text-sm text-gray-500">
+        <div className="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          <p className="truncate px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400">
             {email ?? "Sesión sin autenticar"}
           </p>
           <Link
             href="/dashboard/settings"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            className="block rounded-lg px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             Configuración
           </Link>
           <form action={signOutAction}>
             <button
               type="submit"
-              className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+              className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
             >
               Cerrar sesión
             </button>
