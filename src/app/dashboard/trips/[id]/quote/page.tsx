@@ -5,7 +5,7 @@ import {
   itemTypeMeta,
   formatDateLong,
   formatAssignedClients,
-  formatCurrency,
+  formatCost,
 } from "@/lib/item-meta";
 import { PrintButton } from "@/components/PrintButton";
 
@@ -79,7 +79,7 @@ export default async function TripQuotePage({
                         </div>
                       </div>
                       <span className="shrink-0 font-medium text-gray-900">
-                        {formatCurrency(item.cost ?? 0)}
+                        {formatCost(item.cost ?? 0, trip.currency)}
                       </span>
                     </div>
                   );
@@ -88,14 +88,14 @@ export default async function TripQuotePage({
             )}
 
             <div className="mt-3 flex justify-end border-t border-gray-100 pt-2 text-sm font-semibold text-gray-700">
-              Subtotal del día: {formatCurrency(day.subtotal)}
+              Subtotal del día: {formatCost(day.subtotal, trip.currency)}
             </div>
           </div>
         ))}
       </div>
 
       <div className="mt-6 flex justify-end border-t-2 border-gray-300 pt-4 text-lg font-bold text-gray-900">
-        Total del viaje: {formatCurrency(grandTotal)}
+        Total del viaje: {formatCost(grandTotal, trip.currency)}
       </div>
     </main>
   );
