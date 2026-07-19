@@ -34,6 +34,8 @@ export interface Trip {
   instructions?: string;
   budget?: number;
   status: TripStatus;
+  /** Opt-in del agente Triton: si true, la vista pública muestra el resumen de costos. */
+  showCostsToClient: boolean;
   createdAt: string;
 }
 
@@ -43,6 +45,7 @@ export interface TripDay {
   date: string;
   notes?: string;
   sortOrder: number;
+  deletedAt?: string;
 }
 
 export interface ItemDocument {
@@ -68,6 +71,15 @@ export interface Item {
   cost?: number;
   sortOrder: number;
   documents?: ItemDocument[];
+  deletedAt?: string;
+}
+
+export interface PackingItem {
+  id: string;
+  tripId: string;
+  label: string;
+  checked: boolean;
+  sortOrder: number;
 }
 
 export interface TripWithDetails extends Trip {
@@ -78,6 +90,8 @@ export interface TripWithDetails extends Trip {
   /** Tags asignados al viaje (0..N). Siempre [] si no hay tags, nunca null/undefined. */
   tags: Tag[];
   days: (TripDay & { items: Item[] })[];
+  /** Checklist de equipaje del viaje (0..N), ordenado por sortOrder. */
+  packingItems: PackingItem[];
 }
 
 export interface SiteSettings {
