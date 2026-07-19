@@ -16,6 +16,7 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { UndoToastHost } from "@/components/UndoToast";
 import { PrintButton } from "@/components/PrintButton";
 import {
   addDayAction,
@@ -29,6 +30,8 @@ import {
   moveDayAction,
   moveItemAction,
   publishTripStatusAction,
+  restoreDayAction,
+  restoreItemAction,
   setShowCostsToClientAction,
   setTripClientsAction,
   setTripTagsAction,
@@ -213,6 +216,7 @@ export default async function TripEditorPage({
                     }
                     onSubmit={editDayAction.bind(null, trip.id, day.id)}
                     onDelete={deleteDayAction.bind(null, trip.id, day.id)}
+                    onUndoDelete={restoreDayAction.bind(null, trip.id, day.id)}
                   />
                 </div>
               </div>
@@ -264,6 +268,7 @@ export default async function TripEditorPage({
                           }
                           onSubmit={editItemAction.bind(null, trip.id, item.id)}
                           onDelete={deleteItemAction.bind(null, trip.id, item.id)}
+                          onUndoDelete={restoreItemAction.bind(null, trip.id, item.id)}
                           documentsEnabled={documentsEnabled}
                           onLoadDocuments={getItemDocumentsAction.bind(null, item.id)}
                           onUploadDocument={uploadDocumentAction.bind(null, trip.id, item.id)}
@@ -296,6 +301,8 @@ export default async function TripEditorPage({
           onSubmit={addDayAction.bind(null, trip.id)}
         />
       </div>
+
+      <UndoToastHost />
     </main>
   );
 }
