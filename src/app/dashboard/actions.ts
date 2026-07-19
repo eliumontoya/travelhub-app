@@ -11,3 +11,13 @@ export async function moveTripStatusAction(tripId: string, status: TripStatus) {
   await updateTrip(tripId, { status });
   revalidatePath("/dashboard");
 }
+
+export async function bulkUpdateTripStatusAction(
+  tripIds: string[],
+  status: "published" | "archived"
+) {
+  for (const id of tripIds) {
+    await updateTrip(id, { status });
+  }
+  revalidatePath("/dashboard");
+}
