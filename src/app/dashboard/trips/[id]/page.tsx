@@ -7,14 +7,17 @@ import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
+import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import {
   addDayAction,
   addItemAction,
+  addPackingItemAction,
   deleteDayAction,
   deleteDocumentAction,
   deleteItemAction,
+  deletePackingItemAction,
   editDayAction,
   editItemAction,
   getItemDocumentsAction,
@@ -23,6 +26,7 @@ import {
   publishTripStatusAction,
   setTripClientsAction,
   setTripTagsAction,
+  togglePackingItemAction,
   updateTripInstructionsAction,
   uploadDocumentAction,
 } from "./actions";
@@ -132,6 +136,15 @@ export default async function TripEditorPage({
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
         </div>
+      </div>
+
+      <div className="mb-6">
+        <PackingListManager
+          items={trip.packingItems}
+          onAdd={addPackingItemAction.bind(null, trip.id)}
+          onToggle={togglePackingItemAction.bind(null, trip.id)}
+          onDelete={deletePackingItemAction.bind(null, trip.id)}
+        />
       </div>
 
       <div className="space-y-6">
