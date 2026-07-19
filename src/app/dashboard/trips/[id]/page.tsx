@@ -22,6 +22,7 @@ import { TripPhotoGallery } from "@/components/TripPhotoGallery";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
+import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { WeatherBadge } from "@/components/WeatherBadge";
@@ -387,6 +388,9 @@ export default async function TripEditorPage({
                           <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
                           {item.startTime && (
                             <span className="text-xs text-gray-400 dark:text-gray-500">{item.startTime}</span>
+                          )}
+                          {item.type === "flight" && (
+                            <FlightStatusBadge title={item.title} />
                           )}
                         </div>
                         {item.location && (

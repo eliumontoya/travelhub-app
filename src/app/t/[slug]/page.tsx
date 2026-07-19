@@ -4,6 +4,7 @@ import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
+import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
@@ -158,6 +159,9 @@ export default async function PublicTripPage({
                                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
                                 {item.startTime && (
                                   <span className="text-xs text-gray-400 dark:text-gray-500">{item.startTime}</span>
+                                )}
+                                {item.type === "flight" && (
+                                  <FlightStatusBadge title={item.title} />
                                 )}
                               </div>
                               {item.location && (
