@@ -52,6 +52,15 @@ export interface ItemDocument {
   uploadedAt: string;
 }
 
+export interface ClientDocument {
+  id: string;
+  clientId: string;
+  filePath: string;
+  filename: string;
+  mimeType?: string;
+  createdAt: string;
+}
+
 export interface Item {
   id: string;
   tripDayId: string;

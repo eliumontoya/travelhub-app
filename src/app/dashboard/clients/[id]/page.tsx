@@ -1,8 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getClientById, getTripsByClientId } from "@/lib/data";
+import { getClientById, getClientDocuments, getTripsByClientId } from "@/lib/data";
 import { formatDateShort } from "@/lib/item-meta";
-import { updateClientAction } from "./actions";
+import { ClientDocuments } from "@/components/ClientDocuments";
+import {
+  deleteClientDocumentAction,
+  getClientDocumentsAction,
+  updateClientAction,
+  uploadClientDocumentAction,
+} from "./actions";
+
+const documentsEnabled = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -20,6 +30,7 @@ export default async function ClientDetailPage({
   if (!client) notFound();
 
   const trips = await getTripsByClientId(id);
+  const documents = await getClientDocuments(id);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -98,6 +109,16 @@ export default async function ClientDetailPage({
           </button>
         </form>
       </details>
+
+      <div className="mb-8">
+        <ClientDocuments
+          documents={documents}
+          documentsEnabled={documentsEnabled}
+          onUpload={uploadClientDocumentAction.bind(null, client.id)}
+          onDelete={deleteClientDocumentAction.bind(null, client.id)}
+          onRefresh={getClientDocumentsAction.bind(null, client.id)}
+        />
+      </div>
 
       <h2 className="mb-4 text-lg font-semibold text-gray-900">Viajes</h2>
       {trips.length === 0 ? (
