@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import {
+  itemTypeMeta,
+  formatDateLong,
+  formatAssignedClients,
+  formatTags,
+  computeTripCompleteness,
+} from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -47,6 +53,7 @@ export default async function TripEditorPage({
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+  const completeness = computeTripCompleteness(trip);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -132,6 +139,34 @@ export default async function TripEditorPage({
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
         </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-gray-900">Completitud del itinerario</h3>
+          <span className="text-sm font-medium text-gray-700">
+            {completeness.documentPercentage}% con documentos
+          </span>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full rounded-full bg-blue-500"
+            style={{ width: `${completeness.documentPercentage}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          {completeness.itemsWithDocuments} de {completeness.totalItems} items tienen al menos un
+          documento adjunto.
+        </p>
+        {completeness.emptyDays.length > 0 && (
+          <p className="mt-2 text-xs font-medium text-amber-700">
+            {completeness.emptyDays.length === 1
+              ? `1 día sin items: ${formatDateLong(completeness.emptyDays[0].date)}`
+              : `${completeness.emptyDays.length} días sin items: ${completeness.emptyDays
+                  .map((d) => formatDateLong(d.date))
+                  .join(", ")}`}
+          </p>
+        )}
       </div>
 
       <div className="space-y-6">
