@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
-import { itemTypeMeta, formatDateLong } from "@/lib/item-meta";
+import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -14,6 +14,13 @@ export default async function PublicTripPage({
   const { slug } = await params;
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
   if (!trip || trip.status !== "published") notFound();
+
+  const totalCost = trip.showCostsToClient
+    ? trip.days.reduce(
+        (sum, day) => sum + day.items.reduce((daySum, item) => daySum + (item.cost ?? 0), 0),
+        0
+      )
+    : 0;
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16">
@@ -62,6 +69,14 @@ export default async function PublicTripPage({
             <AddTripToCalendarButton trip={trip} />
           </div>
 
+          {trip.showCostsToClient && (
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900">Resumen de costos</h2>
+              <p className="mt-1 text-2xl font-bold text-gray-900">{formatCost(totalCost)}</p>
+              <p className="text-xs text-gray-400">Total estimado del viaje</p>
+            </div>
+          )}
+
           <div className="space-y-8">
             {trip.days.map((day) => (
               <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
@@ -97,6 +112,11 @@ export default async function PublicTripPage({
                               {item.confirmationCode && (
                                 <p className="mt-1 text-xs text-gray-400">
                                   Confirmación: {item.confirmationCode}
+                                </p>
+                              )}
+                              {trip.showCostsToClient && item.cost !== undefined && (
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Costo: {formatCost(item.cost)}
                                 </p>
                               )}
                               {item.lat !== undefined && item.lng !== undefined && (
