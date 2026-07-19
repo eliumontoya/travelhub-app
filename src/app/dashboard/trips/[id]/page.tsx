@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClients, getTags, getTripById } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import {
+  itemTypeMeta,
+  formatDateLong,
+  formatAssignedClients,
+  formatCost,
+  formatTags,
+  computeTripCompleteness,
+} from "@/lib/item-meta";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -22,6 +29,7 @@ import {
   moveDayAction,
   moveItemAction,
   publishTripStatusAction,
+  setShowCostsToClientAction,
   setTripClientsAction,
   setTripTagsAction,
   updateTripInstructionsAction,
@@ -48,6 +56,7 @@ export default async function TripEditorPage({
   if (!trip) notFound();
 
   const dayOrder = trip.days.map((d) => ({ id: d.id, sortOrder: d.sortOrder }));
+  const completeness = computeTripCompleteness(trip);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 print:py-0">
@@ -84,6 +93,18 @@ export default async function TripEditorPage({
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
+            </button>
+          </form>
+          <form
+            action={setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient)}
+          >
+            <button
+              type="submit"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {trip.showCostsToClient
+                ? "Ocultar costos al cliente"
+                : "Mostrar costos al cliente"}
             </button>
           </form>
           <TripClientsManager
@@ -134,6 +155,34 @@ export default async function TripEditorPage({
           <CopyUrlButtonClient slug={trip.slug} />
           <PrintButton />
         </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:hidden">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-gray-900">Completitud del itinerario</h3>
+          <span className="text-sm font-medium text-gray-700">
+            {completeness.documentPercentage}% con documentos
+          </span>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full rounded-full bg-blue-500"
+            style={{ width: `${completeness.documentPercentage}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          {completeness.itemsWithDocuments} de {completeness.totalItems} items tienen al menos un
+          documento adjunto.
+        </p>
+        {completeness.emptyDays.length > 0 && (
+          <p className="mt-2 text-xs font-medium text-amber-700">
+            {completeness.emptyDays.length === 1
+              ? `1 día sin items: ${formatDateLong(completeness.emptyDays[0].date)}`
+              : `${completeness.emptyDays.length} días sin items: ${completeness.emptyDays
+                  .map((d) => formatDateLong(d.date))
+                  .join(", ")}`}
+          </p>
+        )}
       </div>
 
       <div className="space-y-6 print:space-y-3">
@@ -189,6 +238,9 @@ export default async function TripEditorPage({
                         </div>
                         {item.location && (
                           <p className="text-sm text-gray-500">{item.location}</p>
+                        )}
+                        {item.cost !== undefined && (
+                          <p className="text-xs text-gray-400">Costo: {formatCost(item.cost)}</p>
                         )}
                         {item.confirmationCode && (
                           <p className="text-xs text-gray-400">

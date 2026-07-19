@@ -1,4 +1,4 @@
-import { Client, ItemType, Tag } from "@/types";
+import { Client, ItemType, Tag, TripWithDetails } from "@/types";
 
 export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color: string }> = {
   flight: { label: "Vuelo", icon: "✈️", color: "bg-sky-100 text-sky-700" },
@@ -50,4 +50,40 @@ export function formatAssignedClients(clients: Client[]): string {
 // esto decide el markup; aquí solo se normaliza el orden/lista).
 export function formatTags(tags: Tag[]): string[] {
   return tags.map((t) => t.name);
+}
+
+export interface TripCompleteness {
+  totalItems: number;
+  itemsWithDocuments: number;
+  /** 0-100, redondeado. 100 cuando no hay items (nada pendiente que documentar). */
+  documentPercentage: number;
+  /** Días con cero items, en el orden en que aparecen en trip.days. */
+  emptyDays: { id: string; date: string }[];
+}
+
+// Indicador de completitud para el editor de viajes: % de items con al
+// menos 1 documento adjunto + lista de días sin ningún item. Se calcula en
+// memoria a partir de trip.days/items/documents ya cargados por
+// getTripById; no dispara queries adicionales ni requiere nuevas tablas.
+export function computeTripCompleteness(trip: TripWithDetails): TripCompleteness {
+  const allItems = trip.days.flatMap((day) => day.items);
+  const totalItems = allItems.length;
+  const itemsWithDocuments = allItems.filter((item) => (item.documents?.length ?? 0) > 0).length;
+  const documentPercentage =
+    totalItems === 0 ? 100 : Math.round((itemsWithDocuments / totalItems) * 100);
+  const emptyDays = trip.days
+    .filter((day) => day.items.length === 0)
+    .map((day) => ({ id: day.id, date: day.date }));
+
+  return { totalItems, itemsWithDocuments, documentPercentage, emptyDays };
+}
+
+// Formato genérico de moneda para el resumen de costos (issue #35). Sin
+// símbolo de divisa fijo en el dominio (la app no modela multi-moneda aún),
+// por lo que se usa un formato numérico simple con separador de miles.
+export function formatCost(value: number): string {
+  return new Intl.NumberFormat("es-MX", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }

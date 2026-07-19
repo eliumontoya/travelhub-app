@@ -25,6 +25,11 @@ function parseCoord(raw: FormDataEntryValue | null): number | undefined {
   return value ? Number(value) : undefined;
 }
 
+function parseCost(raw: FormDataEntryValue | null): number | undefined {
+  const value = String(raw ?? "").trim();
+  return value ? Number(value) : undefined;
+}
+
 function revalidateTrip(tripId: string) {
   revalidatePath(`/dashboard/trips/${tripId}`);
 }
@@ -83,6 +88,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
@@ -98,6 +104,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
@@ -130,6 +137,16 @@ export async function moveItemAction(
 export async function publishTripStatusAction(tripId: string, status: "draft" | "published" | "archived") {
   await updateTrip(tripId, { status });
   revalidateTrip(tripId);
+}
+
+export async function setShowCostsToClientAction(
+  tripId: string,
+  slug: string,
+  showCostsToClient: boolean
+) {
+  await updateTrip(tripId, { showCostsToClient });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
 }
 
 export async function updateTripInstructionsAction(
