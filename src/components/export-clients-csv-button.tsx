@@ -45,7 +45,7 @@ export function ExportClientsCsvButton({ clients }: ExportClientsCsvButtonProps)
     <button
       type="button"
       onClick={handleExport}
-      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
     >
       Exportar CSV
     </button>
