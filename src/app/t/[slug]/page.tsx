@@ -5,6 +5,7 @@ import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
+import { PrintButton } from "@/components/PrintButton";
 
 export default async function PublicTripPage({
   params,
@@ -16,9 +17,9 @@ export default async function PublicTripPage({
   if (!trip) notFound();
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-16">
+    <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0">
       <div
-        className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72"
+        className="flex h-56 items-end bg-gray-800 bg-cover bg-center sm:h-72 print:hidden"
         style={{
           backgroundImage: trip.coverImageUrl
             ? `linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.1)), url(${trip.coverImageUrl})`
@@ -45,26 +46,34 @@ export default async function PublicTripPage({
         </div>
       </div>
 
+      <div className="hidden print:block px-4 pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
+        </p>
+      </div>
+
       <div className="mx-auto max-w-2xl px-4 lg:max-w-5xl lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-x-8">
         <TripDaySidebar
           days={trip.days}
-          className="hidden lg:block lg:sticky lg:top-6 lg:self-start"
+          className="hidden lg:block lg:sticky lg:top-6 lg:self-start print:hidden"
         />
 
         <div className="lg:max-w-2xl">
           {trip.instructions && (
-            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:shadow-none print:border-gray-300">
               <p className="whitespace-pre-line text-sm text-gray-700">{trip.instructions}</p>
             </div>
           )}
 
-          <div className="my-6 flex justify-center">
+          <div className="my-6 flex justify-center gap-2 print:hidden">
             <AddTripToCalendarButton trip={trip} />
+            <PrintButton />
           </div>
 
           <div className="space-y-8">
             {trip.days.map((day) => (
-              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6">
+              <div key={day.id} id={`day-${day.id}`} className="scroll-mt-6 print:break-inside-avoid">
                 <h2 className="mb-3 text-lg font-semibold capitalize text-gray-900">
                   {formatDateLong(day.date)}
                 </h2>
@@ -74,7 +83,7 @@ export default async function PublicTripPage({
                     return (
                       <div
                         key={item.id}
-                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                        className="relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid print:shadow-none print:border-gray-300"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-3">
@@ -100,11 +109,15 @@ export default async function PublicTripPage({
                                 </p>
                               )}
                               {item.lat !== undefined && item.lng !== undefined && (
-                                <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                <div className="print:hidden">
+                                  <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                </div>
                               )}
                             </div>
                           </div>
-                          <AddToCalendarButton item={item} date={day.date} />
+                          <div className="print:hidden">
+                            <AddToCalendarButton item={item} date={day.date} />
+                          </div>
                         </div>
                       </div>
                     );
