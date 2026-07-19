@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getClients, getTripsWithClients } from "@/lib/data";
+import { getClients, getTripStats, getTripsWithClients } from "@/lib/data";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
+import DashboardKpiCards from "@/components/DashboardKpiCards";
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -9,7 +10,11 @@ const statusMeta = {
 };
 
 export default async function DashboardPage() {
-  const [clients, trips] = await Promise.all([getClients(), getTripsWithClients()]);
+  const [clients, trips, stats] = await Promise.all([
+    getClients(),
+    getTripsWithClients(),
+    getTripStats(),
+  ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -22,6 +27,8 @@ export default async function DashboardPage() {
           + Nuevo viaje
         </Link>
       </div>
+
+      <DashboardKpiCards stats={stats} />
 
       <div className="grid gap-4">
         {trips.map((trip) => {
