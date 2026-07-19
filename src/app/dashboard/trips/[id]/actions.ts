@@ -1,26 +1,51 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   createItem,
+  createTrip,
+  createPackingItem,
   createTripDay,
   deleteDocument,
   deleteItem,
+  deletePackingItem,
   deleteTripDay,
+  deleteTripPhoto,
   getItemDocuments,
   getOrCreateTag,
+  getTripById,
   reorderItems,
   reorderTripDays,
+  restoreItem,
+  restoreTripDay,
+  saveTripAsTemplate,
   setTripClients,
   setTripTags,
   updateItem,
+  updatePackingItem,
   updateTrip,
   updateTripDay,
   uploadItemDocument,
+  uploadTripPhoto,
 } from "@/lib/data";
 import { ItemType } from "@/types";
 
 function parseCoord(raw: FormDataEntryValue | null): number | undefined {
+  const value = String(raw ?? "").trim();
+  return value ? Number(value) : undefined;
+}
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function parseCost(raw: FormDataEntryValue | null): number | undefined {
   const value = String(raw ?? "").trim();
   return value ? Number(value) : undefined;
 }
@@ -46,6 +71,11 @@ export async function editDayAction(tripId: string, dayId: string, formData: For
 
 export async function deleteDayAction(tripId: string, dayId: string) {
   await deleteTripDay(dayId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreDayAction(tripId: string, dayId: string) {
+  await restoreTripDay(dayId);
   revalidateTrip(tripId);
 }
 
@@ -83,6 +113,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
@@ -98,12 +129,18 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     lng: parseCoord(formData.get("lng")),
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
+    cost: parseCost(formData.get("cost")),
   });
   revalidateTrip(tripId);
 }
 
 export async function deleteItemAction(tripId: string, itemId: string) {
   await deleteItem(itemId);
+  revalidateTrip(tripId);
+}
+
+export async function restoreItemAction(tripId: string, itemId: string) {
+  await restoreItem(itemId);
   revalidateTrip(tripId);
 }
 
@@ -132,6 +169,16 @@ export async function publishTripStatusAction(tripId: string, status: "draft" | 
   revalidateTrip(tripId);
 }
 
+export async function setShowCostsToClientAction(
+  tripId: string,
+  slug: string,
+  showCostsToClient: boolean
+) {
+  await updateTrip(tripId, { showCostsToClient });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
 export async function updateTripInstructionsAction(
   tripId: string,
   slug: string,
@@ -141,6 +188,25 @@ export async function updateTripInstructionsAction(
   await updateTrip(tripId, { instructions: instructions || null });
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function updateTripTravelerCountAction(
+  tripId: string,
+  slug: string,
+  formData: FormData
+) {
+  const raw = Number(formData.get("travelerCount"));
+  if (!Number.isFinite(raw) || raw < 1) return;
+  await updateTrip(tripId, { travelerCount: Math.floor(raw) });
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+  revalidatePath("/dashboard");
+}
+
+export async function updateTripBudgetAction(tripId: string, formData: FormData) {
+  const raw = String(formData.get("budget") ?? "").trim();
+  await updateTrip(tripId, { budget: raw ? Number(raw) : null });
+  revalidateTrip(tripId);
 }
 
 export async function setTripClientsAction(tripId: string, formData: FormData) {
@@ -164,6 +230,23 @@ export async function setTripTagsAction(tripId: string, formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function addPackingItemAction(tripId: string, formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  if (!label) return;
+  await createPackingItem({ tripId, label });
+  revalidateTrip(tripId);
+}
+
+export async function togglePackingItemAction(tripId: string, itemId: string, checked: boolean) {
+  await updatePackingItem(itemId, { checked });
+  revalidateTrip(tripId);
+}
+
+export async function deletePackingItemAction(tripId: string, itemId: string) {
+  await deletePackingItem(itemId);
+  revalidateTrip(tripId);
+}
+
 export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
@@ -178,4 +261,76 @@ export async function deleteDocumentAction(tripId: string, documentId: string) {
 
 export async function getItemDocumentsAction(itemId: string) {
   return getItemDocuments(itemId);
+}
+
+export async function saveTripAsTemplateAction(tripId: string, formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return;
+  const template = await saveTripAsTemplate(tripId, title);
+  revalidatePath("/dashboard/trips/new");
+  redirect(`/dashboard/trips/${template.id}`);
+}
+
+export async function uploadTripPhotoAction(tripId: string, slug: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadTripPhoto(tripId, file);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+export async function deleteTripPhotoAction(tripId: string, slug: string, photoId: string) {
+  await deleteTripPhoto(photoId);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+// Clona un viaje completo (días + items, sin documentos) en un nuevo viaje en
+// estado draft. Conserva los clientes asignados porque createTrip exige al
+// menos 1 (regla de negocio en data.ts); título y slug quedan marcados como
+// copia para que el usuario ajuste fechas/detalles del nuevo itinerario.
+export async function duplicateTripAction(tripId: string) {
+  const trip = await getTripById(tripId);
+  if (!trip) return;
+
+  const slugBase = slugify(trip.title) || "viaje";
+  const slug = `${slugBase}-copia-${Date.now().toString(36)}`;
+
+  const newTrip = await createTrip({
+    clientIds: trip.clients.map((c) => c.id),
+    title: `${trip.title} (copia)`,
+    slug,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    coverImageUrl: trip.coverImageUrl,
+    instructions: trip.instructions,
+    travelerCount: trip.travelerCount,
+    tagIds: trip.tags.map((t) => t.id),
+  });
+
+  for (const day of trip.days) {
+    const newDay = await createTripDay({
+      tripId: newTrip.id,
+      date: day.date,
+      notes: day.notes,
+      sortOrder: day.sortOrder,
+    });
+    for (const item of day.items) {
+      await createItem({
+        tripDayId: newDay.id,
+        type: item.type,
+        title: item.title,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        location: item.location,
+        lat: item.lat,
+        lng: item.lng,
+        confirmationCode: item.confirmationCode,
+        notes: item.notes,
+        sortOrder: item.sortOrder,
+      });
+    }
+  }
+
+  redirect(`/dashboard/trips/${newTrip.id}`);
 }

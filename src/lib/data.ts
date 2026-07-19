@@ -1,4 +1,4 @@
-import { Client, Item, ItemDocument, SiteSettings, Tag, Trip, TripDay, TripWithDetails } from "@/types";
+import { Client, Item, ItemDocument, PackingItem, SiteSettings, Tag, Trip, TripDay, TripPhoto, TripWithDetails } from "@/types";
 import {
   mockClients,
   mockTrips,
@@ -8,6 +8,9 @@ import {
   mockTripClients,
   mockTags,
   mockTripTags,
+  mockTripPhotos,
+  mockPackingItems,
+  mockClientTags,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -21,6 +24,30 @@ function uid() {
   return crypto.randomUUID();
 }
 
+// ---------- Pagination ----------
+
+export const DEFAULT_PAGE_SIZE = 20;
+
+// Para selectores que necesitan el catálogo completo de clientes (asignar
+// cliente a un viaje), no la página paginada del dashboard. Un solo agente
+// de viajes no maneja miles de clientes, así que un límite alto basta.
+export const ALL_CLIENTS_PAGE_SIZE = 1000;
+
+// Mismo criterio que ALL_CLIENTS_PAGE_SIZE, para agregados internos
+// (KPIs, alertas) que necesitan escanear todos los viajes en memoria.
+export const ALL_TRIPS_PAGE_SIZE = 1000;
+
+export type PaginationParams = { page?: number; pageSize?: number };
+export type PaginatedResult<T> = { items: T[]; totalCount: number };
+
+function paginationBounds(params: PaginationParams) {
+  const page = params.page && params.page > 0 ? params.page : 1;
+  const pageSize = params.pageSize && params.pageSize > 0 ? params.pageSize : DEFAULT_PAGE_SIZE;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  return { page, pageSize, from, to };
+}
+
 // ---------- Clients ----------
 
 export type CreateClientInput = {
@@ -30,15 +57,19 @@ export type CreateClientInput = {
   notes?: string;
 };
 
-export async function getClients(): Promise<Client[]> {
-  if (!isSupabaseConfigured()) return mockClients;
+export async function getClients(params: PaginationParams = {}): Promise<PaginatedResult<Client>> {
+  const { from, to, pageSize } = paginationBounds(params);
+  if (!isSupabaseConfigured()) {
+    return { items: mockClients.slice(from, from + pageSize), totalCount: mockClients.length };
+  }
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("clients")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return data.map(rowToClient);
+  return { items: data.map(rowToClient), totalCount: count ?? 0 };
 }
 
 export async function getClientById(id: string): Promise<Client | null> {
@@ -65,13 +96,15 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
 
 export async function createClient(input: CreateClientInput): Promise<Client> {
   if (!isSupabaseConfigured()) {
+    const now = new Date().toISOString();
     const client: Client = {
       id: uid(),
       name: input.name,
       email: input.email ?? "",
       phone: input.phone ?? "",
       notes: input.notes,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
     mockClients.unshift(client);
     return client;
@@ -94,6 +127,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
     if (input.notes !== undefined) client.notes = input.notes;
+    client.updatedAt = new Date().toISOString();
     return client;
   }
   const supabase = await createServerSupabase();
@@ -115,7 +149,157 @@ function rowToClient(row: Record<string, unknown>): Client {
     phone: (row.phone as string) ?? "",
     notes: (row.notes as string) ?? undefined,
     createdAt: row.created_at as string,
+    updatedAt: (row.updated_at as string) ?? (row.created_at as string),
   };
+}
+
+// Query batcheada para el dashboard/list: clients + UN solo client_tags.in()
+// + UN solo tags.in() (sin N+1 por fila), mismo patrón que getTripsWithClients.
+export async function getClientsWithTags(
+  params: PaginationParams = {}
+): Promise<PaginatedResult<Client & { tags: Tag[] }>> {
+  const { from, to, pageSize } = paginationBounds(params);
+
+  if (!isSupabaseConfigured()) {
+    const pageClients = mockClients.slice(from, from + pageSize);
+    return {
+      items: pageClients.map((client) => ({
+        ...client,
+        tags: mockClientTags
+          .filter((ct) => ct.clientId === client.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+          .filter((t): t is Tag => Boolean(t)),
+      })),
+      totalCount: mockClients.length,
+    };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: clientRows, error, count } = await supabase
+    .from("clients")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error) throw error;
+
+  const clients = (clientRows ?? []).map(rowToClient);
+  const clientIds = clients.map((c) => c.id);
+  const totalCount = count ?? 0;
+  if (!clientIds.length) return { items: [], totalCount };
+
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("client_tags")
+    .select("client_id, tag_id, created_at")
+    .in("client_id", clientIds)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const tagIds = [...new Set((tagLinkRows ?? []).map((l) => l.tag_id as string))];
+  let tagsById = new Map<string, Tag>();
+  if (tagIds.length) {
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("tags")
+      .select("*")
+      .in("id", tagIds);
+    if (tagsError) throw tagsError;
+    tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  }
+
+  return {
+    items: clients.map((client) => ({
+      ...client,
+      tags: (tagLinkRows ?? [])
+        .filter((l) => l.client_id === client.id)
+        .map((l) => tagsById.get(l.tag_id as string))
+        .filter((t): t is Tag => Boolean(t)),
+    })),
+    totalCount,
+  };
+}
+
+// Tags asignados a un solo cliente (0..N), ordenados por created_at asc.
+export async function getClientTags(clientId: string): Promise<Tag[]> {
+  if (!isSupabaseConfigured()) {
+    return mockClientTags
+      .filter((ct) => ct.clientId === clientId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((ct) => mockTags.find((t) => t.id === ct.tagId))
+      .filter((t): t is Tag => Boolean(t));
+  }
+  const supabase = await createServerSupabase();
+  const { data: tagLinkRows, error: tagLinksError } = await supabase
+    .from("client_tags")
+    .select("tag_id, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: true });
+  if (tagLinksError) throw tagLinksError;
+
+  const orderedTagIds = (tagLinkRows ?? []).map((l) => l.tag_id as string);
+  if (!orderedTagIds.length) return [];
+  const { data: tagRows, error: tagsError } = await supabase
+    .from("tags")
+    .select("*")
+    .in("id", orderedTagIds);
+  if (tagsError) throw tagsError;
+  const tagById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+  return orderedTagIds.map((id) => tagById.get(id)).filter((t): t is Tag => Boolean(t));
+}
+
+// Reemplaza el conjunto completo de tags asignados a un cliente mediante un
+// diff (borra los removidos + inserta los agregados), mismo patrón que
+// setTripTags. 0 tags es válido, no lanza.
+export async function setClientTags(clientId: string, tagIds: string[]): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const current = mockClientTags.filter((ct) => ct.clientId === clientId);
+    const currentIds = new Set(current.map((ct) => ct.tagId));
+    const nextIds = new Set(tagIds);
+
+    for (let i = mockClientTags.length - 1; i >= 0; i--) {
+      const ct = mockClientTags[i];
+      if (ct.clientId === clientId && !nextIds.has(ct.tagId)) {
+        mockClientTags.splice(i, 1);
+      }
+    }
+    const now = Date.now();
+    tagIds.forEach((tagId, idx) => {
+      if (!currentIds.has(tagId)) {
+        mockClientTags.push({ clientId, tagId, createdAt: new Date(now + idx).toISOString() });
+      }
+    });
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: currentRows, error: currentError } = await supabase
+    .from("client_tags")
+    .select("tag_id")
+    .eq("client_id", clientId);
+  if (currentError) throw currentError;
+
+  const currentIds = new Set((currentRows ?? []).map((r) => r.tag_id as string));
+  const nextIds = new Set(tagIds);
+  const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
+  const toAdd = tagIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    const { error: removeError } = await supabase
+      .from("client_tags")
+      .delete()
+      .eq("client_id", clientId)
+      .in("tag_id", toRemove);
+    if (removeError) throw removeError;
+  }
+
+  if (toAdd.length) {
+    const { error: addError } = await supabase
+      .from("client_tags")
+      .upsert(
+        toAdd.map((tagId) => ({ client_id: clientId, tag_id: tagId })),
+        { onConflict: "client_id,tag_id", ignoreDuplicates: true }
+      );
+    if (addError) throw addError;
+  }
 }
 
 // ---------- Tags ----------
@@ -254,14 +438,18 @@ export async function setTripTags(tripId: string, tagIds: string[]): Promise<voi
 // ---------- Trips ----------
 
 export type CreateTripInput = {
-  clientIds: string[];
+  // Opcional solo para plantillas (isTemplate: true), que no tienen cliente
+  // asociado. Un viaje normal sigue requiriendo al menos un cliente.
+  clientIds?: string[];
   title: string;
   slug: string;
   startDate?: string;
   endDate?: string;
   coverImageUrl?: string;
   instructions?: string;
+  travelerCount?: number;
   tagIds?: string[];
+  isTemplate?: boolean;
 };
 
 export type UpdateTripInput = Partial<{
@@ -271,15 +459,46 @@ export type UpdateTripInput = Partial<{
   endDate: string;
   coverImageUrl: string;
   instructions: string | null;
+  travelerCount: number;
+  budget: number | null;
   status: Trip["status"];
+  showCostsToClient: boolean;
 }>;
 
-export async function getTrips(): Promise<Trip[]> {
-  if (!isSupabaseConfigured()) return mockTrips;
+export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
+  const { from, to, pageSize } = paginationBounds(params);
+  if (!isSupabaseConfigured()) {
+    const nonTemplateTrips = mockTrips.filter((t) => !t.isTemplate);
+    return {
+      items: nonTemplateTrips.slice(from, from + pageSize),
+      totalCount: nonTemplateTrips.length,
+    };
+  }
+  const supabase = await createServerSupabase();
+  const { data, error, count } = await supabase
+    .from("trips")
+    .select("*", { count: "exact" })
+    .eq("is_template", false)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error) throw error;
+  return { items: data.map(rowToTrip), totalCount: count ?? 0 };
+}
+
+// Viajes marcados como plantilla (issue #31): estructura de días/items
+// reusable, sin cliente asociado. Se listan aparte de getTrips() (que las
+// excluye) para el selector de "crear desde plantilla".
+export async function getTemplates(): Promise<Trip[]> {
+  if (!isSupabaseConfigured()) {
+    return mockTrips
+      .filter((t) => t.isTemplate)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trips")
     .select("*")
+    .eq("is_template", true)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data.map(rowToTrip);
@@ -289,35 +508,45 @@ export async function getTrips(): Promise<Trip[]> {
 // + UN solo clients.in() (sin N+1 por fila) y SIN cargar days/items/documents
 // (solo lo que necesita la vista de lista). clients[] queda ordenado por
 // created_at asc (orden de asignación), igual que assembleTripWithDetails.
-export async function getTripsWithClients(): Promise<
-  (Trip & { clients: Client[]; tags: Tag[] })[]
-> {
+export async function getTripsWithClients(
+  params: PaginationParams = {}
+): Promise<PaginatedResult<Trip & { clients: Client[]; tags: Tag[] }>> {
+  const { from, to, pageSize } = paginationBounds(params);
+
   if (!isSupabaseConfigured()) {
-    return mockTrips.map((trip) => ({
-      ...trip,
-      clients: mockTripClients
-        .filter((tc) => tc.tripId === trip.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((tc) => mockClients.find((c) => c.id === tc.clientId))
-        .filter((c): c is Client => Boolean(c)),
-      tags: mockTripTags
-        .filter((tt) => tt.tripId === trip.id)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((tt) => mockTags.find((t) => t.id === tt.tagId))
-        .filter((t): t is Tag => Boolean(t)),
-    }));
+    const nonTemplateTrips = mockTrips.filter((trip) => !trip.isTemplate);
+    const pageTrips = nonTemplateTrips.slice(from, from + pageSize);
+    return {
+      items: pageTrips.map((trip) => ({
+        ...trip,
+        clients: mockTripClients
+          .filter((tc) => tc.tripId === trip.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((tc) => mockClients.find((c) => c.id === tc.clientId))
+          .filter((c): c is Client => Boolean(c)),
+        tags: mockTripTags
+          .filter((tt) => tt.tripId === trip.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((tt) => mockTags.find((t) => t.id === tt.tagId))
+          .filter((t): t is Tag => Boolean(t)),
+      })),
+      totalCount: nonTemplateTrips.length,
+    };
   }
 
   const supabase = await createServerSupabase();
-  const { data: tripRows, error } = await supabase
+  const { data: tripRows, error, count } = await supabase
     .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .eq("is_template", false)
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
 
   const trips = (tripRows ?? []).map(rowToTrip);
+  const totalCount = count ?? 0;
   const tripIds = trips.map((t) => t.id);
-  if (!tripIds.length) return [];
+  if (!tripIds.length) return { items: [], totalCount };
 
   const { data: linkRows, error: linksError } = await supabase
     .from("trip_clients")
@@ -355,17 +584,41 @@ export async function getTripsWithClients(): Promise<
     tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
   }
 
-  return trips.map((trip) => ({
-    ...trip,
-    clients: (linkRows ?? [])
-      .filter((l) => l.trip_id === trip.id)
-      .map((l) => clientsById.get(l.client_id as string))
-      .filter((c): c is Client => Boolean(c)),
-    tags: (tagLinkRows ?? [])
-      .filter((l) => l.trip_id === trip.id)
-      .map((l) => tagsById.get(l.tag_id as string))
-      .filter((t): t is Tag => Boolean(t)),
-  }));
+  return {
+    items: trips.map((trip) => ({
+      ...trip,
+      clients: (linkRows ?? [])
+        .filter((l) => l.trip_id === trip.id)
+        .map((l) => clientsById.get(l.client_id as string))
+        .filter((c): c is Client => Boolean(c)),
+      tags: (tagLinkRows ?? [])
+        .filter((l) => l.trip_id === trip.id)
+        .map((l) => tagsById.get(l.tag_id as string))
+        .filter((t): t is Tag => Boolean(t)),
+    })),
+    totalCount,
+  };
+}
+
+// Viajes en estado "draft" cuya fecha de inicio cae dentro de los próximos
+// `withinDays` días (hoy incluido, pasado excluido). Reutiliza
+// getTripsWithClients (ya trae clients/tags batcheados) y filtra en JS: no
+// hay una columna derivada en la tabla, así que no se puede empujar el
+// filtro de fecha a Supabase sin una función/columna generada.
+export async function getUpcomingUnpublishedTrips(
+  withinDays = 7
+): Promise<(Trip & { clients: Client[]; tags: Tag[] })[]> {
+  const { items: trips } = await getTripsWithClients({ pageSize: ALL_TRIPS_PAGE_SIZE });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const limit = new Date(today);
+  limit.setDate(limit.getDate() + withinDays);
+
+  return trips.filter((trip) => {
+    if (trip.status !== "draft" || !trip.startDate) return false;
+    const start = new Date(trip.startDate + "T00:00:00");
+    return start >= today && start <= limit;
+  });
 }
 
 // Devuelve todos los viajes asignados a un cliente vía trip_clients (fuente
@@ -395,6 +648,30 @@ export async function getTripsByClientId(clientId: string): Promise<Trip[]> {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data.map(rowToTrip);
+}
+
+export type ClientTripSummary = {
+  totalTrips: number;
+  publishedCount: number;
+  draftCount: number;
+  archivedCount: number;
+  // Null porque items/trips no tienen un campo de costo hoy (ver issue #25,
+  // aún no mergeado). Si ese campo llega a existir, sumarlo aquí.
+  totalCost: number | null;
+};
+
+// Resumen agregado para la vista de detalle de cliente (issue #41). Se apoya
+// en getTripsByClientId para respetar el modo mock/Supabase sin duplicar
+// lógica de acceso a datos.
+export async function getClientTripSummary(clientId: string): Promise<ClientTripSummary> {
+  const trips = await getTripsByClientId(clientId);
+  return {
+    totalTrips: trips.length,
+    publishedCount: trips.filter((t) => t.status === "published").length,
+    draftCount: trips.filter((t) => t.status === "draft").length,
+    archivedCount: trips.filter((t) => t.status === "archived").length,
+    totalCost: null,
+  };
 }
 
 export async function getTripById(id: string): Promise<TripWithDetails | null> {
@@ -473,10 +750,23 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     tags = orderedTagIds.map((id) => tagById.get(id)).filter((t): t is Tag => Boolean(t));
   }
 
+  const { data: photoRows, error: photosError } = await supabase
+    .from("trip_photos")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (photosError) throw photosError;
+  const photos = (photoRows ?? []).map((row) => {
+    const photo = rowToTripPhoto(row);
+    const { data: publicUrlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(photo.filePath);
+    return { ...photo, url: publicUrlData.publicUrl };
+  });
+
   const { data: dayRows, error: daysError } = await supabase
     .from("trip_days")
     .select("*")
     .eq("trip_id", trip.id)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true });
   if (daysError) throw daysError;
 
@@ -487,6 +777,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
       .from("items")
       .select("*")
       .in("trip_day_id", dayIds)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true });
     if (itemsError) throw itemsError;
     itemRows = data ?? [];
@@ -517,12 +808,22 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     return { ...day, items };
   });
 
+  const { data: packingRows, error: packingError } = await supabase
+    .from("packing_items")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (packingError) throw packingError;
+  const packingItems = (packingRows ?? []).map(rowToPackingItem);
+
   return {
     ...trip,
     clients,
     client,
     tags,
+    photos,
     days,
+    packingItems,
   };
 }
 
@@ -531,25 +832,31 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
 // trips.client_id se sigue escribiendo como espejo de compatibilidad
 // (clientIds[0]); trip_clients es la fuente de verdad para lecturas.
 export async function createTrip(input: CreateTripInput): Promise<Trip> {
-  if (!input.clientIds || input.clientIds.length < 1) {
+  const isTemplate = input.isTemplate ?? false;
+  const clientIds = input.clientIds ?? [];
+  if (!isTemplate && clientIds.length < 1) {
     throw new Error("Se requiere al menos un cliente para crear el viaje");
   }
   if (!isSupabaseConfigured()) {
+    const now = new Date().toISOString();
     const trip: Trip = {
       id: uid(),
-      clientId: input.clientIds[0],
+      clientId: clientIds[0] ?? "",
       title: input.title,
       slug: input.slug,
       startDate: input.startDate ?? "",
       endDate: input.endDate ?? "",
       coverImageUrl: input.coverImageUrl,
       instructions: input.instructions,
+      travelerCount: input.travelerCount ?? 1,
       status: "draft",
-      createdAt: new Date().toISOString(),
+      isTemplate,
+      showCostsToClient: false,
+      createdAt: now,
+      updatedAt: now,
     };
     mockTrips.unshift(trip);
-    const now = new Date().toISOString();
-    input.clientIds.forEach((clientId, idx) => {
+    clientIds.forEach((clientId, idx) => {
       mockTripClients.push({
         tripId: trip.id,
         clientId,
@@ -569,23 +876,27 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
   const { data, error } = await supabase
     .from("trips")
     .insert({
-      client_id: input.clientIds[0],
+      client_id: clientIds[0] ?? null,
       title: input.title,
       slug: input.slug,
       start_date: input.startDate || null,
       end_date: input.endDate || null,
       cover_image_url: input.coverImageUrl,
       instructions: input.instructions ?? null,
+      traveler_count: input.travelerCount ?? 1,
+      is_template: isTemplate,
     })
     .select()
     .single();
   if (error) throw error;
   const trip = rowToTrip(data);
 
-  const { error: linksError } = await supabase
-    .from("trip_clients")
-    .insert(input.clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
-  if (linksError) throw linksError;
+  if (clientIds.length) {
+    const { error: linksError } = await supabase
+      .from("trip_clients")
+      .insert(clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
+    if (linksError) throw linksError;
+  }
 
   if (input.tagIds?.length) {
     const { error: tagLinksError } = await supabase
@@ -594,6 +905,67 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
     if (tagLinksError) throw tagLinksError;
   }
 
+  return trip;
+}
+
+// Copia días + items (sin documentos, issue #31) de un viaje/plantilla origen
+// hacia un viaje destino recién creado. Reusa createTripDay/createItem (que
+// ya manejan mock/Supabase) en vez de duplicar esa lógica aquí.
+async function copyTripDaysAndItems(sourceTripId: string, destTripId: string): Promise<void> {
+  const source = await getTripById(sourceTripId);
+  if (!source) throw new Error("Viaje origen no encontrado");
+  for (const day of source.days) {
+    const newDay = await createTripDay({
+      tripId: destTripId,
+      date: day.date,
+      notes: day.notes,
+      sortOrder: day.sortOrder,
+    });
+    for (const item of day.items) {
+      await createItem({
+        tripDayId: newDay.id,
+        type: item.type,
+        title: item.title,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        location: item.location,
+        lat: item.lat,
+        lng: item.lng,
+        confirmationCode: item.confirmationCode,
+        notes: item.notes,
+        sortOrder: item.sortOrder,
+      });
+    }
+  }
+}
+
+function templateSlug(title: string): string {
+  const base =
+    title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "plantilla";
+  return `plantilla-${base}-${Date.now().toString(36)}`;
+}
+
+// Guarda la estructura de días/items de un viaje existente como una nueva
+// plantilla (is_template = true, sin cliente). No copia documentos.
+export async function saveTripAsTemplate(tripId: string, title: string): Promise<Trip> {
+  const template = await createTrip({ title, slug: templateSlug(title), isTemplate: true });
+  await copyTripDaysAndItems(tripId, template.id);
+  return template;
+}
+
+// Crea un viaje normal (requiere clientIds como createTrip) y le copia la
+// estructura de días/items de una plantilla existente.
+export async function createTripFromTemplate(
+  templateId: string,
+  input: CreateTripInput
+): Promise<Trip> {
+  const trip = await createTrip(input);
+  await copyTripDaysAndItems(templateId, trip.id);
   return trip;
 }
 
@@ -682,7 +1054,11 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.endDate !== undefined) trip.endDate = input.endDate;
     if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
     if (input.instructions !== undefined) trip.instructions = input.instructions ?? undefined;
+    if (input.travelerCount !== undefined) trip.travelerCount = input.travelerCount;
+    if (input.budget !== undefined) trip.budget = input.budget ?? undefined;
     if (input.status !== undefined) trip.status = input.status;
+    if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
+    trip.updatedAt = new Date().toISOString();
     return trip;
   }
   const supabase = await createServerSupabase();
@@ -693,7 +1069,10 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.endDate !== undefined) patch.end_date = input.endDate;
   if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl;
   if (input.instructions !== undefined) patch.instructions = input.instructions;
+  if (input.travelerCount !== undefined) patch.traveler_count = input.travelerCount;
+  if (input.budget !== undefined) patch.budget = input.budget;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.showCostsToClient !== undefined) patch.show_costs_to_client = input.showCostsToClient;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToTrip(data);
@@ -706,7 +1085,7 @@ export type MonthlyTripCount = { label: string; count: number };
 // hace en JS (no SQL) para funcionar igual en modo mock y en modo Supabase,
 // reutilizando getTrips() en vez de una query nueva.
 export async function getTripsPerMonth(): Promise<MonthlyTripCount[]> {
-  const trips = await getTrips();
+  const { items: trips } = await getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE });
 
   const now = new Date();
   const months: { year: number; month: number }[] = [];
@@ -743,8 +1122,93 @@ function rowToTrip(row: Record<string, unknown>): Trip {
     endDate: (row.end_date as string) ?? "",
     coverImageUrl: (row.cover_image_url as string) ?? undefined,
     instructions: (row.instructions as string) ?? undefined,
+    travelerCount: (row.traveler_count as number) ?? 1,
+    budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
     status: row.status as Trip["status"],
+    isTemplate: Boolean(row.is_template),
+    showCostsToClient: Boolean(row.show_costs_to_client),
     createdAt: row.created_at as string,
+    updatedAt: (row.updated_at as string) ?? (row.created_at as string),
+  };
+}
+
+// ---------- Packing list (issue #24) ----------
+
+export type CreatePackingItemInput = { tripId: string; label: string; sortOrder?: number };
+export type UpdatePackingItemInput = Partial<{ label: string; checked: boolean; sortOrder: number }>;
+
+export async function createPackingItem(input: CreatePackingItemInput): Promise<PackingItem> {
+  if (!isSupabaseConfigured()) {
+    const item: PackingItem = {
+      id: uid(),
+      tripId: input.tripId,
+      label: input.label,
+      checked: false,
+      sortOrder:
+        input.sortOrder ?? mockPackingItems.filter((p) => p.tripId === input.tripId).length,
+    };
+    mockPackingItems.push(item);
+    return item;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("packing_items")
+    .insert({
+      trip_id: input.tripId,
+      label: input.label,
+      sort_order: input.sortOrder ?? 0,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToPackingItem(data);
+}
+
+export async function updatePackingItem(
+  id: string,
+  input: UpdatePackingItemInput
+): Promise<PackingItem> {
+  if (!isSupabaseConfigured()) {
+    const item = mockPackingItems.find((p) => p.id === id);
+    if (!item) throw new Error("Item de equipaje no encontrado");
+    if (input.label !== undefined) item.label = input.label;
+    if (input.checked !== undefined) item.checked = input.checked;
+    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
+    return item;
+  }
+  const supabase = await createServerSupabase();
+  const patch: Record<string, unknown> = {};
+  if (input.label !== undefined) patch.label = input.label;
+  if (input.checked !== undefined) patch.checked = input.checked;
+  if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
+  const { data, error } = await supabase
+    .from("packing_items")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToPackingItem(data);
+}
+
+export async function deletePackingItem(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const idx = mockPackingItems.findIndex((p) => p.id === id);
+    if (idx >= 0) mockPackingItems.splice(idx, 1);
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("packing_items").delete().eq("id", id);
+  if (error) throw error;
+}
+
+function rowToPackingItem(row: Record<string, unknown>): PackingItem {
+  return {
+    id: row.id as string,
+    tripId: row.trip_id as string,
+    label: row.label as string,
+    checked: row.checked as boolean,
+    sortOrder: row.sort_order as number,
   };
 }
 
@@ -806,17 +1270,33 @@ export async function updateTripDay(id: string, input: UpdateTripDayInput): Prom
   return rowToTripDay(data);
 }
 
+// Soft delete (issue #23): marca deleted_at en vez de borrar la fila, para
+// poder deshacer dentro de la misma sesión (toast "Deshacer"). Los items de
+// ese día NO se marcan individualmente: quedan ocultos porque las consultas
+// de lectura (assembleTripWithDetails / mock getTripWithDetails) ya excluyen
+// items cuyo trip_day padre está soft-deleted.
 export async function deleteTripDay(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
-    const idx = mockTripDays.findIndex((d) => d.id === id);
-    if (idx >= 0) mockTripDays.splice(idx, 1);
-    for (let i = mockItems.length - 1; i >= 0; i--) {
-      if (mockItems[i].tripDayId === id) mockItems.splice(i, 1);
-    }
+    const day = mockTripDays.find((d) => d.id === id);
+    if (day) day.deletedAt = new Date().toISOString();
     return;
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("trip_days").delete().eq("id", id);
+  const { error } = await supabase
+    .from("trip_days")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function restoreTripDay(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const day = mockTripDays.find((d) => d.id === id);
+    if (day) day.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("trip_days").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
 
@@ -843,6 +1323,7 @@ export type CreateItemInput = {
   lng?: number;
   confirmationCode?: string;
   notes?: string;
+  cost?: number;
   sortOrder?: number;
 };
 
@@ -862,6 +1343,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmationCode: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost,
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
     };
@@ -882,6 +1364,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lng: input.lng,
       confirmation_code: input.confirmationCode,
       notes: input.notes,
+      cost: input.cost ?? null,
       sort_order: input.sortOrder ?? 0,
     })
     .select()
@@ -908,20 +1391,36 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.lng !== undefined) patch.lng = input.lng;
   if (input.confirmationCode !== undefined) patch.confirmation_code = input.confirmationCode;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.cost !== undefined) patch.cost = input.cost ?? null;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToItem(data);
 }
 
+// Soft delete (issue #23): ver comentario de deleteTripDay.
 export async function deleteItem(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
-    const idx = mockItems.findIndex((i) => i.id === id);
-    if (idx >= 0) mockItems.splice(idx, 1);
+    const item = mockItems.find((i) => i.id === id);
+    if (item) item.deletedAt = new Date().toISOString();
     return;
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.from("items").delete().eq("id", id);
+  const { error } = await supabase
+    .from("items")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function restoreItem(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const item = mockItems.find((i) => i.id === id);
+    if (item) item.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("items").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
 
@@ -970,6 +1469,7 @@ function rowToItem(row: Record<string, unknown>): Item {
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
     confirmationCode: (row.confirmation_code as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
+    cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     sortOrder: row.sort_order as number,
   };
 }
@@ -982,6 +1482,7 @@ export async function createDocument(input: {
   itemId: string;
   fileUrl: string;
   fileName: string;
+  mimeType?: string;
 }): Promise<ItemDocument> {
   if (!isSupabaseConfigured()) {
     return {
@@ -989,13 +1490,19 @@ export async function createDocument(input: {
       itemId: input.itemId,
       fileUrl: input.fileUrl,
       fileName: input.fileName,
+      mimeType: input.mimeType,
       uploadedAt: new Date().toISOString(),
     };
   }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("documents")
-    .insert({ item_id: input.itemId, file_url: input.fileUrl, file_name: input.fileName })
+    .insert({
+      item_id: input.itemId,
+      file_url: input.fileUrl,
+      file_name: input.fileName,
+      mime_type: input.mimeType ?? null,
+    })
     .select()
     .single();
   if (error) throw error;
@@ -1027,7 +1534,7 @@ export async function uploadItemDocument(itemId: string, file: File): Promise<It
     .from(DOCUMENTS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
   if (uploadError) throw uploadError;
-  return createDocument({ itemId, fileUrl: path, fileName: file.name });
+  return createDocument({ itemId, fileUrl: path, fileName: file.name, mimeType: file.type || undefined });
 }
 
 // Genera una URL firmada de corta duración para descargar/ver un documento
@@ -1064,8 +1571,200 @@ function rowToDocument(row: Record<string, unknown>): ItemDocument {
     itemId: row.item_id as string,
     fileUrl: row.file_url as string,
     fileName: row.file_name as string,
+    mimeType: (row.mime_type as string | null) ?? undefined,
     uploadedAt: row.uploaded_at as string,
   };
+}
+
+// ---------- Actividad reciente (dashboard) ----------
+
+export type ActivityFeedItem = {
+  id: string;
+  entityType: "trip" | "client";
+  action: "created" | "updated";
+  title: string;
+  href: string;
+  timestamp: string;
+};
+
+// Feed combinado de los N eventos más recientes entre trips y clients,
+// ordenado por updated_at desc. No hay un log de eventos separado: se
+// clasifica cada fila como "updated" si updated_at se movió después de
+// created_at (con margen de 1s para tolerar el redondeo del insert inicial),
+// o "created" si no.
+export async function getRecentActivity(limit = 8): Promise<ActivityFeedItem[]> {
+  const [{ items: trips }, { items: clients }] = await Promise.all([
+    getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE }),
+    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
+  ]);
+
+  const wasEdited = (createdAt: string, updatedAt: string) =>
+    Date.parse(updatedAt) - Date.parse(createdAt) > 1000;
+
+  const tripItems: ActivityFeedItem[] = trips.map((trip) => ({
+    id: trip.id,
+    entityType: "trip",
+    action: wasEdited(trip.createdAt, trip.updatedAt) ? "updated" : "created",
+    title: trip.title,
+    href: `/dashboard/trips/${trip.id}`,
+    timestamp: trip.updatedAt,
+  }));
+
+  const clientItems: ActivityFeedItem[] = clients.map((client) => ({
+    id: client.id,
+    entityType: "client",
+    action: wasEdited(client.createdAt, client.updatedAt) ? "updated" : "created",
+    title: client.name,
+    href: `/dashboard/clients/${client.id}`,
+    timestamp: client.updatedAt,
+  }));
+
+  return [...tripItems, ...clientItems]
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .slice(0, limit);
+}
+
+// ---------- Trip photos (galería pública) ----------
+
+// Bucket público (a diferencia de "trip-documents", privado): las fotos
+// están pensadas para verse en /t/{slug}, ver
+// supabase/migrations/0012_trip_photos.sql.
+const PHOTOS_BUCKET = "trip-photos";
+
+function rowToTripPhoto(row: Record<string, unknown>): TripPhoto {
+  return {
+    id: row.id as string,
+    tripId: row.trip_id as string,
+    filePath: row.file_path as string,
+    fileName: row.file_name as string,
+    sortOrder: row.sort_order as number,
+    createdAt: row.created_at as string,
+  };
+}
+
+export async function getTripPhotos(
+  tripId: string
+): Promise<(TripPhoto & { url: string | null })[]> {
+  if (!isSupabaseConfigured()) {
+    return mockTripPhotos
+      .filter((p) => p.tripId === tripId)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((p) => ({ ...p, url: p.filePath }));
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trip_photos")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => {
+    const photo = rowToTripPhoto(row);
+    const { data: publicUrlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(photo.filePath);
+    return { ...photo, url: publicUrlData.publicUrl };
+  });
+}
+
+// Sube una imagen al bucket público "trip-photos" (ver
+// supabase/migrations/0012_trip_photos.sql) y registra la foto. Requiere
+// Supabase configurado; si no, lanza para que la UI muestre el mensaje de
+// "configura Supabase" en vez de fallar en silencio (mismo patrón que
+// uploadItemDocument).
+export async function uploadTripPhoto(tripId: string, file: File): Promise<TripPhoto> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se pueden subir fotos.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `${tripId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+
+  const { count } = await supabase
+    .from("trip_photos")
+    .select("*", { count: "exact", head: true })
+    .eq("trip_id", tripId);
+
+  const { data, error } = await supabase
+    .from("trip_photos")
+    .insert({
+      trip_id: tripId,
+      file_path: path,
+      file_name: file.name,
+      sort_order: count ?? 0,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToTripPhoto(data);
+}
+
+export async function deleteTripPhoto(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = await createServerSupabase();
+  const { data: row } = await supabase
+    .from("trip_photos")
+    .select("file_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (row?.file_path) {
+    await supabase.storage.from(PHOTOS_BUCKET).remove([row.file_path as string]);
+  }
+  const { error } = await supabase.from("trip_photos").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- Dashboard stats ----------
+
+export type TripStats = {
+  byStatus: Record<Trip["status"], number>;
+  upcomingNext7: number;
+  upcomingNext30: number;
+  newClientsThisMonth: number;
+  unpublishedNearStart: number;
+};
+
+// Se apoya en getTrips()/getClients() (ya cubren el modo dual mock/Supabase),
+// pidiendo el catálogo completo vía ALL_*_PAGE_SIZE, y calcula los conteos en
+// JS: al ser una sola cuenta de agente, el volumen de trips/clients es bajo y
+// no justifica duplicar el branching de isSupabaseConfigured() con queries
+// agregadas.
+export async function getTripStats(): Promise<TripStats> {
+  const [{ items: trips }, { items: clients }] = await Promise.all([
+    getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE }),
+    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
+  ]);
+
+  const now = new Date();
+  const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const byStatus: Record<Trip["status"], number> = { draft: 0, published: 0, archived: 0 };
+  let upcomingNext7 = 0;
+  let upcomingNext30 = 0;
+  let unpublishedNearStart = 0;
+
+  for (const trip of trips) {
+    byStatus[trip.status] = (byStatus[trip.status] ?? 0) + 1;
+
+    const start = trip.startDate ? new Date(trip.startDate) : null;
+    const hasValidStart = start !== null && !Number.isNaN(start.getTime());
+
+    if (hasValidStart && start! >= now && start! <= in7Days) upcomingNext7++;
+    if (hasValidStart && start! >= now && start! <= in30Days) upcomingNext30++;
+    if (trip.status === "draft" && hasValidStart && start! >= now && start! <= in30Days) {
+      unpublishedNearStart++;
+    }
+  }
+
+  const newClientsThisMonth = clients.filter((client) => {
+    const created = new Date(client.createdAt);
+    return !Number.isNaN(created.getTime()) && created >= startOfMonth;
+  }).length;
+
+  return { byStatus, upcomingNext7, upcomingNext30, newClientsThisMonth, unpublishedNearStart };
 }
 
 // ---------- Site settings (contacto público, fila singleton) ----------
