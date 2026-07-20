@@ -29,6 +29,7 @@ create index if not exists idx_trip_clients_client_id on trip_clients(client_id)
 alter table trip_clients enable row level security;
 alter table trip_clients force row level security;
 
+drop policy if exists "trip_clients_owner_all" on trip_clients;
 create policy "trip_clients_owner_all" on trip_clients
   for all
   using (auth.uid() is not null)
