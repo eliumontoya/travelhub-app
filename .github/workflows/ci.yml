@@ -70,6 +70,7 @@ jobs:
         run: npx playwright test --project=chromium
         env:
           BASE_URL: ${{ steps.deploy.outputs.preview-url }}
+          VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
