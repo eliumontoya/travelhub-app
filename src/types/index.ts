@@ -109,6 +109,74 @@ export interface TripPhoto {
   createdAt: string;
 }
 
+// ---------- Metadata discriminated union per ItemType ----------
+
+export interface FlightMetadata {
+  airline: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTime: string;
+  arrivalTime: string;
+  terminal?: string;
+  gate?: string;
+  seat?: string;
+  bookingReference?: string;
+}
+
+export interface HotelMetadata {
+  hotelName: string;
+  address: string;
+  checkIn: string;
+  checkOut: string;
+  roomType: string;
+  boardBasis: string;
+  bookingReference?: string;
+  hotelPhone?: string;
+  specialRequests?: string;
+}
+
+export interface ActivityMetadata {
+  activityName: string;
+  provider: string;
+  address: string;
+  startTime: string;
+  endTime: string;
+  duration?: string;
+  ticketType?: string;
+  bookingReference?: string;
+  includes?: string;
+  meetingPoint?: string;
+}
+
+export interface RestaurantMetadata {
+  restaurantName: string;
+  address: string;
+  cuisine: string;
+  dressCode?: string;
+  reservationReference?: string;
+  phone?: string;
+}
+
+export interface TransportMetadata {
+  company: string;
+  pickupLocation: string;
+  dropoffLocation: string;
+  pickupTime: string;
+  vehicleType?: string;
+  driverName?: string;
+  driverPhone?: string;
+  bookingReference?: string;
+}
+
+export type ItemMetadata =
+  | FlightMetadata
+  | HotelMetadata
+  | ActivityMetadata
+  | RestaurantMetadata
+  | TransportMetadata
+  | null;
+
 export interface Item {
   id: string;
   tripDayId: string;
@@ -123,6 +191,7 @@ export interface Item {
   notes?: string;
   cost?: number;
   sortOrder: number;
+  metadata?: ItemMetadata;
   documents?: ItemDocument[];
   deletedAt?: string;
 }
