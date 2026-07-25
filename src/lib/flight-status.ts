@@ -33,15 +33,15 @@ function extractFlightNumber(title: string): string | null {
   return null;
 }
 
-export async function getFlightStatus(title: string): Promise<string | null> {
+export async function getFlightStatus(title: string, flightNumber?: string | null): Promise<string | null> {
   const apiKey = process.env.FLIGHT_API_KEY;
   if (!apiKey) return null;
 
-  const flightNumber = extractFlightNumber(title);
-  if (!flightNumber) return null;
+  const fn = flightNumber || extractFlightNumber(title);
+  if (!fn) return null;
 
   try {
-    const url = `${AVIATIONSTACK_URL}?access_key=${apiKey}&flight_iata=${flightNumber}`;
+    const url = `${AVIATIONSTACK_URL}?access_key=${apiKey}&flight_iata=${fn}`;
     const res = await fetch(url, { next: { revalidate: 300 } });
     if (!res.ok) return null;
 

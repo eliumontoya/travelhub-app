@@ -1,7 +1,13 @@
 import { getFlightStatus } from "@/lib/flight-status";
 
-export async function FlightStatusBadge({ title }: { title: string }) {
-  const status = await getFlightStatus(title);
+export async function FlightStatusBadge({
+  title,
+  flightNumber,
+}: {
+  title: string;
+  flightNumber?: string | null;
+}) {
+  const status = await getFlightStatus(title, flightNumber);
   if (!status) return null;
 
   return (

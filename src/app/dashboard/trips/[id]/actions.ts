@@ -32,6 +32,7 @@ import {
   uploadTripPhoto,
 } from "@/lib/data";
 import { ItemType, TripCurrency } from "@/types";
+import { validateItemMetadata } from "@/lib/item-metadata-schemas";
 
 const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
@@ -124,9 +125,19 @@ export async function moveDayAction(
 export async function addItemAction(tripId: string, dayId: string, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
+  const type = String(formData.get("type") ?? "note") as ItemType;
+  const metadataRaw = formData.get("metadata");
+  let metadata: Record<string, unknown> | null | undefined;
+  if (metadataRaw && String(metadataRaw).trim()) {
+    try {
+      metadata = validateItemMetadata(type, JSON.parse(String(metadataRaw)));
+    } catch {
+      throw new Error("Datos del item inválidos: revisa los campos específicos del tipo.");
+    }
+  }
   await createItem({
     tripDayId: dayId,
-    type: String(formData.get("type") ?? "note") as ItemType,
+    type,
     title,
     startTime: String(formData.get("startTime") ?? "").trim() || undefined,
     endTime: String(formData.get("endTime") ?? "").trim() || undefined,
@@ -136,13 +147,24 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
+    metadata: metadata ?? undefined,
   });
   revalidateTrip(tripId);
 }
 
 export async function editItemAction(tripId: string, itemId: string, formData: FormData) {
+  const type = String(formData.get("type") ?? "note") as ItemType;
+  const metadataRaw = formData.get("metadata");
+  let metadata: Record<string, unknown> | null | undefined;
+  if (metadataRaw && String(metadataRaw).trim()) {
+    try {
+      metadata = validateItemMetadata(type, JSON.parse(String(metadataRaw)));
+    } catch {
+      throw new Error("Datos del item inválidos: revisa los campos específicos del tipo.");
+    }
+  }
   await updateItem(itemId, {
-    type: String(formData.get("type") ?? "note") as ItemType,
+    type,
     title: String(formData.get("title") ?? "").trim(),
     startTime: String(formData.get("startTime") ?? "").trim() || undefined,
     endTime: String(formData.get("endTime") ?? "").trim() || undefined,
@@ -152,6 +174,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
+    metadata: metadata ?? undefined,
   });
   revalidateTrip(tripId);
 }

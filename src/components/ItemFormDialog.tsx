@@ -8,6 +8,85 @@ import { showUndoToast } from "@/components/UndoToast";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
+type MetadataFieldDef = {
+  name: string;
+  label: string;
+  type: "text" | "time" | "date" | "select" | "textarea";
+  options?: { value: string; label: string }[];
+};
+
+const metadataFieldsByType: Record<ItemType, MetadataFieldDef[]> = {
+  flight: [
+    { name: "airline", label: "Aerolínea", type: "text" },
+    { name: "flightNumber", label: "Número de vuelo", type: "text" },
+    { name: "departureAirport", label: "Aeropuerto de salida", type: "text" },
+    { name: "arrivalAirport", label: "Aeropuerto de llegada", type: "text" },
+    { name: "terminal", label: "Terminal", type: "text" },
+    { name: "gate", label: "Puerta", type: "text" },
+    { name: "seat", label: "Asiento", type: "text" },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+  ],
+  hotel: [
+    { name: "hotelName", label: "Nombre del hotel", type: "text" },
+    { name: "address", label: "Dirección", type: "text" },
+    { name: "checkIn", label: "Check-in", type: "date" },
+    { name: "checkOut", label: "Check-out", type: "date" },
+    { name: "roomType", label: "Tipo de habitación", type: "text" },
+    {
+      name: "boardBasis",
+      label: "Régimen",
+      type: "select",
+      options: [
+        { value: "Solo alojamiento", label: "Solo alojamiento" },
+        { value: "Desayuno incluido", label: "Desayuno incluido" },
+        { value: "Media pensión", label: "Media pensión" },
+        { value: "Pensión completa", label: "Pensión completa" },
+        { value: "Todo incluido", label: "Todo incluido" },
+      ],
+    },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+    { name: "hotelPhone", label: "Teléfono del hotel", type: "text" },
+    { name: "specialRequests", label: "Solicitudes especiales", type: "textarea" },
+  ],
+  activity: [
+    { name: "activityName", label: "Nombre de la actividad", type: "text" },
+    { name: "provider", label: "Proveedor", type: "text" },
+    { name: "address", label: "Dirección", type: "text" },
+    { name: "duration", label: "Duración", type: "text" },
+    { name: "ticketType", label: "Tipo de entrada", type: "text" },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+    { name: "includes", label: "Incluye", type: "text" },
+    { name: "meetingPoint", label: "Punto de encuentro", type: "text" },
+  ],
+  restaurant: [
+    { name: "restaurantName", label: "Nombre del restaurante", type: "text" },
+    { name: "address", label: "Dirección", type: "text" },
+    { name: "cuisine", label: "Tipo de cocina", type: "text" },
+    { name: "dressCode", label: "Código de vestimenta", type: "text" },
+    { name: "reservationReference", label: "Referencia de reserva", type: "text" },
+    { name: "phone", label: "Teléfono", type: "text" },
+  ],
+  transport: [
+    { name: "company", label: "Empresa", type: "text" },
+    { name: "pickupLocation", label: "Lugar de recogida", type: "text" },
+    { name: "dropoffLocation", label: "Lugar de destino", type: "text" },
+    { name: "pickupTime", label: "Hora de recogida", type: "text" },
+    { name: "vehicleType", label: "Tipo de vehículo", type: "text" },
+    { name: "driverName", label: "Nombre del conductor", type: "text" },
+    { name: "driverPhone", label: "Teléfono del conductor", type: "text" },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+  ],
+  note: [],
+};
+
+function metadataDefaultValue(item: Item | undefined, fieldName: string): string | undefined {
+  if (!item?.metadata) return undefined;
+  const m = item.metadata as unknown as Record<string, unknown> | null;
+  if (!m) return undefined;
+  const val = m[fieldName];
+  return typeof val === "string" ? val : undefined;
+}
+
 type DocWithUrl = ItemDocument & { url: string | null };
 
 function DocumentPreview({ doc }: { doc: DocWithUrl }) {
@@ -87,9 +166,11 @@ export function ItemFormDialog({
   const [error, setError] = useState<string | null>(null);
   const [docs, setDocs] = useState<DocWithUrl[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [selectedType, setSelectedType] = useState<ItemType>(item?.type ?? "activity");
 
   function open() {
     setError(null);
+    setSelectedType(item?.type ?? "activity");
     dialogRef.current?.showModal();
     if (item && onLoadDocuments) {
       setDocsLoading(true);
@@ -109,6 +190,21 @@ export function ItemFormDialog({
     if (!String(formData.get("title") ?? "").trim()) {
       setError("El título es obligatorio");
       return;
+    }
+    // Serialize metadata fields to JSON
+    const mFields = metadataFieldsByType[selectedType];
+    const metadataValues: Record<string, string> = {};
+    let hasAnyValue = false;
+    for (const field of mFields) {
+      const val = String(formData.get(`metadata_${field.name}`) ?? "").trim();
+      if (val) {
+        metadataValues[field.name] = val;
+        hasAnyValue = true;
+      }
+      formData.delete(`metadata_${field.name}`);
+    }
+    if (hasAnyValue) {
+      formData.set("metadata", JSON.stringify(metadataValues));
     }
     startTransition(async () => {
       await onSubmit(formData);
@@ -165,7 +261,8 @@ export function ItemFormDialog({
             <label className="block text-sm font-medium text-gray-700">Tipo</label>
             <select
               name="type"
-              defaultValue={item?.type ?? "activity"}
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value as ItemType)}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             >
               {itemTypes.map((t) => (
@@ -250,6 +347,49 @@ export function ItemFormDialog({
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
+
+          {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
+            <div className="border-t border-gray-100 pt-4">
+              <h4 className="mb-3 text-sm font-semibold text-gray-800">
+                {itemTypeMeta[selectedType].icon} Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}
+              </h4>
+              <div className="space-y-3">
+                {metadataFieldsByType[selectedType].map((field) => (
+                  <div key={field.name}>
+                    <label className="block text-sm font-medium text-gray-700">{field.label}</label>
+                    {field.type === "textarea" ? (
+                      <textarea
+                        name={`metadata_${field.name}`}
+                        defaultValue={metadataDefaultValue(item, field.name)}
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    ) : field.type === "select" && field.options ? (
+                      <select
+                        name={`metadata_${field.name}`}
+                        defaultValue={metadataDefaultValue(item, field.name) ?? ""}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {field.options.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        name={`metadata_${field.name}`}
+                        defaultValue={metadataDefaultValue(item, field.name)}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {item && (
             <div className="border-t border-gray-100 pt-4">
