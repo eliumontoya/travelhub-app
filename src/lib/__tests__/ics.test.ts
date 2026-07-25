@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildIcsForItem, buildIcsForTrip } from "@/lib/ics";
-import { Item, TripWithDetails } from "@/types";
+import { Client, Item, TripWithDetails } from "@/types";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -34,7 +34,7 @@ function makeTrip(): TripWithDetails {
     createdAt: "2026-07-01T09:00:00Z",
     updatedAt: "2026-07-01T09:00:00Z",
     clients: [],
-    client: {} as any,
+    client: {} as unknown as Client,
     tags: [],
     statusHistory: [],
     photos: [],

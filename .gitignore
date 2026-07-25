@@ -32,3 +32,5 @@ playwright/.cache/
 .atl/
 .config/
 .env*
+.DS_Store
+opencode.json

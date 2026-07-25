@@ -795,6 +795,7 @@ export async function getTripWithDetails(slug: string): Promise<TripWithDetails 
   if (!isSupabaseConfigured()) {
     const trip = mockGetTripWithDetails(slug);
     if (!trip) return null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { salePrice: _salePrice, commissionRate: _commissionRate, ...publicTrip } = trip;
     return publicTrip as TripWithDetails;
   }

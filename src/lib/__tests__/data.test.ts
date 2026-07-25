@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/supabase/server", () => ({
   isSupabaseConfigured: () => false,
@@ -11,13 +11,11 @@ import {
   createClient,
   updateClient,
   getTrips,
-  getTripById,
   getTripWithDetails,
   getTripsByClientId,
   getClientTripSummary,
   getTags,
   getOrCreateTag,
-  DEFAULT_PAGE_SIZE,
 } from "@/lib/data";
 
 describe("data layer (mock mode)", () => {

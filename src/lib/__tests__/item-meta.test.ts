@@ -7,7 +7,7 @@ import {
   computeTripCompleteness,
   formatRelativeTime,
 } from "@/lib/item-meta";
-import { Client, ItemType, TripWithDetails } from "@/types";
+import { Client, Item, ItemType, TripDay, TripWithDetails } from "@/types";
 
 describe("itemTypeMeta", () => {
   it("tiene metadata para todos los tipos de item", () => {
@@ -87,7 +87,7 @@ describe("computeTripCompleteness", () => {
     }) as TripWithDetails;
 
   it("retorna 100% cuando no hay items", () => {
-    const result = computeTripCompleteness(makeTrip([{ items: [] } as any]));
+    const result = computeTripCompleteness(makeTrip([{ items: [] } as unknown as TripDay & { items: Item[] }]));
     expect(result.documentPercentage).toBe(100);
     expect(result.totalItems).toBe(0);
   });
@@ -97,11 +97,11 @@ describe("computeTripCompleteness", () => {
       makeTrip([
         {
           items: [
-            { documents: [{}] } as any,
-            { documents: [{}] } as any,
-            { documents: [] } as any,
+            { documents: [{}] } as unknown as Item,
+            { documents: [{}] } as unknown as Item,
+            { documents: [] } as unknown as Item,
           ],
-        } as any,
+        } as unknown as TripDay & { items: Item[] },
       ])
     );
     expect(result.totalItems).toBe(3);
@@ -112,9 +112,9 @@ describe("computeTripCompleteness", () => {
   it("identifica días vacíos", () => {
     const result = computeTripCompleteness(
       makeTrip([
-        { id: "d1", date: "2026-09-10", items: [] } as any,
-        { id: "d2", date: "2026-09-11", items: [{ documents: [] } as any] } as any,
-        { id: "d3", date: "2026-09-12", items: [] } as any,
+        { id: "d1", date: "2026-09-10", items: [] } as unknown as TripDay & { items: Item[] },
+        { id: "d2", date: "2026-09-11", items: [{ documents: [] } as unknown as Item] } as unknown as TripDay & { items: Item[] },
+        { id: "d3", date: "2026-09-12", items: [] } as unknown as TripDay & { items: Item[] },
       ])
     );
     expect(result.emptyDays).toHaveLength(2);
