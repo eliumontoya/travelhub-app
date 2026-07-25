@@ -58,13 +58,13 @@ jobs:
 
       - name: Deploy Preview to Vercel
         id: deploy
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: "--yes"
-          working-directory: ./
+        run: |
+          url=$(npx vercel --token "${{ secrets.VERCEL_TOKEN }}" --cwd . 2>&1 | grep -oE 'https://[^ ]+\.vercel\.app' | head -1)
+          echo "preview-url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview deployed at: $url"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Run Playwright Tests
         run: npx playwright test --project=chromium
@@ -83,7 +83,8 @@ jobs:
 
       - name: Cleanup Vercel Preview
         if: always()
-        run: npx vercel rm --yes --token ${{ secrets.VERCEL_TOKEN }} || true
+        run: |
+          npx vercel rm --token "${{ secrets.VERCEL_TOKEN }}" --cwd . || true
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
