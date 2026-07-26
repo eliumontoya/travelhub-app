@@ -1,12 +1,16 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Item, ItemDocument, ItemType } from "@/types";
+import { Item, ItemDocument, ItemType, Supplier } from "@/types";
 import { itemTypeMeta } from "@/lib/item-meta";
 import { LocationInput } from "@/components/LocationInput";
+import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
+
+/** Tipos de item que muestran el selector de proveedor */
+const SUPPLIER_ENABLED_TYPES = new Set(["hotel", "restaurant", "transport"]);
 
 type DocWithUrl = ItemDocument & { url: string | null };
 
@@ -63,6 +67,7 @@ function DocumentPreview({ doc }: { doc: DocWithUrl }) {
 export function ItemFormDialog({
   trigger,
   item,
+  allSuppliers,
   onSubmit,
   onDelete,
   onUndoDelete,
@@ -73,6 +78,7 @@ export function ItemFormDialog({
 }: {
   trigger: React.ReactNode;
   item?: Item;
+  allSuppliers?: Supplier[];
   onSubmit: (formData: FormData) => Promise<void>;
   onDelete?: () => Promise<void>;
   onUndoDelete?: () => Promise<void>;
@@ -87,9 +93,15 @@ export function ItemFormDialog({
   const [error, setError] = useState<string | null>(null);
   const [docs, setDocs] = useState<DocWithUrl[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [autoFillType, setAutoFillType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string>(item?.type ?? "activity");
 
   function open() {
     setError(null);
+    setSelectedType(item?.type ?? "activity");
+    setAutoFillType(null);
+    setSuppliers(allSuppliers ?? []);
     dialogRef.current?.showModal();
     if (item && onLoadDocuments) {
       setDocsLoading(true);
@@ -110,6 +122,15 @@ export function ItemFormDialog({
       setError("El título es obligatorio");
       return;
     }
+    // Apply auto-filled type from supplier selection if present
+    if (autoFillType) {
+      formData.set("type", autoFillType);
+    }
+    // Remove the supplier combobox hidden field name if no supplier selected
+    // (hidden input always submits an empty string if no selection)
+    if (!formData.get("supplierId") || formData.get("supplierId") === "") {
+      formData.delete("supplierId");
+    }
     startTransition(async () => {
       await onSubmit(formData);
       close();
@@ -126,6 +147,14 @@ export function ItemFormDialog({
         showUndoToast({ message: "Item eliminado", onUndo: onUndoDelete });
       }
     });
+  }
+
+  function handleSupplierSelected(supplier: Supplier) {
+    // Auto-fill item type when supplier type maps to an item type
+    if (supplier.type === "hotel" || supplier.type === "restaurant" || supplier.type === "transport") {
+      setAutoFillType(supplier.type);
+      setSelectedType(supplier.type);
+    }
   }
 
   function handleUpload() {
@@ -165,7 +194,11 @@ export function ItemFormDialog({
             <label className="block text-sm font-medium text-gray-700">Tipo</label>
             <select
               name="type"
-              defaultValue={item?.type ?? "activity"}
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setAutoFillType(null);
+              }}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             >
               {itemTypes.map((t) => (
@@ -175,6 +208,18 @@ export function ItemFormDialog({
               ))}
             </select>
           </div>
+
+          {SUPPLIER_ENABLED_TYPES.has(selectedType as ItemType) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Proveedor</label>
+              <SupplierCombobox
+                suppliers={suppliers}
+                name="supplierId"
+                defaultValue={item?.supplierId}
+                onSupplierSelected={handleSupplierSelected}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Título</label>

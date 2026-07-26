@@ -109,6 +109,23 @@ export interface TripPhoto {
   createdAt: string;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  type: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
+  tags: Tag[];
+  deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Item {
   id: string;
   tripDayId: string;
@@ -125,7 +142,12 @@ export interface Item {
   sortOrder: number;
   documents?: ItemDocument[];
   deletedAt?: string;
+  supplierId?: string;
 }
+
+export type ItemWithSupplier = Item & {
+  supplier?: Pick<Supplier, "name" | "address" | "lat" | "lng">;
+};
 
 export interface PackingItem {
   id: string;

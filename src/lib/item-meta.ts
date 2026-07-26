@@ -62,17 +62,49 @@ export function formatDateCompact(dateStr: string, lang: Lang = DEFAULT_LANG) {
   });
 }
 
+// Separa palabras compuestas por " & " o " y " en una lista de palabras
+// individuales. Si una palabra aparece varias veces, se conserva una sola.
+function splitName(name: string): string[] {
+  return name
+    .split(/\s+[&yY]\s+/)
+    .flatMap((part) => part.split(/\s+y\s+/i))
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Normaliza una lista de clientes separando nombres compuestos y
+// deduplicando palabras individuales. Esto corrige el caso en que un
+// cliente se llama "Ana & Pedro" y otro "Ana" — en lugar de mostrar
+// "Ana & Pedro, Ana", muestra "Ana, Pedro".
+export function normalizeClientNames(clients: Client[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const c of clients) {
+    for (const word of splitName(c.name)) {
+      if (!seen.has(word)) {
+        seen.add(word);
+        result.push(word);
+      }
+    }
+  }
+  return result;
+}
+
 // Formato es-MX para listas de clientes asignados a un viaje: hasta 2
 // nombres se muestran completos separados por coma; a partir de 3, se
 // muestran los primeros 2 + "+N más" (N = total - 2).
 // Ej.: ["Ana", "Luis"] -> "Ana, Luis"; ["Ana","Luis","Carla","Diego"] ->
 // "Ana, Luis +2 más".
+//
+// Internamente aplica normalizeClientNames para evitar duplicados cuando
+// hay nombres compuestos como "Ana & Pedro" junto a "Ana".
 export function formatAssignedClients(clients: Client[]): string {
-  if (clients.length === 0) return "";
-  if (clients.length <= 2) return clients.map((c) => c.name).join(", ");
-  const [first, second] = clients;
-  const remaining = clients.length - 2;
-  return `${first.name}, ${second.name} +${remaining} más`;
+  const names = normalizeClientNames(clients);
+  if (names.length === 0) return "";
+  if (names.length <= 2) return names.join(", ");
+  const [first, second] = names;
+  const remaining = names.length - 2;
+  return `${first}, ${second} +${remaining} más`;
 }
 
 // Nombres de tags listos para render como chips (el componente que consuma

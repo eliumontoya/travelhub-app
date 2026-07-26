@@ -9,6 +9,7 @@ import { LocationMap } from "@/components/LocationMap";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
 import { TripFeedbackForm } from "@/components/TripFeedbackForm";
+import { SupplierInfo } from "@/components/SupplierInfo";
 import { submitTripFeedbackAction } from "./actions";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
@@ -16,6 +17,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
 import { PrintButton } from "@/components/PrintButton";
+import type { ItemWithSupplier } from "@/types";
 
 export async function generateMetadata({
   params,
@@ -171,7 +173,8 @@ export default async function PublicTripPage({
                   <WeatherBadge weather={dayWeather[dayIdx]} />
                 </h2>
                 <div className="space-y-3 border-l-2 border-gray-200 pl-4 dark:border-gray-800">
-                  {day.items.map((item) => {
+                  {day.items.map((rawItem) => {
+                    const item = rawItem as ItemWithSupplier;
                     const meta = itemTypeMeta[item.type];
                     const tzLabel = getApproxUtcOffsetLabel(item.lat, item.lng);
                     return (
@@ -220,6 +223,12 @@ export default async function PublicTripPage({
                                 <div className="print:hidden">
                                   <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
                                 </div>
+                              )}
+                              {item.supplier && (
+                                <SupplierInfo
+                                  name={item.supplier.name}
+                                  address={item.supplier.address}
+                                />
                               )}
                             </div>
                           </div>
