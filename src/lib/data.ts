@@ -11,6 +11,7 @@ import {
   Trip,
   TripDay,
   TripFeedback,
+  TripFilters,
   TripPhoto,
   TripStatusHistoryEntry,
   TripWithDetails,
@@ -35,6 +36,7 @@ import {
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slugify";
+import { hasActiveTripFilters, tripMatchesFilters } from "@/lib/trip-filters";
 
 // Capa de acceso a datos. Si Supabase está configurado (NEXT_PUBLIC_SUPABASE_URL
 // presente), todo se lee/escribe de Postgres. Si no, se usan los mocks en
@@ -840,46 +842,164 @@ export async function getTemplates(): Promise<Trip[]> {
 // + UN solo clients.in() (sin N+1 por fila) y SIN cargar days/items/documents
 // (solo lo que necesita la vista de lista). clients[] queda ordenado por
 // created_at asc (orden de asignación), igual que assembleTripWithDetails.
+export type TripsWithClientsParams = PaginationParams & { filters?: Partial<TripFilters> };
+
 export async function getTripsWithClients(
-  params: PaginationParams = {}
+  params: TripsWithClientsParams = {}
 ): Promise<PaginatedResult<Trip & { clients: Client[]; tags: Tag[] }>> {
+  const filters = params.filters ?? {};
   const { from, to, pageSize } = paginationBounds(params);
 
   if (!isSupabaseConfigured()) {
-    const nonTemplateTrips = mockTrips.filter((trip) => !trip.isTemplate);
-    const pageTrips = nonTemplateTrips.slice(from, from + pageSize);
-    return {
-      items: pageTrips.map((trip) => ({
-        ...trip,
-        clients: mockTripClients
-          .filter((tc) => tc.tripId === trip.id)
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-          .map((tc) => mockClients.find((c) => c.id === tc.clientId))
-          .filter((c): c is Client => Boolean(c)),
-        tags: mockTripTags
-          .filter((tt) => tt.tripId === trip.id)
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-          .map((tt) => mockTags.find((t) => t.id === tt.tagId))
-          .filter((t): t is Tag => Boolean(t)),
-      })),
-      totalCount: nonTemplateTrips.length,
-    };
+    const filteredTrips = mockTrips
+      .filter((trip) => !trip.isTemplate)
+      .map((trip) => hydrateMockTripListItem(trip))
+      .filter((trip) => tripMatchesFilters(trip, filters));
+    const pageTrips = filteredTrips.slice(from, from + pageSize);
+    return { items: pageTrips, totalCount: filteredTrips.length };
   }
 
   const supabase = await createServerSupabase();
-  const { data: tripRows, error, count } = await supabase
+  const matchingTripIds = hasActiveTripFilters(filters)
+    ? await getSupabaseTripIdsForFilters(supabase, filters)
+    : null;
+
+  if (matchingTripIds?.size === 0) return { items: [], totalCount: 0 };
+
+  let query = supabase
     .from("trips")
     .select("*", { count: "exact" })
-    .eq("is_template", false)
+    .eq("is_template", false);
+
+  if (filters.status?.length) query = query.in("status", filters.status);
+  if (filters.currency) query = query.eq("currency", filters.currency);
+  if (filters.dateFrom) query = query.gte("end_date", filters.dateFrom);
+  if (filters.dateTo) query = query.lte("start_date", filters.dateTo);
+  if (matchingTripIds) query = query.in("id", [...matchingTripIds]);
+
+  const { data: tripRows, error, count } = await query
     .order("created_at", { ascending: false })
     .range(from, to);
   if (error) throw error;
 
   const trips = (tripRows ?? []).map(rowToTrip);
   const totalCount = count ?? 0;
-  const tripIds = trips.map((t) => t.id);
+  const tripIds = trips.map((trip) => trip.id);
   if (!tripIds.length) return { items: [], totalCount };
 
+  const { linkRows, clientsById, tagLinkRows, tagsById } = await loadTripRelations(supabase, tripIds);
+
+  return {
+    items: trips.map((trip) => ({
+      ...trip,
+      clients: (linkRows ?? [])
+        .filter((link) => link.trip_id === trip.id)
+        .map((link) => clientsById.get(link.client_id as string))
+        .filter((client): client is Client => Boolean(client)),
+      tags: (tagLinkRows ?? [])
+        .filter((link) => link.trip_id === trip.id)
+        .map((link) => tagsById.get(link.tag_id as string))
+        .filter((tag): tag is Tag => Boolean(tag)),
+    })),
+    totalCount,
+  };
+}
+
+function hydrateMockTripListItem(trip: Trip): Trip & { clients: Client[]; tags: Tag[]; internalNotes?: string | null } {
+  return {
+    ...trip,
+    clients: mockTripClients
+      .filter((link) => link.tripId === trip.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((link) => mockClients.find((client) => client.id === link.clientId))
+      .filter((client): client is Client => Boolean(client)),
+    tags: mockTripTags
+      .filter((link) => link.tripId === trip.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((link) => mockTags.find((tag) => tag.id === link.tagId))
+      .filter((tag): tag is Tag => Boolean(tag)),
+    internalNotes: mockTripInternalNotes[trip.id] ?? null,
+  };
+}
+
+function intersectTripIds(current: Set<string> | null, next: Set<string>) {
+  if (current === null) return next;
+  return new Set([...current].filter((id) => next.has(id)));
+}
+
+function escapeIlike(value: string) {
+  return value.replace(/[%,_*]/g, " ").trim();
+}
+
+async function getSupabaseTripIdsForFilters(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  filters: Partial<TripFilters>,
+) {
+  let matchingTripIds: Set<string> | null = null;
+
+  if (filters.clientIds?.length) {
+    const { data, error } = await supabase
+      .from("trip_clients")
+      .select("trip_id")
+      .in("client_id", filters.clientIds);
+    if (error) throw error;
+    matchingTripIds = intersectTripIds(
+      matchingTripIds,
+      new Set((data ?? []).map((row) => row.trip_id as string)),
+    );
+  }
+
+  if (filters.tagIds?.length) {
+    const { data, error } = await supabase
+      .from("trip_tags")
+      .select("trip_id")
+      .in("tag_id", filters.tagIds);
+    if (error) throw error;
+    matchingTripIds = intersectTripIds(
+      matchingTripIds,
+      new Set((data ?? []).map((row) => row.trip_id as string)),
+    );
+  }
+
+  const q = escapeIlike(filters.query?.trim() ?? "");
+  if (q) {
+    const [tripMatches, clientMatches] = await Promise.all([
+      supabase
+        .from("trips")
+        .select("id")
+        .or(`title.ilike.%${q}%,instructions.ilike.%${q}%,internal_notes.ilike.%${q}%`),
+      supabase.from("clients").select("id").ilike("name", `%${q}%`),
+    ]);
+    if (tripMatches.error) throw tripMatches.error;
+    if (clientMatches.error) throw clientMatches.error;
+
+    const clientIds = (clientMatches.data ?? []).map((row) => row.id as string);
+    let clientTripIds: string[] = [];
+    if (clientIds.length) {
+      const { data, error } = await supabase
+        .from("trip_clients")
+        .select("trip_id")
+        .in("client_id", clientIds);
+      if (error) throw error;
+      clientTripIds = (data ?? []).map((row) => row.trip_id as string);
+    }
+
+    matchingTripIds = intersectTripIds(
+      matchingTripIds,
+      new Set([
+        ...(tripMatches.data ?? []).map((row) => row.id as string),
+        ...clientTripIds,
+      ]),
+    );
+  }
+
+  return matchingTripIds;
+}
+
+async function loadTripRelations(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  tripIds: string[],
+) {
   const { data: linkRows, error: linksError } = await supabase
     .from("trip_clients")
     .select("trip_id, client_id, created_at")
@@ -887,7 +1007,7 @@ export async function getTripsWithClients(
     .order("created_at", { ascending: true });
   if (linksError) throw linksError;
 
-  const clientIds = [...new Set((linkRows ?? []).map((l) => l.client_id as string))];
+  const clientIds = [...new Set((linkRows ?? []).map((link) => link.client_id as string))];
   let clientsById = new Map<string, Client>();
   if (clientIds.length) {
     const { data: clientRows, error: clientsError } = await supabase
@@ -895,7 +1015,7 @@ export async function getTripsWithClients(
       .select("*")
       .in("id", clientIds);
     if (clientsError) throw clientsError;
-    clientsById = new Map((clientRows ?? []).map((c) => [c.id as string, rowToClient(c)]));
+    clientsById = new Map((clientRows ?? []).map((client) => [client.id as string, rowToClient(client)]));
   }
 
   const { data: tagLinkRows, error: tagLinksError } = await supabase
@@ -905,7 +1025,7 @@ export async function getTripsWithClients(
     .order("created_at", { ascending: true });
   if (tagLinksError) throw tagLinksError;
 
-  const tagIds = [...new Set((tagLinkRows ?? []).map((l) => l.tag_id as string))];
+  const tagIds = [...new Set((tagLinkRows ?? []).map((link) => link.tag_id as string))];
   let tagsById = new Map<string, Tag>();
   if (tagIds.length) {
     const { data: tagRows, error: tagsError } = await supabase
@@ -913,23 +1033,10 @@ export async function getTripsWithClients(
       .select("*")
       .in("id", tagIds);
     if (tagsError) throw tagsError;
-    tagsById = new Map((tagRows ?? []).map((t) => [t.id as string, rowToTag(t)]));
+    tagsById = new Map((tagRows ?? []).map((tag) => [tag.id as string, rowToTag(tag)]));
   }
 
-  return {
-    items: trips.map((trip) => ({
-      ...trip,
-      clients: (linkRows ?? [])
-        .filter((l) => l.trip_id === trip.id)
-        .map((l) => clientsById.get(l.client_id as string))
-        .filter((c): c is Client => Boolean(c)),
-      tags: (tagLinkRows ?? [])
-        .filter((l) => l.trip_id === trip.id)
-        .map((l) => tagsById.get(l.tag_id as string))
-        .filter((t): t is Tag => Boolean(t)),
-    })),
-    totalCount,
-  };
+  return { linkRows, clientsById, tagLinkRows, tagsById };
 }
 
 // Viajes en estado "draft" cuya fecha de inicio cae dentro de los próximos
@@ -2002,13 +2109,14 @@ export type CreateItemInput = {
   cost?: number;
   sortOrder?: number;
   supplierId?: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type UpdateItemInput = Partial<Omit<CreateItemInput, "tripDayId">>;
 
 export async function createItem(input: CreateItemInput): Promise<Item> {
   if (!isSupabaseConfigured()) {
-    const item: Item = {
+    const item = {
       id: uid(),
       tripDayId: input.tripDayId,
       type: input.type,
@@ -2022,9 +2130,10 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       notes: input.notes,
       cost: input.cost,
       supplierId: input.supplierId,
+      metadata: (input.metadata ?? null) as unknown as Item["metadata"],
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
-    };
+    } as Item;
     mockItems.push(item);
     return item;
   }
@@ -2045,6 +2154,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       cost: input.cost ?? null,
       supplier_id: input.supplierId || null,
       sort_order: input.sortOrder ?? 0,
+      item_metadata: input.metadata ?? null,
     })
     .select()
     .single();
@@ -2056,7 +2166,19 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (!isSupabaseConfigured()) {
     const item = mockItems.find((i) => i.id === id);
     if (!item) throw new Error("Item no encontrado");
-    Object.assign(item, input);
+    if (input.type !== undefined) item.type = input.type;
+    if (input.title !== undefined) item.title = input.title;
+    if (input.startTime !== undefined) item.startTime = input.startTime;
+    if (input.endTime !== undefined) item.endTime = input.endTime;
+    if (input.location !== undefined) item.location = input.location;
+    if (input.lat !== undefined) item.lat = input.lat;
+    if (input.lng !== undefined) item.lng = input.lng;
+    if (input.confirmationCode !== undefined) item.confirmationCode = input.confirmationCode;
+    if (input.notes !== undefined) item.notes = input.notes;
+    if (input.cost !== undefined) item.cost = input.cost;
+    if (input.supplierId !== undefined) item.supplierId = input.supplierId || undefined;
+    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
+    if (input.metadata !== undefined) item.metadata = (input.metadata ?? null) as unknown as Item["metadata"];
     return item;
   }
   const supabase = await createServerSupabase();
@@ -2073,6 +2195,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.cost !== undefined) patch.cost = input.cost ?? null;
   if (input.supplierId !== undefined) patch.supplier_id = input.supplierId || null;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
+  if (input.metadata !== undefined) patch.item_metadata = input.metadata ?? null;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToItem(data);
@@ -2136,7 +2259,14 @@ export async function reorderTripDays(order: { id: string; sortOrder: number }[]
   );
 }
 
-function rowToItem(row: Record<string, unknown>): Item {
+export function rowToItem(row: Record<string, unknown>): Item {
+  const rawMetadata = row.item_metadata;
+  const metadata: Item["metadata"] =
+    rawMetadata && typeof rawMetadata === "string"
+      ? (JSON.parse(rawMetadata) as unknown as Item["metadata"])
+      : rawMetadata && typeof rawMetadata === "object"
+        ? (rawMetadata as unknown as Item["metadata"])
+        : null;
   return {
     id: row.id as string,
     tripDayId: row.trip_day_id as string,
@@ -2152,7 +2282,8 @@ function rowToItem(row: Record<string, unknown>): Item {
     cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     supplierId: (row.supplier_id as string) ?? undefined,
     sortOrder: row.sort_order as number,
-  };
+    metadata,
+  } as Item;
 }
 
 // ---------- Documents ----------

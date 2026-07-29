@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
+import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -200,7 +201,10 @@ export default async function PublicTripPage({
                                   </span>
                                 )}
                                 {item.type === "flight" && (
-                                  <FlightStatusBadge title={item.title} />
+                                  <FlightStatusBadge
+                                    title={item.title}
+                                    flightNumber={getItemFlightNumber(item)}
+                                  />
                                 )}
                               </div>
                               {item.location && (
@@ -212,6 +216,11 @@ export default async function PublicTripPage({
                               {item.confirmationCode && (
                                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                   {t.confirmationLabel}: {item.confirmationCode}
+                                </p>
+                              )}
+                              {formatItemMetadataSummary(item) && (
+                                <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                                  {formatItemMetadataSummary(item)}
                                 </p>
                               )}
                               {trip.showCostsToClient && item.cost !== undefined && (

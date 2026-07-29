@@ -32,6 +32,7 @@ import {
   uploadTripPhoto,
 } from "@/lib/data";
 import { ItemType, TripCurrency } from "@/types";
+import { validateItemMetadata } from "@/lib/item-metadata-schemas";
 
 const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
@@ -56,6 +57,15 @@ function parseCost(raw: FormDataEntryValue | null): number | undefined {
 
 function revalidateTrip(tripId: string) {
   revalidatePath(`/dashboard/trips/${tripId}`);
+}
+
+function parseItemMetadata(type: ItemType, raw: FormDataEntryValue | null): Record<string, unknown> | null {
+  if (!raw || !String(raw).trim()) return null;
+  try {
+    return validateItemMetadata(type, JSON.parse(String(raw)));
+  } catch {
+    throw new Error("Datos del item inválidos: revisa los campos específicos del tipo.");
+  }
 }
 
 export async function addDayAction(tripId: string, formData: FormData) {
@@ -124,9 +134,11 @@ export async function moveDayAction(
 export async function addItemAction(tripId: string, dayId: string, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
+  const type = String(formData.get("type") ?? "note") as ItemType;
+  const metadata = parseItemMetadata(type, formData.get("metadata"));
   await createItem({
     tripDayId: dayId,
-    type: String(formData.get("type") ?? "note") as ItemType,
+    type,
     title,
     startTime: String(formData.get("startTime") ?? "").trim() || undefined,
     endTime: String(formData.get("endTime") ?? "").trim() || undefined,
@@ -136,13 +148,16 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
+    metadata,
   });
   revalidateTrip(tripId);
 }
 
 export async function editItemAction(tripId: string, itemId: string, formData: FormData) {
+  const type = String(formData.get("type") ?? "note") as ItemType;
+  const metadata = parseItemMetadata(type, formData.get("metadata"));
   await updateItem(itemId, {
-    type: String(formData.get("type") ?? "note") as ItemType,
+    type,
     title: String(formData.get("title") ?? "").trim(),
     startTime: String(formData.get("startTime") ?? "").trim() || undefined,
     endTime: String(formData.get("endTime") ?? "").trim() || undefined,
@@ -152,6 +167,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
+    metadata,
   });
   revalidateTrip(tripId);
 }

@@ -10,6 +10,16 @@ export type TripStatus = "draft" | "published" | "archived";
 
 export type TripCurrency = "MXN" | "USD" | "EUR";
 
+export type TripFilters = {
+  query?: string;
+  status?: TripStatus[];
+  dateFrom?: string;
+  dateTo?: string;
+  clientIds?: string[];
+  tagIds?: string[];
+  currency?: TripCurrency;
+};
+
 export interface Client {
   id: string;
   name: string;
@@ -126,10 +136,77 @@ export interface Supplier {
   updatedAt: string;
 }
 
-export interface Item {
+// ---------- Metadata discriminated union per ItemType ----------
+
+export interface FlightMetadata {
+  airline: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTime: string;
+  arrivalTime: string;
+  terminal?: string;
+  gate?: string;
+  seat?: string;
+  bookingReference?: string;
+}
+
+export interface HotelMetadata {
+  hotelName: string;
+  address: string;
+  checkIn: string;
+  checkOut: string;
+  roomType: string;
+  boardBasis: string;
+  bookingReference?: string;
+  hotelPhone?: string;
+  specialRequests?: string;
+}
+
+export interface ActivityMetadata {
+  activityName: string;
+  provider: string;
+  address: string;
+  startTime: string;
+  endTime: string;
+  duration?: string;
+  ticketType?: string;
+  bookingReference?: string;
+  includes?: string;
+  meetingPoint?: string;
+}
+
+export interface RestaurantMetadata {
+  restaurantName: string;
+  address: string;
+  cuisine: string;
+  dressCode?: string;
+  reservationReference?: string;
+  phone?: string;
+}
+
+export interface TransportMetadata {
+  company: string;
+  pickupLocation: string;
+  dropoffLocation: string;
+  pickupTime: string;
+  vehicleType?: string;
+  driverName?: string;
+  driverPhone?: string;
+  bookingReference?: string;
+}
+
+export type ItemMetadata =
+  | FlightMetadata
+  | HotelMetadata
+  | ActivityMetadata
+  | RestaurantMetadata
+  | TransportMetadata
+  | null;
+
+type BaseItem = {
   id: string;
   tripDayId: string;
-  type: ItemType;
   title: string;
   startTime?: string;
   endTime?: string;
@@ -143,7 +220,22 @@ export interface Item {
   documents?: ItemDocument[];
   deletedAt?: string;
   supplierId?: string;
-}
+};
+
+export type FlightItem = BaseItem & { type: "flight"; metadata: FlightMetadata | null };
+export type HotelItem = BaseItem & { type: "hotel"; metadata: HotelMetadata | null };
+export type ActivityItem = BaseItem & { type: "activity"; metadata: ActivityMetadata | null };
+export type RestaurantItem = BaseItem & { type: "restaurant"; metadata: RestaurantMetadata | null };
+export type TransportItem = BaseItem & { type: "transport"; metadata: TransportMetadata | null };
+export type NoteItem = BaseItem & { type: "note"; metadata: null };
+
+export type Item =
+  | FlightItem
+  | HotelItem
+  | ActivityItem
+  | RestaurantItem
+  | TransportItem
+  | NoteItem;
 
 export type ItemWithSupplier = Item & {
   supplier?: Pick<Supplier, "name" | "address" | "lat" | "lng">;

@@ -20,6 +20,7 @@ import {
   computeTripCompleteness,
 } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
+import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { GenerateDaysButton } from "@/components/GenerateDaysButton";
@@ -478,7 +479,10 @@ export default async function TripEditorPage({
                             </span>
                           )}
                           {item.type === "flight" && (
-                            <FlightStatusBadge title={item.title} />
+                            <FlightStatusBadge
+                              title={item.title}
+                              flightNumber={getItemFlightNumber(item)}
+                            />
                           )}
                         </div>
                         {item.location && (
@@ -490,6 +494,11 @@ export default async function TripEditorPage({
                         {item.confirmationCode && (
                           <p className="text-xs text-gray-400 dark:text-gray-500">
                             Confirmación: {item.confirmationCode}
+                          </p>
+                        )}
+                        {formatItemMetadataSummary(item) && (
+                          <p className={`text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                            {formatItemMetadataSummary(item)}
                           </p>
                         )}
                       </div>

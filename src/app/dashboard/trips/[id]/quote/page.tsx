@@ -8,6 +8,7 @@ import {
   formatCost,
 } from "@/lib/item-meta";
 import { PrintButton } from "@/components/PrintButton";
+import { formatItemMetadataSummary } from "@/lib/item-display";
 
 export default async function TripQuotePage({
   params,
@@ -75,6 +76,9 @@ export default async function TripQuotePage({
                           <p className="font-medium text-gray-900">{item.title}</p>
                           {item.location && (
                             <p className="text-sm text-gray-500">{item.location}</p>
+                          )}
+                          {formatItemMetadataSummary(item) && (
+                            <p className="text-xs text-gray-400">{formatItemMetadataSummary(item)}</p>
                           )}
                         </div>
                       </div>

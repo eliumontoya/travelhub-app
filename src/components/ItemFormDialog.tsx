@@ -9,8 +9,105 @@ import { showUndoToast } from "@/components/UndoToast";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
-/** Tipos de item que muestran el selector de proveedor */
-const SUPPLIER_ENABLED_TYPES = new Set(["hotel", "restaurant", "transport"]);
+const SUPPLIER_ENABLED_TYPES = new Set<ItemType>(["hotel", "restaurant", "transport"]);
+
+type MetadataFieldDef = {
+  name: string;
+  label: string;
+  type: "text" | "time" | "date" | "select" | "textarea";
+  options?: { value: string; label: string }[];
+  required?: boolean;
+};
+
+const metadataFieldsByType: Record<ItemType, MetadataFieldDef[]> = {
+  flight: [
+    { name: "airline", required: true, label: "Aerolínea", type: "text" },
+    { name: "flightNumber", required: true, label: "Número de vuelo", type: "text" },
+    { name: "departureAirport", required: true, label: "Aeropuerto de salida", type: "text" },
+    { name: "arrivalAirport", required: true, label: "Aeropuerto de llegada", type: "text" },
+    { name: "departureTime", required: true, label: "Hora de salida", type: "time" },
+    { name: "arrivalTime", required: true, label: "Hora de llegada", type: "time" },
+    { name: "terminal", label: "Terminal", type: "text" },
+    { name: "gate", label: "Puerta", type: "text" },
+    { name: "seat", label: "Asiento", type: "text" },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+  ],
+  hotel: [
+    { name: "hotelName", required: true, label: "Nombre del hotel", type: "text" },
+    { name: "address", required: true, label: "Dirección", type: "text" },
+    { name: "checkIn", required: true, label: "Check-in", type: "date" },
+    { name: "checkOut", required: true, label: "Check-out", type: "date" },
+    { name: "roomType", required: true, label: "Tipo de habitación", type: "text" },
+    {
+      name: "boardBasis",
+      required: true,
+      label: "Régimen",
+      type: "select",
+      options: [
+        { value: "Solo alojamiento", label: "Solo alojamiento" },
+        { value: "Desayuno incluido", label: "Desayuno incluido" },
+        { value: "Media pensión", label: "Media pensión" },
+        { value: "Pensión completa", label: "Pensión completa" },
+        { value: "Todo incluido", label: "Todo incluido" },
+      ],
+    },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+    { name: "hotelPhone", label: "Teléfono del hotel", type: "text" },
+    { name: "specialRequests", label: "Solicitudes especiales", type: "textarea" },
+  ],
+  activity: [
+    { name: "activityName", required: true, label: "Nombre de la actividad", type: "text" },
+    { name: "provider", required: true, label: "Proveedor", type: "text" },
+    { name: "address", required: true, label: "Dirección", type: "text" },
+    { name: "startTime", required: true, label: "Hora de inicio", type: "time" },
+    { name: "endTime", required: true, label: "Hora de fin", type: "time" },
+    { name: "duration", label: "Duración", type: "text" },
+    { name: "ticketType", label: "Tipo de entrada", type: "text" },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+    { name: "includes", label: "Incluye", type: "text" },
+    { name: "meetingPoint", label: "Punto de encuentro", type: "text" },
+  ],
+  restaurant: [
+    { name: "restaurantName", required: true, label: "Nombre del restaurante", type: "text" },
+    { name: "address", required: true, label: "Dirección", type: "text" },
+    { name: "cuisine", required: true, label: "Tipo de cocina", type: "text" },
+    { name: "dressCode", label: "Código de vestimenta", type: "text" },
+    { name: "reservationReference", label: "Referencia de reserva", type: "text" },
+    { name: "phone", label: "Teléfono", type: "text" },
+  ],
+  transport: [
+    { name: "company", required: true, label: "Empresa", type: "text" },
+    { name: "pickupLocation", required: true, label: "Lugar de recogida", type: "text" },
+    { name: "dropoffLocation", required: true, label: "Lugar de destino", type: "text" },
+    { name: "pickupTime", required: true, label: "Hora de recogida", type: "text" },
+    { name: "vehicleType", label: "Tipo de vehículo", type: "text" },
+    { name: "driverName", label: "Nombre del conductor", type: "text" },
+    { name: "driverPhone", label: "Teléfono del conductor", type: "text" },
+    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
+  ],
+  note: [],
+};
+
+export function appendSerializedMetadata(formData: FormData, selectedType: ItemType) {
+  const mFields = metadataFieldsByType[selectedType];
+  const rawValues = mFields.map((field) => [field, String(formData.get(`metadata_${field.name}`) ?? "").trim()] as const);
+  const requiredValues = rawValues.filter(([field]) => field.required);
+  const hasAllRequiredValues = requiredValues.length > 0 && requiredValues.every(([, val]) => val);
+  const metadataValues: Record<string, string> = {};
+  for (const [field, val] of rawValues) {
+    if (val && (field.required || hasAllRequiredValues)) metadataValues[field.name] = val;
+    formData.delete(`metadata_${field.name}`);
+  }
+  formData.set("metadata", JSON.stringify(hasAllRequiredValues ? metadataValues : null));
+}
+
+function metadataDefaultValue(item: Item | undefined, fieldName: string): string | undefined {
+  if (!item?.metadata) return undefined;
+  const m = item.metadata as unknown as Record<string, unknown> | null;
+  if (!m) return undefined;
+  const val = m[fieldName];
+  return typeof val === "string" ? val : undefined;
+}
 
 type DocWithUrl = ItemDocument & { url: string | null };
 
@@ -93,9 +190,9 @@ export function ItemFormDialog({
   const [error, setError] = useState<string | null>(null);
   const [docs, setDocs] = useState<DocWithUrl[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [autoFillType, setAutoFillType] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string>(item?.type ?? "activity");
+  const [suppliers, setSuppliers] = useState<Supplier[]>(allSuppliers ?? []);
+  const [autoFillType, setAutoFillType] = useState<ItemType | null>(null);
+  const [selectedType, setSelectedType] = useState<ItemType>(item?.type ?? "activity");
 
   function open() {
     setError(null);
@@ -122,18 +219,19 @@ export function ItemFormDialog({
       setError("El título es obligatorio");
       return;
     }
-    // Apply auto-filled type from supplier selection if present
-    if (autoFillType) {
-      formData.set("type", autoFillType);
-    }
-    // Remove the supplier combobox hidden field name if no supplier selected
-    // (hidden input always submits an empty string if no selection)
+    const submittedType = autoFillType ?? selectedType;
+    if (autoFillType) formData.set("type", autoFillType);
     if (!formData.get("supplierId") || formData.get("supplierId") === "") {
       formData.delete("supplierId");
     }
+    appendSerializedMetadata(formData, submittedType);
     startTransition(async () => {
-      await onSubmit(formData);
-      close();
+      try {
+        await onSubmit(formData);
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudo guardar el item.");
+      }
     });
   }
 
@@ -150,7 +248,6 @@ export function ItemFormDialog({
   }
 
   function handleSupplierSelected(supplier: Supplier) {
-    // Auto-fill item type when supplier type maps to an item type
     if (supplier.type === "hotel" || supplier.type === "restaurant" || supplier.type === "transport") {
       setAutoFillType(supplier.type);
       setSelectedType(supplier.type);
@@ -196,7 +293,7 @@ export function ItemFormDialog({
               name="type"
               value={selectedType}
               onChange={(e) => {
-                setSelectedType(e.target.value);
+                setSelectedType(e.target.value as ItemType);
                 setAutoFillType(null);
               }}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
@@ -209,7 +306,7 @@ export function ItemFormDialog({
             </select>
           </div>
 
-          {SUPPLIER_ENABLED_TYPES.has(selectedType as ItemType) && (
+          {SUPPLIER_ENABLED_TYPES.has(selectedType) && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Proveedor</label>
               <SupplierCombobox
@@ -295,6 +392,49 @@ export function ItemFormDialog({
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
+
+          {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
+            <div className="border-t border-gray-100 pt-4">
+              <h4 className="mb-3 text-sm font-semibold text-gray-800">
+                {itemTypeMeta[selectedType].icon} Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}
+              </h4>
+              <div className="space-y-3">
+                {metadataFieldsByType[selectedType].map((field) => (
+                  <div key={field.name}>
+                    <label className="block text-sm font-medium text-gray-700">{field.label}</label>
+                    {field.type === "textarea" ? (
+                      <textarea
+                        name={`metadata_${field.name}`}
+                        defaultValue={metadataDefaultValue(item, field.name)}
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    ) : field.type === "select" && field.options ? (
+                      <select
+                        name={`metadata_${field.name}`}
+                        defaultValue={metadataDefaultValue(item, field.name) ?? ""}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {field.options.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        name={`metadata_${field.name}`}
+                        defaultValue={metadataDefaultValue(item, field.name)}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {item && (
             <div className="border-t border-gray-100 pt-4">
