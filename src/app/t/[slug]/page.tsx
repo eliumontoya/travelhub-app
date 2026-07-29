@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
+import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -199,11 +200,7 @@ export default async function PublicTripPage({
                                 {item.type === "flight" && (
                                   <FlightStatusBadge
                                     title={item.title}
-                                    flightNumber={
-                                      item.metadata && "flightNumber" in item.metadata
-                                        ? (item.metadata as { flightNumber?: string }).flightNumber
-                                        : null
-                                    }
+                                    flightNumber={getItemFlightNumber(item)}
                                   />
                                 )}
                               </div>
@@ -218,38 +215,9 @@ export default async function PublicTripPage({
                                   {t.confirmationLabel}: {item.confirmationCode}
                                 </p>
                               )}
-                              {item.metadata && item.type === "flight" && "airline" in item.metadata && (
-                                <p className="mt-1 text-xs font-medium text-sky-600 dark:text-sky-400">
-                                  {(item.metadata as { airline?: string; flightNumber?: string }).airline}{" "}
-                                  {(item.metadata as { flightNumber?: string }).flightNumber}
-                                  {(item.metadata as { departureAirport?: string; arrivalAirport?: string }).departureAirport &&
-                                    ` · ${(item.metadata as { departureAirport?: string }).departureAirport} → ${(item.metadata as { arrivalAirport?: string }).arrivalAirport}`}
-                                </p>
-                              )}
-                              {item.metadata && item.type === "hotel" && "roomType" in item.metadata && (
-                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                  {(item.metadata as { roomType?: string }).roomType}
-                                  {(item.metadata as { boardBasis?: string }).boardBasis &&
-                                    ` · ${(item.metadata as { boardBasis?: string }).boardBasis}`}
-                                </p>
-                              )}
-                              {item.metadata && item.type === "activity" && "provider" in item.metadata && (
-                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                  {(item.metadata as { provider?: string }).provider}
-                                  {(item.metadata as { duration?: string }).duration &&
-                                    ` · ${(item.metadata as { duration?: string }).duration}`}
-                                </p>
-                              )}
-                              {item.metadata && item.type === "restaurant" && "cuisine" in item.metadata && (
-                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                  {(item.metadata as { cuisine?: string }).cuisine}
-                                </p>
-                              )}
-                              {item.metadata && item.type === "transport" && "company" in item.metadata && (
-                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                  {(item.metadata as { company?: string }).company}
-                                  {(item.metadata as { vehicleType?: string }).vehicleType &&
-                                    ` · ${(item.metadata as { vehicleType?: string }).vehicleType}`}
+                              {formatItemMetadataSummary(item) && (
+                                <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                                  {formatItemMetadataSummary(item)}
                                 </p>
                               )}
                               {trip.showCostsToClient && item.cost !== undefined && (
