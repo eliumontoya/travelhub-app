@@ -130,7 +130,7 @@ export interface Supplier {
   lat?: number;
   lng?: number;
   notes?: string;
-  tags: Tag[];
+  tags: string[];
   deletedAt?: string;
   createdAt: string;
   updatedAt: string;

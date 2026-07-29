@@ -552,6 +552,7 @@ export type CreateSupplierInput = {
   lat?: number;
   lng?: number;
   notes?: string;
+  tags?: string[];
 };
 
 export type SupplierFilterParams = {
@@ -559,6 +560,7 @@ export type SupplierFilterParams = {
   pageSize?: number;
   query?: string;
   type?: string;
+  tag?: string;
 };
 
 export async function getSuppliers(
@@ -574,6 +576,10 @@ export async function getSuppliers(
     }
     if (params.type) {
       filtered = filtered.filter((s) => s.type === params.type);
+    }
+    if (params.tag) {
+      const tag = params.tag.toLowerCase();
+      filtered = filtered.filter((s) => s.tags.some((t) => t.toLowerCase().includes(tag)));
     }
     const active = filtered.filter((s) => !s.deletedAt);
     return { items: active.slice(from, from + pageSize), totalCount: active.length };
@@ -592,6 +598,9 @@ export async function getSuppliers(
   }
   if (params.type) {
     query = query.eq("type", params.type);
+  }
+  if (params.tag) {
+    query = query.contains("tags", [params.tag]);
   }
 
   const { data, error, count } = await query;
@@ -627,7 +636,7 @@ export async function createSupplier(input: CreateSupplierInput): Promise<Suppli
       lat: input.lat,
       lng: input.lng,
       notes: input.notes,
-      tags: [],
+      tags: input.tags ?? [],
       createdAt: now,
       updatedAt: now,
     };
@@ -647,6 +656,7 @@ export async function createSupplier(input: CreateSupplierInput): Promise<Suppli
       lat: input.lat ?? null,
       lng: input.lng ?? null,
       notes: input.notes || null,
+      tags: input.tags ?? [],
     })
     .select()
     .single();
@@ -670,6 +680,7 @@ export async function updateSupplier(
     if (input.lat !== undefined) supplier.lat = input.lat;
     if (input.lng !== undefined) supplier.lng = input.lng;
     if (input.notes !== undefined) supplier.notes = input.notes;
+    if (input.tags !== undefined) supplier.tags = input.tags;
     supplier.updatedAt = new Date().toISOString();
     return supplier;
   }
@@ -684,6 +695,7 @@ export async function updateSupplier(
   if (input.lat !== undefined) patch.lat = input.lat ?? null;
   if (input.lng !== undefined) patch.lng = input.lng ?? null;
   if (input.notes !== undefined) patch.notes = input.notes || null;
+  if (input.tags !== undefined) patch.tags = input.tags;
   patch.updated_at = new Date().toISOString();
   const { data, error } = await supabase
     .from("suppliers")
@@ -758,7 +770,7 @@ function rowToSupplier(row: Record<string, unknown>): Supplier {
     lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : undefined,
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
     notes: (row.notes as string) ?? undefined,
-    tags: [],
+    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     deletedAt: (row.deleted_at as string) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: (row.updated_at as string) ?? (row.created_at as string),
