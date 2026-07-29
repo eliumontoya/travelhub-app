@@ -84,6 +84,20 @@ describe("structured item metadata form serialization", () => {
     expect(formData.has("metadata_flightNumber")).toBe(false);
   });
 
+  it("serializes partial type-specific fields as null metadata", () => {
+    const formData = new FormData();
+    formData.set("metadata_provider", "Local Guide");
+    formData.set("metadata_duration", "2h");
+    formData.set("metadata_bookingReference", "ACT-123");
+
+    appendSerializedMetadata(formData, "activity");
+
+    expect(formData.get("metadata")).toBe("null");
+    expect(formData.has("metadata_provider")).toBe(false);
+    expect(formData.has("metadata_duration")).toBe(false);
+    expect(formData.has("metadata_bookingReference")).toBe(false);
+  });
+
   it("serializes filled type-specific fields into metadata JSON", () => {
     const formData = new FormData();
     formData.set("metadata_airline", "AA");
