@@ -1,7 +1,10 @@
 import Link from "next/link";
 import {
+  ALL_CLIENTS_PAGE_SIZE,
+  ALL_TRIPS_PAGE_SIZE,
   DEFAULT_PAGE_SIZE,
   getClientReferralSourceCounts,
+  getClients,
   getClientsWithTags,
   getRecentActivity,
   getTags,
@@ -11,6 +14,7 @@ import {
   getUpcomingBirthdays,
   getUpcomingUnpublishedTrips,
 } from "@/lib/data";
+import type { TripCurrency, TripFilters, TripStatus } from "@/types";
 import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
@@ -21,6 +25,30 @@ import { DashboardExplorer } from "./DashboardExplorer";
 function parsePage(value: string | undefined): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+}
+
+function deserializeFilters(sp: Record<string, string | undefined>): Partial<TripFilters> {
+  return {
+    query: sp.q || undefined,
+    status: sp.status?.split(",").filter(Boolean) as TripStatus[] | undefined,
+    dateFrom: sp.dateFrom || undefined,
+    dateTo: sp.dateTo || undefined,
+    clientIds: sp.client?.split(",").filter(Boolean),
+    tagIds: sp.tags?.split(",").filter(Boolean),
+    currency: sp.currency as TripCurrency | undefined,
+  };
+}
+
+function hasActiveFilters(f: Partial<TripFilters>): boolean {
+  return Boolean(
+    f.query ||
+      f.status?.length ||
+      f.dateFrom ||
+      f.dateTo ||
+      f.clientIds?.length ||
+      f.tagIds?.length ||
+      f.currency,
+  );
 }
 
 const activityMeta = {
@@ -36,15 +64,30 @@ const activityActionLabel = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; clientsPage?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    clientsPage?: string;
+    q?: string;
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    client?: string;
+    tags?: string;
+    currency?: string;
+  }>;
 }) {
-  const { page, clientsPage } = await searchParams;
-  const tripsPage = parsePage(page);
-  const clientsPageNum = parsePage(clientsPage);
+  const sp = await searchParams;
+  const filters = deserializeFilters(sp);
+  const hasFilters = hasActiveFilters(filters);
+  const pageSize = hasFilters ? ALL_TRIPS_PAGE_SIZE : DEFAULT_PAGE_SIZE;
+
+  const tripsPage = parsePage(sp.page);
+  const clientsPageNum = parsePage(sp.clientsPage);
 
   const [
     { items: trips, totalCount: tripsTotal },
     { items: clients, totalCount: clientsTotal },
+    { items: allClients },
     tags,
     stats,
     upcomingUnpublishedTrips,
@@ -53,8 +96,9 @@ export default async function DashboardPage({
     upcomingBirthdays,
     referralSourceCounts,
   ] = await Promise.all([
-    getTripsWithClients({ page: tripsPage }),
+    getTripsWithClients({ page: tripsPage, pageSize }),
     getClientsWithTags({ page: clientsPageNum }),
+    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
     getTags(),
     getTripStats(),
     getUpcomingUnpublishedTrips(),
@@ -64,7 +108,7 @@ export default async function DashboardPage({
     getClientReferralSourceCounts(),
   ]);
 
-  const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / DEFAULT_PAGE_SIZE));
+  const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / pageSize));
   const clientsTotalPages = Math.max(1, Math.ceil(clientsTotal / DEFAULT_PAGE_SIZE));
 
   return (
@@ -176,6 +220,9 @@ export default async function DashboardPage({
         trips={trips}
         clients={clients}
         tags={tags}
+        allClients={allClients}
+        initialFilters={filters}
+        hasActiveFilters={hasFilters}
         tripsPagination={
           <div className="mt-4 flex items-center justify-between text-sm">
             <Link

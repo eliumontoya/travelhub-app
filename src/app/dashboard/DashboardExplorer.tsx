@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition, type ReactNode } from "react";
-import { Client, Tag, TripStatus } from "@/types";
+import { Client, Tag, TripCurrency, TripFilters, TripStatus } from "@/types";
 import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-meta";
 import { bulkUpdateTripStatusAction, moveTripStatusAction } from "@/app/dashboard/actions";
 import { ExportClientsCsvButton } from "@/components/export-clients-csv-button";
 import { TripBoardView } from "@/components/TripBoardView";
+import { DashboardFilters } from "./DashboardFilters";
 
 type TripsViewMode = "list" | "board";
 
@@ -26,6 +27,7 @@ type TripListItem = {
   startDate: string;
   endDate: string;
   travelerCount: number;
+  currency: TripCurrency;
   clients: Client[];
   tags: Tag[];
 };
@@ -43,18 +45,22 @@ export function DashboardExplorer({
   trips,
   clients,
   tags,
+  allClients,
+  initialFilters,
+  hasActiveFilters: parentHasFilters,
   tripsPagination,
   clientsPagination,
 }: {
   trips: TripListItem[];
   clients: ClientListItem[];
   tags: Tag[];
+  allClients: Client[];
+  initialFilters: Partial<TripFilters>;
+  hasActiveFilters: boolean;
   tripsPagination?: ReactNode;
   clientsPagination?: ReactNode;
 }) {
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TripStatus | "all">("all");
-  const [tagFilter, setTagFilter] = useState<string>("all");
+  const [filters, setFilters] = useState<Partial<TripFilters>>(initialFilters);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [viewMode, setViewMode] = useState<TripsViewMode>("list");
@@ -77,62 +83,65 @@ export function DashboardExplorer({
     });
   }
 
-  const normalizedQuery = normalize(query.trim());
+  const normalizedQuery = normalize(filters.query?.trim() ?? "");
 
   const filteredTrips = useMemo(() => {
     return trips.filter((trip) => {
-      if (statusFilter !== "all" && trip.status !== statusFilter) return false;
-      if (tagFilter !== "all" && !trip.tags.some((t) => t.id === tagFilter)) return false;
-      if (!normalizedQuery) return true;
-      const haystack = [trip.title, ...trip.clients.map((c) => c.name)]
-        .map(normalize)
-        .join(" ");
-      return haystack.includes(normalizedQuery);
+      // Status multi-select (OR)
+      if (filters.status?.length && !filters.status.includes(trip.status)) return false;
+      // Tags multi-select (OR)
+      if (filters.tagIds?.length && !trip.tags.some((t) => filters.tagIds!.includes(t.id))) return false;
+      // Date range overlap (trip starts or ends within range)
+      if (filters.dateFrom || filters.dateTo) {
+        const tStart = new Date(trip.startDate);
+        const tEnd = new Date(trip.endDate);
+        const dFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
+        const dTo = filters.dateTo ? new Date(filters.dateTo) : null;
+        if (dFrom && tEnd < dFrom) return false;
+        if (dTo && tStart > dTo) return false;
+      }
+      // Client match (trip has any matching client)
+      if (filters.clientIds?.length && !trip.clients.some((c) => filters.clientIds!.includes(c.id)))
+        return false;
+      // Currency
+      if (filters.currency && trip.currency !== filters.currency) return false;
+      // Text search (accent-insensitive, matches title + client names)
+      if (normalizedQuery) {
+        const haystack = [trip.title, ...trip.clients.map((c) => c.name)]
+          .map(normalize)
+          .join(" ");
+        if (!haystack.includes(normalizedQuery)) return false;
+      }
+      return true;
     });
-  }, [trips, statusFilter, tagFilter, normalizedQuery]);
+  }, [trips, filters, normalizedQuery]);
 
   const filteredClients = useMemo(() => {
     if (!normalizedQuery) return clients;
     return clients.filter((client) => normalize(client.name).includes(normalizedQuery));
   }, [clients, normalizedQuery]);
 
-  const hasActiveFilters = normalizedQuery.length > 0 || statusFilter !== "all" || tagFilter !== "all";
+  const hasActiveFilters =
+    parentHasFilters ||
+    Boolean(
+      filters.query ||
+        filters.status?.length ||
+        filters.dateFrom ||
+        filters.dateTo ||
+        filters.clientIds?.length ||
+        filters.tagIds?.length ||
+        filters.currency,
+    );
 
   return (
     <>
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por cliente o título de viaje…"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as TripStatus | "all")}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        >
-          <option value="all">Todos los estados</option>
-          <option value="draft">Borrador</option>
-          <option value="published">Publicado</option>
-          <option value="archived">Archivado</option>
-        </select>
-        <select
-          value={tagFilter}
-          onChange={(e) => setTagFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        >
-          <option value="all">Todos los tags</option>
-          {tags.map((tag) => (
-            <option key={tag.id} value={tag.id}>
-              {tag.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <DashboardFilters
+        onChange={setFilters}
+        clients={allClients}
+        tags={tags}
+      />
 
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 mt-6 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setViewMode("list")}
@@ -245,7 +254,13 @@ export function DashboardExplorer({
         <TripBoardView trips={filteredTrips} onMoveStatus={moveTripStatusAction} />
       )}
 
-      {viewMode === "list" && tripsPagination}
+      {viewMode === "list" && !hasActiveFilters && tripsPagination}
+      {viewMode === "list" && hasActiveFilters && (
+        <div className="mt-4 text-center text-sm text-gray-400 dark:text-gray-500">
+          {filteredTrips.length} viaje{filteredTrips.length !== 1 ? "s" : ""} encontrado
+          {filteredTrips.length !== 1 ? "s" : ""}
+        </div>
+      )}
 
       <div className="mt-10 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Clientes</h2>
