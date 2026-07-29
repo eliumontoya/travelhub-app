@@ -193,12 +193,24 @@ export function ItemFormDialog({
   const [suppliers, setSuppliers] = useState<Supplier[]>(allSuppliers ?? []);
   const [autoFillType, setAutoFillType] = useState<ItemType | null>(null);
   const [selectedType, setSelectedType] = useState<ItemType>(item?.type ?? "activity");
+  const [titleValue, setTitleValue] = useState(item?.title ?? "");
+  const [locationValue, setLocationValue] = useState(item?.location ?? "");
+  const [latValue, setLatValue] = useState<number | undefined>(item?.lat);
+  const [lngValue, setLngValue] = useState<number | undefined>(item?.lng);
+  const [metadataAutofill, setMetadataAutofill] = useState<Record<string, string>>({});
+  const [metadataAutofillVersion, setMetadataAutofillVersion] = useState(0);
 
   function open() {
     setError(null);
     setSelectedType(item?.type ?? "activity");
     setAutoFillType(null);
     setSuppliers(allSuppliers ?? []);
+    setTitleValue(item?.title ?? "");
+    setLocationValue(item?.location ?? "");
+    setLatValue(item?.lat);
+    setLngValue(item?.lng);
+    setMetadataAutofill({});
+    setMetadataAutofillVersion((version) => version + 1);
     dialogRef.current?.showModal();
     if (item && onLoadDocuments) {
       setDocsLoading(true);
@@ -252,6 +264,30 @@ export function ItemFormDialog({
       setAutoFillType(supplier.type);
       setSelectedType(supplier.type);
     }
+
+    setTitleValue((current) => (current.trim() ? current : supplier.name));
+    if (supplier.address) setLocationValue(supplier.address);
+    setLatValue(supplier.lat);
+    setLngValue(supplier.lng);
+
+    const nextMetadata: Record<string, string> = {};
+    if (supplier.type === "hotel") {
+      nextMetadata.hotelName = supplier.name;
+      if (supplier.address) nextMetadata.address = supplier.address;
+      if (supplier.contactPhone) nextMetadata.hotelPhone = supplier.contactPhone;
+    }
+    if (supplier.type === "restaurant") {
+      nextMetadata.restaurantName = supplier.name;
+      if (supplier.address) nextMetadata.address = supplier.address;
+      if (supplier.contactPhone) nextMetadata.phone = supplier.contactPhone;
+    }
+    if (supplier.type === "transport") {
+      nextMetadata.company = supplier.name;
+      if (supplier.address) nextMetadata.pickupLocation = supplier.address;
+      if (supplier.contactPhone) nextMetadata.driverPhone = supplier.contactPhone;
+    }
+    setMetadataAutofill(nextMetadata);
+    setMetadataAutofillVersion((version) => version + 1);
   }
 
   function handleUpload() {
@@ -322,7 +358,8 @@ export function ItemFormDialog({
             <label className="block text-sm font-medium text-gray-700">Título</label>
             <input
               name="title"
-              defaultValue={item?.title}
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
               required
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
@@ -355,6 +392,14 @@ export function ItemFormDialog({
               defaultValue={item?.location}
               defaultLat={item?.lat}
               defaultLng={item?.lng}
+              value={locationValue}
+              onValueChange={setLocationValue}
+              lat={latValue}
+              lng={lngValue}
+              onCoordinatesChange={(lat, lng) => {
+                setLatValue(lat);
+                setLngValue(lng);
+              }}
             />
           </div>
 
@@ -394,7 +439,7 @@ export function ItemFormDialog({
           </div>
 
           {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
-            <div className="border-t border-gray-100 pt-4">
+            <div key={`${selectedType}-${metadataAutofillVersion}`} className="border-t border-gray-100 pt-4">
               <h4 className="mb-3 text-sm font-semibold text-gray-800">
                 {itemTypeMeta[selectedType].icon} Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}
               </h4>
@@ -405,14 +450,14 @@ export function ItemFormDialog({
                     {field.type === "textarea" ? (
                       <textarea
                         name={`metadata_${field.name}`}
-                        defaultValue={metadataDefaultValue(item, field.name)}
+                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
                         rows={2}
                         className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                       />
                     ) : field.type === "select" && field.options ? (
                       <select
                         name={`metadata_${field.name}`}
-                        defaultValue={metadataDefaultValue(item, field.name) ?? ""}
+                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name) ?? ""}
                         className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                       >
                         <option value="">Seleccionar...</option>
@@ -426,7 +471,7 @@ export function ItemFormDialog({
                       <input
                         type={field.type}
                         name={`metadata_${field.name}`}
-                        defaultValue={metadataDefaultValue(item, field.name)}
+                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
                         className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                       />
                     )}

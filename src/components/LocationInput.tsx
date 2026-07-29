@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Google Places Autocomplete se carga dinámicamente vía <script> solo si
 // hay API key configurada. Sin key, este es un <input type="text"> normal
@@ -46,15 +46,41 @@ export function LocationInput({
   defaultValue,
   defaultLat,
   defaultLng,
+  value,
+  onValueChange,
+  lat: controlledLat,
+  lng: controlledLng,
+  onCoordinatesChange,
 }: {
   defaultValue?: string;
   defaultLat?: number;
   defaultLng?: number;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  lat?: number;
+  lng?: number;
+  onCoordinatesChange?: (lat?: number, lng?: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [lat, setLat] = useState<number | undefined>(defaultLat);
-  const [lng, setLng] = useState<number | undefined>(defaultLng);
+  const [internalValue, setInternalValue] = useState(defaultValue ?? "");
+  const [internalLat, setInternalLat] = useState<number | undefined>(defaultLat);
+  const [internalLng, setInternalLng] = useState<number | undefined>(defaultLng);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const coordinatesAreControlled = Boolean(onCoordinatesChange);
+  const inputValue = value ?? internalValue;
+  const lat = coordinatesAreControlled ? controlledLat : internalLat;
+  const lng = coordinatesAreControlled ? controlledLng : internalLng;
+
+  const updateValue = useCallback((nextValue: string) => {
+    setInternalValue(nextValue);
+    onValueChange?.(nextValue);
+  }, [onValueChange]);
+
+  const updateCoordinates = useCallback((nextLat?: number, nextLng?: number) => {
+    setInternalLat(nextLat);
+    setInternalLng(nextLng);
+    onCoordinatesChange?.(nextLat, nextLng);
+  }, [onCoordinatesChange]);
 
   useEffect(() => {
     if (!apiKey || !inputRef.current) return;
@@ -68,9 +94,9 @@ export function LocationInput({
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
           const location = place.geometry?.location;
+          if (inputRef.current) updateValue(inputRef.current.value);
           if (location) {
-            setLat(location.lat());
-            setLng(location.lng());
+            updateCoordinates(location.lat(), location.lng());
           }
         });
       })
@@ -80,7 +106,7 @@ export function LocationInput({
     return () => {
       cancelled = true;
     };
-  }, [apiKey]);
+  }, [apiKey, updateCoordinates, updateValue]);
 
   return (
     <div>
@@ -88,7 +114,8 @@ export function LocationInput({
         ref={inputRef}
         type="text"
         name="location"
-        defaultValue={defaultValue}
+        value={inputValue}
+        onChange={(e) => updateValue(e.target.value)}
         placeholder={apiKey ? "Buscar ubicación…" : undefined}
         className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
       />
