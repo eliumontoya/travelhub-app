@@ -59,6 +59,15 @@ function revalidateTrip(tripId: string) {
   revalidatePath(`/dashboard/trips/${tripId}`);
 }
 
+function parseItemMetadata(type: ItemType, raw: FormDataEntryValue | null): Record<string, unknown> | null {
+  if (!raw || !String(raw).trim()) return null;
+  try {
+    return validateItemMetadata(type, JSON.parse(String(raw)));
+  } catch {
+    throw new Error("Datos del item inválidos: revisa los campos específicos del tipo.");
+  }
+}
+
 export async function addDayAction(tripId: string, formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const notes = String(formData.get("notes") ?? "").trim() || undefined;
@@ -126,15 +135,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
   const type = String(formData.get("type") ?? "note") as ItemType;
-  const metadataRaw = formData.get("metadata");
-  let metadata: Record<string, unknown> | null | undefined;
-  if (metadataRaw && String(metadataRaw).trim()) {
-    try {
-      metadata = validateItemMetadata(type, JSON.parse(String(metadataRaw)));
-    } catch {
-      throw new Error("Datos del item inválidos: revisa los campos específicos del tipo.");
-    }
-  }
+  const metadata = parseItemMetadata(type, formData.get("metadata"));
   await createItem({
     tripDayId: dayId,
     type,
@@ -147,22 +148,14 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
-    metadata: metadata ?? undefined,
+    metadata,
   });
   revalidateTrip(tripId);
 }
 
 export async function editItemAction(tripId: string, itemId: string, formData: FormData) {
   const type = String(formData.get("type") ?? "note") as ItemType;
-  const metadataRaw = formData.get("metadata");
-  let metadata: Record<string, unknown> | null | undefined;
-  if (metadataRaw && String(metadataRaw).trim()) {
-    try {
-      metadata = validateItemMetadata(type, JSON.parse(String(metadataRaw)));
-    } catch {
-      throw new Error("Datos del item inválidos: revisa los campos específicos del tipo.");
-    }
-  }
+  const metadata = parseItemMetadata(type, formData.get("metadata"));
   await updateItem(itemId, {
     type,
     title: String(formData.get("title") ?? "").trim(),
@@ -174,7 +167,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
-    metadata: metadata ?? undefined,
+    metadata,
   });
   revalidateTrip(tripId);
 }

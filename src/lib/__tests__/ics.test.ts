@@ -14,8 +14,9 @@ function makeItem(overrides: Partial<Item> = {}): Item {
     confirmationCode: "CONF-123",
     notes: "Llevar calzado cómodo",
     sortOrder: 0,
+    metadata: null,
     ...overrides,
-  };
+  } as Item;
 }
 
 function makeTrip(): TripWithDetails {

@@ -177,10 +177,9 @@ export type ItemMetadata =
   | TransportMetadata
   | null;
 
-export interface Item {
+type BaseItem = {
   id: string;
   tripDayId: string;
-  type: ItemType;
   title: string;
   startTime?: string;
   endTime?: string;
@@ -191,10 +190,24 @@ export interface Item {
   notes?: string;
   cost?: number;
   sortOrder: number;
-  metadata?: ItemMetadata;
   documents?: ItemDocument[];
   deletedAt?: string;
-}
+};
+
+export type FlightItem = BaseItem & { type: "flight"; metadata: FlightMetadata | null };
+export type HotelItem = BaseItem & { type: "hotel"; metadata: HotelMetadata | null };
+export type ActivityItem = BaseItem & { type: "activity"; metadata: ActivityMetadata | null };
+export type RestaurantItem = BaseItem & { type: "restaurant"; metadata: RestaurantMetadata | null };
+export type TransportItem = BaseItem & { type: "transport"; metadata: TransportMetadata | null };
+export type NoteItem = BaseItem & { type: "note"; metadata: null };
+
+export type Item =
+  | FlightItem
+  | HotelItem
+  | ActivityItem
+  | RestaurantItem
+  | TransportItem
+  | NoteItem;
 
 export interface PackingItem {
   id: string;

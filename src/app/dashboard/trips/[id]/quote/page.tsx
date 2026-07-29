@@ -8,6 +8,7 @@ import {
   formatCost,
 } from "@/lib/item-meta";
 import { PrintButton } from "@/components/PrintButton";
+import { formatItemMetadataSummary } from "@/lib/item-display";
 
 export default async function TripQuotePage({
   params,
@@ -76,27 +77,8 @@ export default async function TripQuotePage({
                           {item.location && (
                             <p className="text-sm text-gray-500">{item.location}</p>
                           )}
-                          {item.metadata && item.type === "flight" && "flightNumber" in item.metadata && (
-                            <p className="text-xs text-gray-400">
-                              {(item.metadata as { airline?: string }).airline}{" "}
-                              {(item.metadata as { flightNumber?: string }).flightNumber}
-                              {(item.metadata as { departureAirport?: string; arrivalAirport?: string }).departureAirport &&
-                                ` · ${(item.metadata as { departureAirport?: string }).departureAirport} → ${(item.metadata as { arrivalAirport?: string }).arrivalAirport}`}
-                            </p>
-                          )}
-                          {item.metadata && item.type === "hotel" && "roomType" in item.metadata && (
-                            <p className="text-xs text-gray-400">
-                              {(item.metadata as { roomType?: string }).roomType}
-                              {(item.metadata as { boardBasis?: string }).boardBasis &&
-                                ` · ${(item.metadata as { boardBasis?: string }).boardBasis}`}
-                            </p>
-                          )}
-                          {item.metadata && item.type === "activity" && "provider" in item.metadata && (
-                            <p className="text-xs text-gray-400">
-                              {(item.metadata as { provider?: string }).provider}
-                              {(item.metadata as { duration?: string }).duration &&
-                                ` · ${(item.metadata as { duration?: string }).duration}`}
-                            </p>
+                          {formatItemMetadataSummary(item) && (
+                            <p className="text-xs text-gray-400">{formatItemMetadataSummary(item)}</p>
                           )}
                         </div>
                       </div>

@@ -18,6 +18,7 @@ import {
   computeTripCompleteness,
 } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
+import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { GenerateDaysButton } from "@/components/GenerateDaysButton";
@@ -476,11 +477,7 @@ export default async function TripEditorPage({
                           {item.type === "flight" && (
                             <FlightStatusBadge
                               title={item.title}
-                              flightNumber={
-                                item.metadata && "flightNumber" in item.metadata
-                                  ? (item.metadata as { flightNumber?: string }).flightNumber
-                                  : null
-                              }
+                              flightNumber={getItemFlightNumber(item)}
                             />
                           )}
                         </div>
@@ -495,38 +492,9 @@ export default async function TripEditorPage({
                             Confirmación: {item.confirmationCode}
                           </p>
                         )}
-                        {item.metadata && item.type === "flight" && "airline" in item.metadata && (
-                          <p className="text-xs font-medium text-sky-600 dark:text-sky-400">
-                            {(item.metadata as { airline?: string; flightNumber?: string }).airline}{" "}
-                            {(item.metadata as { flightNumber?: string }).flightNumber}
-                            {(item.metadata as { departureAirport?: string; arrivalAirport?: string }).departureAirport &&
-                              ` · ${(item.metadata as { departureAirport?: string }).departureAirport} → ${(item.metadata as { arrivalAirport?: string }).arrivalAirport}`}
-                          </p>
-                        )}
-                        {item.metadata && item.type === "hotel" && "roomType" in item.metadata && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {(item.metadata as { roomType?: string }).roomType}
-                            {(item.metadata as { boardBasis?: string }).boardBasis &&
-                              ` · ${(item.metadata as { boardBasis?: string }).boardBasis}`}
-                          </p>
-                        )}
-                        {item.metadata && item.type === "activity" && "provider" in item.metadata && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {(item.metadata as { provider?: string }).provider}
-                            {(item.metadata as { duration?: string }).duration &&
-                              ` · ${(item.metadata as { duration?: string }).duration}`}
-                          </p>
-                        )}
-                        {item.metadata && item.type === "restaurant" && "cuisine" in item.metadata && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {(item.metadata as { cuisine?: string }).cuisine}
-                          </p>
-                        )}
-                        {item.metadata && item.type === "transport" && "company" in item.metadata && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {(item.metadata as { company?: string }).company}
-                            {(item.metadata as { vehicleType?: string }).vehicleType &&
-                              ` · ${(item.metadata as { vehicleType?: string }).vehicleType}`}
+                        {formatItemMetadataSummary(item) && (
+                          <p className={`text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                            {formatItemMetadataSummary(item)}
                           </p>
                         )}
                       </div>

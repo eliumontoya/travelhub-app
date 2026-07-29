@@ -1743,14 +1743,14 @@ export type CreateItemInput = {
   notes?: string;
   cost?: number;
   sortOrder?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type UpdateItemInput = Partial<Omit<CreateItemInput, "tripDayId">>;
 
 export async function createItem(input: CreateItemInput): Promise<Item> {
   if (!isSupabaseConfigured()) {
-    const item: Item = {
+    const item = {
       id: uid(),
       tripDayId: input.tripDayId,
       type: input.type,
@@ -1763,10 +1763,10 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       confirmationCode: input.confirmationCode,
       notes: input.notes,
       cost: input.cost,
-      metadata: input.metadata ? (input.metadata as unknown as Item["metadata"]) : undefined,
+      metadata: (input.metadata ?? null) as unknown as Item["metadata"],
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
-    };
+    } as Item;
     mockItems.push(item);
     return item;
   }
@@ -1809,7 +1809,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
     if (input.notes !== undefined) item.notes = input.notes;
     if (input.cost !== undefined) item.cost = input.cost;
     if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
-    if (input.metadata !== undefined) item.metadata = input.metadata ? (input.metadata as unknown as Item["metadata"]) : undefined;
+    if (input.metadata !== undefined) item.metadata = (input.metadata ?? null) as unknown as Item["metadata"];
     return item;
   }
   const supabase = await createServerSupabase();
@@ -1825,7 +1825,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.cost !== undefined) patch.cost = input.cost ?? null;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
-  if (input.metadata !== undefined) patch.item_metadata = input.metadata;
+  if (input.metadata !== undefined) patch.item_metadata = input.metadata ?? null;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToItem(data);
@@ -1889,14 +1889,14 @@ export async function reorderTripDays(order: { id: string; sortOrder: number }[]
   );
 }
 
-function rowToItem(row: Record<string, unknown>): Item {
+export function rowToItem(row: Record<string, unknown>): Item {
   const rawMetadata = row.item_metadata;
   const metadata: Item["metadata"] =
     rawMetadata && typeof rawMetadata === "string"
       ? (JSON.parse(rawMetadata) as unknown as Item["metadata"])
       : rawMetadata && typeof rawMetadata === "object"
         ? (rawMetadata as unknown as Item["metadata"])
-        : undefined;
+        : null;
   return {
     id: row.id as string,
     tripDayId: row.trip_day_id as string,
@@ -1912,7 +1912,7 @@ function rowToItem(row: Record<string, unknown>): Item {
     cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     sortOrder: row.sort_order as number,
     metadata,
-  };
+  } as Item;
 }
 
 // ---------- Documents ----------
