@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Client, Tag, TripCurrency, TripFilters, TripStatus } from "@/types";
 import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-meta";
+import { hasActiveTripFilters, normalizeFilterText, tripMatchesFilters } from "@/lib/trip-filters";
 import { bulkUpdateTripStatusAction, moveTripStatusAction } from "@/app/dashboard/actions";
 import { ExportClientsCsvButton } from "@/components/export-clients-csv-button";
 import { TripBoardView } from "@/components/TripBoardView";
@@ -28,16 +29,10 @@ type TripListItem = {
   endDate: string;
   travelerCount: number;
   currency: TripCurrency;
+  instructions?: string;
   clients: Client[];
   tags: Tag[];
 };
-
-function normalize(text: string) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
 
 type ClientListItem = Client & { tags: Tag[] };
 
@@ -83,55 +78,19 @@ export function DashboardExplorer({
     });
   }
 
-  const normalizedQuery = normalize(filters.query?.trim() ?? "");
+  const normalizedQuery = normalizeFilterText(filters.query?.trim() ?? "");
 
   const filteredTrips = useMemo(() => {
-    return trips.filter((trip) => {
-      // Status multi-select (OR)
-      if (filters.status?.length && !filters.status.includes(trip.status)) return false;
-      // Tags multi-select (OR)
-      if (filters.tagIds?.length && !trip.tags.some((t) => filters.tagIds!.includes(t.id))) return false;
-      // Date range overlap (trip starts or ends within range)
-      if (filters.dateFrom || filters.dateTo) {
-        const tStart = new Date(trip.startDate);
-        const tEnd = new Date(trip.endDate);
-        const dFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
-        const dTo = filters.dateTo ? new Date(filters.dateTo) : null;
-        if (dFrom && tEnd < dFrom) return false;
-        if (dTo && tStart > dTo) return false;
-      }
-      // Client match (trip has any matching client)
-      if (filters.clientIds?.length && !trip.clients.some((c) => filters.clientIds!.includes(c.id)))
-        return false;
-      // Currency
-      if (filters.currency && trip.currency !== filters.currency) return false;
-      // Text search (accent-insensitive, matches title + client names)
-      if (normalizedQuery) {
-        const haystack = [trip.title, ...trip.clients.map((c) => c.name)]
-          .map(normalize)
-          .join(" ");
-        if (!haystack.includes(normalizedQuery)) return false;
-      }
-      return true;
-    });
-  }, [trips, filters, normalizedQuery]);
+    if (parentHasFilters) return trips;
+    return trips.filter((trip) => tripMatchesFilters(trip, filters));
+  }, [trips, filters, parentHasFilters]);
 
   const filteredClients = useMemo(() => {
     if (!normalizedQuery) return clients;
-    return clients.filter((client) => normalize(client.name).includes(normalizedQuery));
+    return clients.filter((client) => normalizeFilterText(client.name).includes(normalizedQuery));
   }, [clients, normalizedQuery]);
 
-  const hasActiveFilters =
-    parentHasFilters ||
-    Boolean(
-      filters.query ||
-        filters.status?.length ||
-        filters.dateFrom ||
-        filters.dateTo ||
-        filters.clientIds?.length ||
-        filters.tagIds?.length ||
-        filters.currency,
-    );
+  const hasActiveFilters = parentHasFilters || hasActiveTripFilters(filters);
 
   return (
     <>

@@ -16,6 +16,7 @@ import {
 } from "@/lib/data";
 import type { TripCurrency, TripFilters, TripStatus } from "@/types";
 import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
+import { hasActiveTripFilters } from "@/lib/trip-filters";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
 import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
@@ -37,18 +38,6 @@ function deserializeFilters(sp: Record<string, string | undefined>): Partial<Tri
     tagIds: sp.tags?.split(",").filter(Boolean),
     currency: sp.currency as TripCurrency | undefined,
   };
-}
-
-function hasActiveFilters(f: Partial<TripFilters>): boolean {
-  return Boolean(
-    f.query ||
-      f.status?.length ||
-      f.dateFrom ||
-      f.dateTo ||
-      f.clientIds?.length ||
-      f.tagIds?.length ||
-      f.currency,
-  );
 }
 
 const activityMeta = {
@@ -78,7 +67,7 @@ export default async function DashboardPage({
 }) {
   const sp = await searchParams;
   const filters = deserializeFilters(sp);
-  const hasFilters = hasActiveFilters(filters);
+  const hasFilters = hasActiveTripFilters(filters);
   const pageSize = hasFilters ? ALL_TRIPS_PAGE_SIZE : DEFAULT_PAGE_SIZE;
 
   const tripsPage = parsePage(sp.page);
@@ -96,7 +85,7 @@ export default async function DashboardPage({
     upcomingBirthdays,
     referralSourceCounts,
   ] = await Promise.all([
-    getTripsWithClients({ page: tripsPage, pageSize }),
+    getTripsWithClients({ page: hasFilters ? 1 : tripsPage, pageSize, filters }),
     getClientsWithTags({ page: clientsPageNum }),
     getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
     getTags(),
@@ -217,6 +206,7 @@ export default async function DashboardPage({
       )}
 
       <DashboardExplorer
+        key={JSON.stringify(filters)}
         trips={trips}
         clients={clients}
         tags={tags}
