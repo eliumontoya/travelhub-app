@@ -5,16 +5,18 @@ import { SUPPLIER_TYPES } from "@/lib/constants";
 export default async function SupplierCatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ query?: string; type?: string; page?: string }>;
+  searchParams: Promise<{ query?: string; type?: string; tag?: string; page?: string }>;
 }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams.query || "";
   const type = resolvedParams.type || "";
+  const tag = resolvedParams.tag || "";
   const page = parseInt(resolvedParams.page || "1", 10);
 
   const { items: suppliers, totalCount } = await getSuppliers({
     query,
     type: type || undefined,
+    tag: tag || undefined,
     page,
     pageSize: 20,
   });
@@ -32,6 +34,7 @@ export default async function SupplierCatalogPage({
         supplierTypes={SUPPLIER_TYPES as unknown as string[]}
         currentQuery={query}
         currentType={type}
+        currentTag={tag}
         currentPage={page}
         totalPages={totalPages}
       />

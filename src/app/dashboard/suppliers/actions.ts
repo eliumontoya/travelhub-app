@@ -8,6 +8,13 @@ import {
   restoreSupplier,
 } from "@/lib/data";
 
+function parseSupplierTags(formData: FormData): string[] {
+  return String(formData.get("tags") ?? "")
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag, index, tags) => Boolean(tag) && tags.indexOf(tag) === index);
+}
+
 export async function createSupplierAction(
   formData: FormData
 ): Promise<{ supplier?: Supplier; error?: string }> {
@@ -27,6 +34,7 @@ export async function createSupplierAction(
       website: (formData.get("website") as string)?.trim() || undefined,
       address: (formData.get("address") as string)?.trim() || undefined,
       notes: (formData.get("notes") as string)?.trim() || undefined,
+      tags: parseSupplierTags(formData),
     });
     return { supplier };
   } catch {
@@ -52,6 +60,7 @@ export async function updateSupplierAction(
       website: (formData.get("website") as string)?.trim() || undefined,
       address: (formData.get("address") as string)?.trim() || undefined,
       notes: (formData.get("notes") as string)?.trim() || undefined,
+      tags: parseSupplierTags(formData),
     });
     return { supplier };
   } catch {

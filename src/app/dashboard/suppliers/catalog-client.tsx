@@ -16,6 +16,7 @@ export function SupplierCatalogClient({
   supplierTypes,
   currentQuery,
   currentType,
+  currentTag,
   currentPage,
   totalPages,
 }: {
@@ -23,6 +24,7 @@ export function SupplierCatalogClient({
   supplierTypes: string[];
   currentQuery: string;
   currentType: string;
+  currentTag: string;
   currentPage: number;
   totalPages: number;
 }) {
@@ -31,11 +33,13 @@ export function SupplierCatalogClient({
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [searchText, setSearchText] = useState(currentQuery);
+  const [tagText, setTagText] = useState(currentTag);
 
-  function applyFilters(query: string, type: string, page: number) {
+  function applyFilters(query: string, type: string, tag: string, page: number) {
     const params = new URLSearchParams();
     if (query) params.set("query", query);
     if (type) params.set("type", type);
+    if (tag) params.set("tag", tag);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     startTransition(() => {
@@ -78,6 +82,7 @@ export function SupplierCatalogClient({
     const params = new URLSearchParams();
     if (currentQuery) params.set("query", currentQuery);
     if (currentType) params.set("type", currentType);
+    if (currentTag) params.set("tag", currentTag);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/dashboard/suppliers${qs ? `?${qs}` : ""}`;
@@ -93,15 +98,34 @@ export function SupplierCatalogClient({
           onChange={(e) => setSearchText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              applyFilters(searchText, currentType, 1);
+              applyFilters(searchText, currentType, tagText, 1);
             }
           }}
           placeholder="Buscar por nombre…"
           className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
         />
+        <input
+          type="text"
+          value={tagText}
+          onChange={(e) => setTagText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              applyFilters(searchText, currentType, tagText, 1);
+            }
+          }}
+          placeholder="Filtrar por tag…"
+          className="min-w-40 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+        />
+        <button
+          type="button"
+          onClick={() => applyFilters(searchText, currentType, tagText, 1)}
+          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+        >
+          Buscar
+        </button>
         <select
           value={currentType}
-          onChange={(e) => applyFilters(currentQuery, e.target.value, 1)}
+          onChange={(e) => applyFilters(currentQuery, e.target.value, currentTag, 1)}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
         >
           <option value="">Todos los tipos</option>
@@ -124,11 +148,11 @@ export function SupplierCatalogClient({
       {suppliers.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
           <p className="text-gray-500 dark:text-gray-400">
-            {currentQuery || currentType
+            {currentQuery || currentType || currentTag
               ? "No se encontraron proveedores con esos filtros."
               : "Aún no hay proveedores. ¡Crea el primero!"}
           </p>
-          {!currentQuery && !currentType && (
+          {!currentQuery && !currentType && !currentTag && (
             <button
               type="button"
               onClick={() => setShowCreateDialog(true)}
@@ -147,6 +171,7 @@ export function SupplierCatalogClient({
                 <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Tipo</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Teléfono</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Tags</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Acciones</th>
               </tr>
             </thead>
@@ -164,6 +189,17 @@ export function SupplierCatalogClient({
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                     {supplier.contactEmail || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                    {supplier.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {supplier.tags.map((tag) => (
+                          <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button

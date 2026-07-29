@@ -166,6 +166,22 @@ export function CreateSupplierDialog({
           />
         </div>
 
+
+        <div>
+          <label htmlFor="supplier-tags" className="block text-sm font-medium text-gray-700">
+            Tags
+          </label>
+          <input
+            id="supplier-tags"
+            name="tags"
+            type="text"
+            defaultValue={supplier?.tags.join(", ")}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            placeholder="playa, 5 estrellas, familiar"
+          />
+          <p className="mt-1 text-xs text-gray-500">Separados por coma.</p>
+        </div>
+
         <div>
           <label htmlFor="supplier-notes" className="block text-sm font-medium text-gray-700">
             Notas
