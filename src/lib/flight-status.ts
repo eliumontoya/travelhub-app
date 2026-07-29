@@ -33,24 +33,29 @@ function extractFlightNumber(title: string): string | null {
   return null;
 }
 
-export async function getFlightStatus(title: string, flightNumber?: string | null): Promise<string | null> {
-  const apiKey = process.env.FLIGHT_API_KEY;
-  if (!apiKey) return null;
+interface FlightStatusResult {
+  status: string | null;
+  flightNumber: string | null;
+}
 
-  const fn = flightNumber || extractFlightNumber(title);
-  if (!fn) return null;
+export async function getFlightStatus(title: string, explicitFlightNumber?: string | null): Promise<FlightStatusResult> {
+  const apiKey = process.env.FLIGHT_API_KEY;
+  const flightNumber = explicitFlightNumber || extractFlightNumber(title);
+  if (!apiKey) return { status: null, flightNumber };
+
+  if (!flightNumber) return { status: null, flightNumber: null };
 
   try {
-    const url = `${AVIATIONSTACK_URL}?access_key=${apiKey}&flight_iata=${fn}`;
-    const res = await fetch(url, { next: { revalidate: 300 } });
-    if (!res.ok) return null;
+    const url = `${AVIATIONSTACK_URL}?access_key=${apiKey}&flight_iata=${flightNumber}`;
+    const res = await fetch(url);
+    if (!res.ok) return { status: null, flightNumber };
 
     const json: AviationstackResponse = await res.json();
-    const status = json.data?.[0]?.flight_status;
-    if (!status) return null;
+    const rawStatus = json.data?.[0]?.flight_status;
+    if (!rawStatus) return { status: null, flightNumber };
 
-    return FLIGHT_STATUS_LABELS[status] ?? status;
+    return { status: FLIGHT_STATUS_LABELS[rawStatus] ?? rawStatus, flightNumber };
   } catch {
-    return null;
+    return { status: null, flightNumber };
   }
 }
