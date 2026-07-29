@@ -168,6 +168,16 @@ export const mockItems: Item[] = [
     confirmationCode: "XJ4K9P",
     cost: 12500,
     sortOrder: 0,
+    metadata: {
+      airline: "AeroMéxico",
+      flightNumber: "AM45",
+      departureAirport: "MEX",
+      arrivalAirport: "FCO",
+      departureTime: "08:30",
+      arrivalTime: "14:20",
+      terminal: "2",
+      bookingReference: "XJ4K9P",
+    },
   },
   {
     id: "i2",
@@ -181,6 +191,15 @@ export const mockItems: Item[] = [
     confirmationCode: "HTL-88213",
     cost: 3200,
     sortOrder: 1,
+    metadata: {
+      hotelName: "Hotel Artemide",
+      address: "Via Nazionale 22, Roma",
+      checkIn: "2026-09-10",
+      checkOut: "2026-09-17",
+      roomType: "Doble Superior",
+      boardBasis: "Desayuno incluido",
+      hotelPhone: "+39 06 1234 5678",
+    },
   },
   {
     id: "i3",
@@ -195,6 +214,17 @@ export const mockItems: Item[] = [
     notes: "Guía en español, punto de encuentro en la entrada norte.",
     cost: 900,
     sortOrder: 0,
+    metadata: {
+      activityName: "Tour privado Coliseo Romano",
+      provider: "Viator",
+      address: "Piazza del Colosseo, 1, Roma",
+      startTime: "10:00",
+      endTime: "13:00",
+      duration: "3 horas",
+      ticketType: "Entrada preferente",
+      includes: "Guía en español, entradas sin fila",
+      meetingPoint: "Entrada norte del Coliseo",
+    },
   },
   {
     id: "i4",
@@ -204,6 +234,13 @@ export const mockItems: Item[] = [
     startTime: "20:00",
     location: "Via dei Giubbonari, 21, Roma",
     sortOrder: 1,
+    metadata: {
+      restaurantName: "Roscioli",
+      address: "Via dei Giubbonari, 21, Roma",
+      cuisine: "Italiana",
+      dressCode: "Casual elegante",
+      phone: "+39 06 1234 5678",
+    },
   },
 ];
 

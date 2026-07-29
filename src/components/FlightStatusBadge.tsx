@@ -4,8 +4,8 @@ import { useState } from "react";
 
 const CACHE_KEY_PREFIX = "flight-status:";
 
-function getCacheKey(title: string) {
-  return `${CACHE_KEY_PREFIX}${title}`;
+function getCacheKey(title: string, flightNumber?: string | null) {
+  return `${CACHE_KEY_PREFIX}${flightNumber ?? title}`;
 }
 
 interface CacheEntry {
@@ -14,14 +14,14 @@ interface CacheEntry {
   timestamp: number;
 }
 
-function readCache(title: string, cacheHours: number): CacheEntry | null {
+function readCache(title: string, flightNumber: string | null | undefined, cacheHours: number): CacheEntry | null {
   try {
-    const raw = localStorage.getItem(getCacheKey(title));
+    const raw = localStorage.getItem(getCacheKey(title, flightNumber));
     if (!raw) return null;
     const entry: CacheEntry = JSON.parse(raw);
     const maxAge = cacheHours * 60 * 60 * 1000;
     if (Date.now() - entry.timestamp > maxAge) {
-      localStorage.removeItem(getCacheKey(title));
+      localStorage.removeItem(getCacheKey(title, flightNumber));
       return null;
     }
     return entry;
@@ -33,7 +33,7 @@ function readCache(title: string, cacheHours: number): CacheEntry | null {
 function writeCache(title: string, status: string, flightNumber: string) {
   try {
     const entry: CacheEntry = { status, flightNumber, timestamp: Date.now() };
-    localStorage.setItem(getCacheKey(title), JSON.stringify(entry));
+    localStorage.setItem(getCacheKey(title, flightNumber), JSON.stringify(entry));
   } catch {
     // localStorage full or unavailable — silently ignore
   }
@@ -42,24 +42,30 @@ function writeCache(title: string, status: string, flightNumber: string) {
 // Read cache outside React to avoid setState-in-effect lint error.
 // localStorage is synchronous and this runs once at module evaluation per page load.
 // The value is safe because we only use it to seed the initial state.
-function getInitialCache(title: string, cacheHours: number): { status: string | null; flightNumber: string | null } {
+function getInitialCache(
+  title: string,
+  flightNumber: string | null | undefined,
+  cacheHours: number,
+): { status: string | null; flightNumber: string | null } {
   if (typeof window === "undefined") return { status: null, flightNumber: null };
-  const cached = readCache(title, cacheHours);
+  const cached = readCache(title, flightNumber, cacheHours);
   return cached ? { status: cached.status, flightNumber: cached.flightNumber } : { status: null, flightNumber: null };
 }
 
-export function FlightStatusBadge({ title }: { title: string }) {
+export function FlightStatusBadge({ title, flightNumber: initialFlightNumber }: { title: string; flightNumber?: string | null }) {
   const cacheHours = Number(process.env.NEXT_PUBLIC_FLIGHT_STATUS_CACHE_HOURS ?? 24);
-  const initial = getInitialCache(title, cacheHours);
+  const initial = getInitialCache(title, initialFlightNumber, cacheHours);
 
   const [status, setStatus] = useState<string | null>(initial.status);
-  const [flightNumber, setFlightNumber] = useState<string | null>(initial.flightNumber);
+  const [flightNumber, setFlightNumber] = useState<string | null>(initial.flightNumber ?? initialFlightNumber ?? null);
   const [loading, setLoading] = useState(false);
 
   async function fetchStatus() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/flight-status?title=${encodeURIComponent(title)}`);
+      const params = new URLSearchParams({ title });
+      if (initialFlightNumber) params.set("flightNumber", initialFlightNumber);
+      const res = await fetch(`/api/flight-status?${params.toString()}`);
       const data = await res.json();
       const newStatus: string | null = data.status;
       const newFlightNumber: string | null = data.flightNumber;

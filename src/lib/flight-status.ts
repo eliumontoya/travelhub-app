@@ -38,11 +38,11 @@ interface FlightStatusResult {
   flightNumber: string | null;
 }
 
-export async function getFlightStatus(title: string): Promise<FlightStatusResult> {
+export async function getFlightStatus(title: string, explicitFlightNumber?: string | null): Promise<FlightStatusResult> {
   const apiKey = process.env.FLIGHT_API_KEY;
-  if (!apiKey) return { status: null, flightNumber: null };
+  const flightNumber = explicitFlightNumber || extractFlightNumber(title);
+  if (!apiKey) return { status: null, flightNumber };
 
-  const flightNumber = extractFlightNumber(title);
   if (!flightNumber) return { status: null, flightNumber: null };
 
   try {
