@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Client, Tag, TripFilters, TripStatus, TripCurrency } from "@/types";
 
 function normalize(text: string) {
-  return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 const STATUS_OPTIONS: TripStatus[] = ["draft", "published", "archived"];
@@ -51,7 +51,7 @@ export function DashboardFilters({
 
   function syncUrl(f: Partial<TripFilters>) {
     const params = new URLSearchParams(searchParams.toString());
-    const filterKeys = ["q", "status", "dateFrom", "dateTo", "client", "tags", "currency"] as const;
+    const filterKeys = ["q", "status", "dateFrom", "dateTo", "client", "tags", "currency", "page", "clientsPage"] as const;
     filterKeys.forEach((key) => params.delete(key));
 
     if (f.query) params.set("q", f.query);
@@ -77,27 +77,33 @@ export function DashboardFilters({
     return next;
   }
 
-  function updateFilters(update: Partial<TripFilters>, immediateSync: boolean) {
-    setFilters((prev) => {
-      const next = clean({ ...prev, ...update });
+  function applyFilters(nextFilters: Partial<TripFilters>, immediateSync: boolean) {
+    const next = clean(nextFilters);
 
-      if (immediateSync) {
-        syncUrl(next);
-      } else {
-        if (debounceRef.current !== null) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-          debounceRef.current = null;
-          syncUrl(next);
-        }, 300);
+    if (immediateSync) {
+      if (debounceRef.current !== null) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
       }
+      syncUrl(next);
+    } else {
+      if (debounceRef.current !== null) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        syncUrl(next);
+      }, 300);
+    }
 
-      onChange(next);
-      return next;
-    });
+    onChange(next);
+    return next;
+  }
+
+  function updateFilters(update: Partial<TripFilters>, immediateSync: boolean) {
+    setFilters((prev) => applyFilters({ ...prev, ...update }, immediateSync));
   }
 
   function clearAll() {
-    updateFilters({}, true);
+    setFilters(() => applyFilters({}, true));
   }
 
   // Derive active badges from current state
@@ -116,13 +122,10 @@ export function DashboardFilters({
         badges.push({
           key: `status-${s}`,
           label: STATUS_LABELS[s],
-          onRemove: () =>
-            setFilters((prev) => {
-              const next = (prev.status ?? []).filter((st) => st !== s);
-              const result = clean({ ...prev, status: next.length ? next : undefined });
-              syncUrl(result);
-              return result;
-            }),
+          onRemove: () => {
+            const next = (filters.status ?? []).filter((st) => st !== s);
+            updateFilters({ status: next.length ? next : undefined }, true);
+          },
         });
       });
     }
@@ -140,13 +143,10 @@ export function DashboardFilters({
         badges.push({
           key: `client-${cid}`,
           label: client?.name ?? cid,
-          onRemove: () =>
-            setFilters((prev) => {
-              const next = (prev.clientIds ?? []).filter((id) => id !== cid);
-              const result = clean({ ...prev, clientIds: next.length ? next : undefined });
-              syncUrl(result);
-              return result;
-            }),
+          onRemove: () => {
+            const next = (filters.clientIds ?? []).filter((id) => id !== cid);
+            updateFilters({ clientIds: next.length ? next : undefined }, true);
+          },
         });
       });
     }
@@ -156,13 +156,10 @@ export function DashboardFilters({
         badges.push({
           key: `tag-${tid}`,
           label: tag?.name ?? tid,
-          onRemove: () =>
-            setFilters((prev) => {
-              const next = (prev.tagIds ?? []).filter((id) => id !== tid);
-              const result = clean({ ...prev, tagIds: next.length ? next : undefined });
-              syncUrl(result);
-              return result;
-            }),
+          onRemove: () => {
+            const next = (filters.tagIds ?? []).filter((id) => id !== tid);
+            updateFilters({ tagIds: next.length ? next : undefined }, true);
+          },
         });
       });
     }

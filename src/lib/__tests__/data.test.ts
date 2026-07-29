@@ -11,6 +11,7 @@ import {
   createClient,
   updateClient,
   getTrips,
+  getTripsWithClients,
   getTripWithDetails,
   getTripsByClientId,
   getClientTripSummary,
@@ -81,6 +82,45 @@ describe("data layer (mock mode)", () => {
       for (const trip of result.items) {
         expect(trip.isTemplate).toBe(false);
       }
+    });
+  });
+
+
+  describe("getTripsWithClients filters", () => {
+    it("filtra viajes por status, moneda, cliente y tags en modo mock", async () => {
+      const result = await getTripsWithClients({
+        filters: {
+          status: ["published"],
+          currency: "EUR",
+          clientIds: ["c1"],
+          tagIds: ["tg1"],
+        },
+      });
+
+      expect(result.items.map((trip) => trip.id)).toEqual(["t1"]);
+      expect(result.totalCount).toBe(1);
+    });
+
+    it("filtra texto con acentos en título, instrucciones y cliente", async () => {
+      const byTitle = await getTripsWithClients({ filters: { query: "italia" } });
+      const byInstructions = await getTripsWithClients({ filters: { query: "documento" } });
+      const byClient = await getTripsWithClients({ filters: { query: "familia gomez" } });
+
+      expect(byTitle.items.map((trip) => trip.id)).toContain("t1");
+      expect(byInstructions.items.map((trip) => trip.id)).toContain("t1");
+      expect(byClient.items.map((trip) => trip.id)).toContain("t2");
+    });
+
+    it("aplica rango de fechas inclusivo por traslape y pagina sobre resultados filtrados", async () => {
+      const result = await getTripsWithClients({
+        page: 1,
+        pageSize: 1,
+        filters: { dateFrom: "2026-12-01", dateTo: "2026-12-31" },
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].id).toBe("t2");
+      expect(result.totalCount).toBe(1);
     });
   });
 
