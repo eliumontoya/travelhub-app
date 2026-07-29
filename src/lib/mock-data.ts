@@ -10,6 +10,7 @@ import {
   SiteSettings,
   PackingItem,
   TripFeedback,
+  Supplier,
 } from "@/types";
 
 export const mockClients: Client[] = [
@@ -76,6 +77,129 @@ export const mockTrips: Trip[] = [
 export const mockTripDays: TripDay[] = [
   { id: "d1", tripId: "t1", date: "2026-09-10", sortOrder: 0 },
   { id: "d2", tripId: "t1", date: "2026-09-11", sortOrder: 1 },
+];
+
+// Catálogo mock de proveedores (issue #114), espejo de la tabla suppliers
+// (ver supabase/migrations/0028_suppliers.sql).
+export const mockSuppliers: Supplier[] = [
+  {
+    id: "s1",
+    name: "Grand Fiesta Americana",
+    type: "hotel",
+    contactPhone: "+52 998 123 4567",
+    contactEmail: "reservaciones@grandfiesta.com",
+    website: "https://www.grandfiestamericana.com",
+    address: "Blvd. Kukulcán Km 16.5, Cancún, Q.Roo",
+    notes: "Todo incluido, 5 estrellas, vistas al mar.",
+    tags: [],
+    createdAt: "2026-07-01T10:00:00Z",
+    updatedAt: "2026-07-01T10:00:00Z",
+  },
+  {
+    id: "s2",
+    name: "María Sazón",
+    type: "restaurant",
+    contactPhone: "+52 55 2345 6789",
+    contactEmail: "contacto@mariasazon.mx",
+    website: "https://www.mariasazon.mx",
+    address: "Av. Reforma 222, CDMX",
+    notes: "Cocina tradicional mexicana, reserva recomendada.",
+    tags: [],
+    createdAt: "2026-07-02T10:00:00Z",
+    updatedAt: "2026-07-02T10:00:00Z",
+  },
+  {
+    id: "s3",
+    name: "AeroTransporte Ejecutivo",
+    type: "transport",
+    contactPhone: "+52 81 3456 7890",
+    contactEmail: "reservas@aerotransporte.mx",
+    address: "Aeropuerto Internacional MTY, Terminal A",
+    notes: "Traslados ejecutivos, flota de vans y sedans.",
+    tags: [],
+    createdAt: "2026-07-03T10:00:00Z",
+    updatedAt: "2026-07-03T10:00:00Z",
+  },
+  {
+    id: "s4",
+    name: "Aventuras Mayas Tour Op",
+    type: "tour_operator",
+    contactPhone: "+52 984 456 7890",
+    contactEmail: "info@aventurasmayas.com",
+    website: "https://www.aventurasmayas.com",
+    address: "Calle 10 x 12, Centro, Playa del Carmen",
+    notes: "Tours personalizados en la Riviera Maya.",
+    tags: [],
+    createdAt: "2026-07-04T10:00:00Z",
+    updatedAt: "2026-07-04T10:00:00Z",
+  },
+  {
+    id: "s5",
+    name: "Distribuidora Turística del Sur",
+    type: "other",
+    contactPhone: "+52 961 567 8901",
+    contactEmail: "ventas@dtsur.mx",
+    address: "Av. Central 345, Tuxtla Gutiérrez",
+    notes: "Distribución de materiales promocionales.",
+    tags: [],
+    createdAt: "2026-07-05T10:00:00Z",
+    updatedAt: "2026-07-05T10:00:00Z",
+  },
+  {
+    id: "s6",
+    name: "Hotel Ritz CDMX",
+    type: "hotel",
+    contactPhone: "+52 55 9876 5432",
+    contactEmail: "cdmx@ritz.com",
+    website: "https://www.ritz.com/cdmx",
+    address: "Av. Paseo de la Reforma 100, CDMX",
+    tags: [],
+    createdAt: "2026-07-06T10:00:00Z",
+    updatedAt: "2026-07-06T10:00:00Z",
+  },
+  {
+    id: "s7",
+    name: "Tacos El Gabo",
+    type: "restaurant",
+    contactPhone: "+52 33 111 2233",
+    address: "Av. Vallarta 500, Guadalajara",
+    notes: "Taquería tradicional, horario nocturno.",
+    tags: [],
+    createdAt: "2026-07-07T10:00:00Z",
+    updatedAt: "2026-07-07T10:00:00Z",
+  },
+  {
+    id: "s8",
+    name: "TransExpress Guadalajara",
+    type: "transport",
+    contactPhone: "+52 33 222 3344",
+    contactEmail: "ventas@transexpressgdl.com",
+    address: "Av. Ávila Camacho 1500, Guadalajara",
+    tags: [],
+    createdAt: "2026-07-08T10:00:00Z",
+    updatedAt: "2026-07-08T10:00:00Z",
+  },
+  {
+    id: "s9",
+    name: "EcoTurismo Patagonia",
+    type: "tour_operator",
+    contactPhone: "+52 55 333 4455",
+    website: "https://www.ecoturismopatagonia.com",
+    notes: "Expediciones de lujo en Sudamérica.",
+    tags: [],
+    createdAt: "2026-07-09T10:00:00Z",
+    updatedAt: "2026-07-09T10:00:00Z",
+  },
+  {
+    id: "s10",
+    name: "Servicios Turísticos del Norte",
+    type: "other",
+    contactPhone: "+52 81 444 5566",
+    address: "Av. Constitución 800, Monterrey",
+    tags: [],
+    createdAt: "2026-07-10T10:00:00Z",
+    updatedAt: "2026-07-10T10:00:00Z",
+  },
 ];
 
 // Fuente de verdad mock para la asignación many-to-many trip<->client,
@@ -262,6 +386,19 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
     .filter((p) => p.tripId === trip.id)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((p) => ({ ...p, url: p.filePath }));
+  const supplierIds = [
+    ...new Set(
+      mockItems
+        .filter((i) => i.tripDayId && i.supplierId)
+        .map((i) => i.supplierId as string)
+    ),
+  ];
+  const supplierInfo = new Map(
+    mockSuppliers
+      .filter((s) => supplierIds.includes(s.id))
+      .map((s) => [s.id, { name: s.name, address: s.address, lat: s.lat, lng: s.lng }])
+  );
+
   const days = mockTripDays
     .filter((d) => d.tripId === trip.id && !d.deletedAt)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -269,7 +406,11 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
       ...day,
       items: mockItems
         .filter((i) => i.tripDayId === day.id && !i.deletedAt)
-        .sort((a, b) => a.sortOrder - b.sortOrder),
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((item) => ({
+          ...item,
+          supplier: item.supplierId ? supplierInfo.get(item.supplierId) : undefined,
+        })),
     }));
   const statusHistory = mockTripStatusHistory
     .filter((h) => h.tripId === trip.id)

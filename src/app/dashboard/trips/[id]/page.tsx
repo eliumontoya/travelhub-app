@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ALL_CLIENTS_PAGE_SIZE,
+  ALL_SUPPLIERS_PAGE_SIZE,
   getClients,
+  getSuppliers,
   getTags,
   getTripById,
   getTripFeedback,
@@ -99,12 +101,14 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, { items: clients }, tags, internalNotes] = await Promise.all([
-    getTripById(id),
-    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
-    getTags(),
-    getTripInternalNotes(id),
-  ]);
+  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }] =
+    await Promise.all([
+      getTripById(id),
+      getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
+      getTags(),
+      getTripInternalNotes(id),
+      getSuppliers({ pageSize: ALL_SUPPLIERS_PAGE_SIZE }),
+    ]);
   if (!trip) notFound();
   const feedback = await getTripFeedback(trip.id);
 
@@ -507,6 +511,7 @@ export default async function TripEditorPage({
                         />
                         <ItemFormDialog
                           item={item}
+                          allSuppliers={allSuppliers}
                           trigger={
                             <button className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                               ✏️
@@ -526,6 +531,7 @@ export default async function TripEditorPage({
                 })}
 
                 <ItemFormDialog
+                  allSuppliers={allSuppliers}
                   trigger={
                     <button
                       id={isLastDay ? ADD_ITEM_LAST_DAY_TRIGGER_ID : undefined}

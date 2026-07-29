@@ -3,8 +3,10 @@ import {
   ClientDocument,
   Item,
   ItemDocument,
+  ItemWithSupplier,
   PackingItem,
   SiteSettings,
+  Supplier,
   Tag,
   Trip,
   TripDay,
@@ -29,6 +31,7 @@ import {
   mockTripPhotos,
   mockPackingItems,
   mockClientTags,
+  mockSuppliers,
   getTripWithDetails as mockGetTripWithDetails,
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -532,6 +535,234 @@ export async function setTripTags(tripId: string, tagIds: string[]): Promise<voi
       );
     if (addError) throw addError;
   }
+}
+
+// ---------- Suppliers ----------
+
+// Para cargar el catálogo completo en el combobox de selección de proveedor.
+export const ALL_SUPPLIERS_PAGE_SIZE = 1000;
+
+export type CreateSupplierInput = {
+  name: string;
+  type: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
+};
+
+export type SupplierFilterParams = {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  type?: string;
+};
+
+export async function getSuppliers(
+  params: SupplierFilterParams = {}
+): Promise<PaginatedResult<Supplier>> {
+  const { from, pageSize } = paginationBounds(params);
+
+  if (!isSupabaseConfigured()) {
+    let filtered = [...mockSuppliers];
+    if (params.query) {
+      const q = params.query.toLowerCase();
+      filtered = filtered.filter((s) => s.name.toLowerCase().includes(q));
+    }
+    if (params.type) {
+      filtered = filtered.filter((s) => s.type === params.type);
+    }
+    const active = filtered.filter((s) => !s.deletedAt);
+    return { items: active.slice(from, from + pageSize), totalCount: active.length };
+  }
+
+  const supabase = await createServerSupabase();
+  let query = supabase
+    .from("suppliers")
+    .select("*", { count: "exact" })
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+
+  if (params.query) {
+    query = query.ilike("name", `%${params.query}%`);
+  }
+  if (params.type) {
+    query = query.eq("type", params.type);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { items: (data ?? []).map(rowToSupplier), totalCount: count ?? 0 };
+}
+
+export async function getSupplierById(id: string): Promise<Supplier | null> {
+  if (!isSupabaseConfigured()) {
+    return mockSuppliers.find((s) => s.id === id) ?? null;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToSupplier(data) : null;
+}
+
+export async function createSupplier(input: CreateSupplierInput): Promise<Supplier> {
+  if (!isSupabaseConfigured()) {
+    const now = new Date().toISOString();
+    const supplier: Supplier = {
+      id: uid(),
+      name: input.name,
+      type: input.type,
+      contactPhone: input.contactPhone,
+      contactEmail: input.contactEmail,
+      website: input.website,
+      address: input.address,
+      lat: input.lat,
+      lng: input.lng,
+      notes: input.notes,
+      tags: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    mockSuppliers.unshift(supplier);
+    return supplier;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert({
+      name: input.name,
+      type: input.type,
+      contact_phone: input.contactPhone || null,
+      contact_email: input.contactEmail || null,
+      website: input.website || null,
+      address: input.address || null,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
+      notes: input.notes || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToSupplier(data);
+}
+
+export async function updateSupplier(
+  id: string,
+  input: Partial<CreateSupplierInput>
+): Promise<Supplier> {
+  if (!isSupabaseConfigured()) {
+    const supplier = mockSuppliers.find((s) => s.id === id);
+    if (!supplier) throw new Error("Proveedor no encontrado");
+    if (input.name !== undefined) supplier.name = input.name;
+    if (input.type !== undefined) supplier.type = input.type;
+    if (input.contactPhone !== undefined) supplier.contactPhone = input.contactPhone;
+    if (input.contactEmail !== undefined) supplier.contactEmail = input.contactEmail;
+    if (input.website !== undefined) supplier.website = input.website;
+    if (input.address !== undefined) supplier.address = input.address;
+    if (input.lat !== undefined) supplier.lat = input.lat;
+    if (input.lng !== undefined) supplier.lng = input.lng;
+    if (input.notes !== undefined) supplier.notes = input.notes;
+    supplier.updatedAt = new Date().toISOString();
+    return supplier;
+  }
+  const supabase = await createServerSupabase();
+  const patch: Record<string, unknown> = {};
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.type !== undefined) patch.type = input.type;
+  if (input.contactPhone !== undefined) patch.contact_phone = input.contactPhone || null;
+  if (input.contactEmail !== undefined) patch.contact_email = input.contactEmail || null;
+  if (input.website !== undefined) patch.website = input.website || null;
+  if (input.address !== undefined) patch.address = input.address || null;
+  if (input.lat !== undefined) patch.lat = input.lat ?? null;
+  if (input.lng !== undefined) patch.lng = input.lng ?? null;
+  if (input.notes !== undefined) patch.notes = input.notes || null;
+  patch.updated_at = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("suppliers")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToSupplier(data);
+}
+
+export async function getSupplierItemCount(id: string): Promise<number> {
+  if (!isSupabaseConfigured()) {
+    return mockItems.filter((i) => i.supplierId === id && !i.deletedAt).length;
+  }
+  const supabase = await createServerSupabase();
+  const { count, error } = await supabase
+    .from("items")
+    .select("*", { count: "exact", head: true })
+    .eq("supplier_id", id)
+    .is("deleted_at", null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function softDeleteSupplier(
+  id: string,
+  force?: boolean
+): Promise<{ ok: boolean; itemCount?: number }> {
+  const itemCount = await getSupplierItemCount(id);
+  if (itemCount > 0 && !force) {
+    return { ok: false, itemCount };
+  }
+
+  if (!isSupabaseConfigured()) {
+    const supplier = mockSuppliers.find((s) => s.id === id);
+    if (supplier) supplier.deletedAt = new Date().toISOString();
+    return { ok: true };
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("suppliers")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+  return { ok: true };
+}
+
+export async function restoreSupplier(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const supplier = mockSuppliers.find((s) => s.id === id);
+    if (supplier) supplier.deletedAt = undefined;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("suppliers")
+    .update({ deleted_at: null })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+function rowToSupplier(row: Record<string, unknown>): Supplier {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    type: (row.type as string) ?? "other",
+    contactPhone: (row.contact_phone as string) ?? undefined,
+    contactEmail: (row.contact_email as string) ?? undefined,
+    website: (row.website as string) ?? undefined,
+    address: (row.address as string) ?? undefined,
+    lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : undefined,
+    lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
+    notes: (row.notes as string) ?? undefined,
+    tags: [],
+    deletedAt: (row.deleted_at as string) ?? undefined,
+    createdAt: row.created_at as string,
+    updatedAt: (row.updated_at as string) ?? (row.created_at as string),
+  };
 }
 
 // ---------- Trips ----------
@@ -1060,15 +1291,42 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     documentRows = data ?? [];
   }
 
+  // Batch-resolve supplier name + address per itemId (issue #114)
+  const supplierIds = [
+    ...new Set(itemRows.map((i) => i.supplier_id as string).filter(Boolean)),
+  ];
+  let supplierById = new Map<string, Pick<Supplier, "name" | "address" | "lat" | "lng">>();
+  if (supplierIds.length) {
+    const { data: supplierRows, error: suppError } = await supabase
+      .from("suppliers")
+      .select("id, name, address, lat, lng")
+      .in("id", supplierIds);
+    if (suppError) throw suppError;
+    supplierById = new Map(
+      (supplierRows ?? []).map((r) => [
+        r.id as string,
+        {
+          name: r.name as string,
+          address: (r.address as string) ?? undefined,
+          lat: r.lat !== null && r.lat !== undefined ? Number(r.lat) : undefined,
+          lng: r.lng !== null && r.lng !== undefined ? Number(r.lng) : undefined,
+        },
+      ])
+    );
+  }
+
   const days = (dayRows ?? []).map((d) => {
     const day = rowToTripDay(d);
     const items = itemRows
       .filter((i) => i.trip_day_id === day.id)
       .map((i) => {
-        const item = rowToItem(i);
+        const item: ItemWithSupplier = rowToItem(i);
         item.documents = documentRows
           .filter((doc) => doc.item_id === item.id)
           .map(rowToDocument);
+        if (item.supplierId && supplierById.has(item.supplierId)) {
+          item.supplier = supplierById.get(item.supplierId);
+        }
         return item;
       });
     return { ...day, items };
@@ -1850,6 +2108,7 @@ export type CreateItemInput = {
   notes?: string;
   cost?: number;
   sortOrder?: number;
+  supplierId?: string;
   metadata?: Record<string, unknown> | null;
 };
 
@@ -1870,6 +2129,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       confirmationCode: input.confirmationCode,
       notes: input.notes,
       cost: input.cost,
+      supplierId: input.supplierId,
       metadata: (input.metadata ?? null) as unknown as Item["metadata"],
       sortOrder:
         input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
@@ -1892,6 +2152,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       confirmation_code: input.confirmationCode,
       notes: input.notes,
       cost: input.cost ?? null,
+      supplier_id: input.supplierId || null,
       sort_order: input.sortOrder ?? 0,
       item_metadata: input.metadata ?? null,
     })
@@ -1915,6 +2176,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
     if (input.confirmationCode !== undefined) item.confirmationCode = input.confirmationCode;
     if (input.notes !== undefined) item.notes = input.notes;
     if (input.cost !== undefined) item.cost = input.cost;
+    if (input.supplierId !== undefined) item.supplierId = input.supplierId || undefined;
     if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
     if (input.metadata !== undefined) item.metadata = (input.metadata ?? null) as unknown as Item["metadata"];
     return item;
@@ -1931,6 +2193,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.confirmationCode !== undefined) patch.confirmation_code = input.confirmationCode;
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.cost !== undefined) patch.cost = input.cost ?? null;
+  if (input.supplierId !== undefined) patch.supplier_id = input.supplierId || null;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   if (input.metadata !== undefined) patch.item_metadata = input.metadata ?? null;
   const { data, error } = await supabase.from("items").update(patch).eq("id", id).select().single();
@@ -2017,6 +2280,7 @@ export function rowToItem(row: Record<string, unknown>): Item {
     confirmationCode: (row.confirmation_code as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
     cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
+    supplierId: (row.supplier_id as string) ?? undefined,
     sortOrder: row.sort_order as number,
     metadata,
   } as Item;

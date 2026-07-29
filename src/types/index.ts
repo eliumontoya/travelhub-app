@@ -119,6 +119,23 @@ export interface TripPhoto {
   createdAt: string;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  type: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
+  tags: Tag[];
+  deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---------- Metadata discriminated union per ItemType ----------
 
 export interface FlightMetadata {
@@ -202,6 +219,7 @@ type BaseItem = {
   sortOrder: number;
   documents?: ItemDocument[];
   deletedAt?: string;
+  supplierId?: string;
 };
 
 export type FlightItem = BaseItem & { type: "flight"; metadata: FlightMetadata | null };
@@ -218,6 +236,10 @@ export type Item =
   | RestaurantItem
   | TransportItem
   | NoteItem;
+
+export type ItemWithSupplier = Item & {
+  supplier?: Pick<Supplier, "name" | "address" | "lat" | "lng">;
+};
 
 export interface PackingItem {
   id: string;

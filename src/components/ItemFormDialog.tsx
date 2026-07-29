@@ -1,12 +1,15 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Item, ItemDocument, ItemType } from "@/types";
+import { Item, ItemDocument, ItemType, Supplier } from "@/types";
 import { itemTypeMeta } from "@/lib/item-meta";
 import { LocationInput } from "@/components/LocationInput";
+import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
+
+const SUPPLIER_ENABLED_TYPES = new Set<ItemType>(["hotel", "restaurant", "transport"]);
 
 type MetadataFieldDef = {
   name: string;
@@ -85,7 +88,6 @@ const metadataFieldsByType: Record<ItemType, MetadataFieldDef[]> = {
   note: [],
 };
 
-
 export function appendSerializedMetadata(formData: FormData, selectedType: ItemType) {
   const mFields = metadataFieldsByType[selectedType];
   const rawValues = mFields.map((field) => [field, String(formData.get(`metadata_${field.name}`) ?? "").trim()] as const);
@@ -162,6 +164,7 @@ function DocumentPreview({ doc }: { doc: DocWithUrl }) {
 export function ItemFormDialog({
   trigger,
   item,
+  allSuppliers,
   onSubmit,
   onDelete,
   onUndoDelete,
@@ -172,6 +175,7 @@ export function ItemFormDialog({
 }: {
   trigger: React.ReactNode;
   item?: Item;
+  allSuppliers?: Supplier[];
   onSubmit: (formData: FormData) => Promise<void>;
   onDelete?: () => Promise<void>;
   onUndoDelete?: () => Promise<void>;
@@ -186,11 +190,15 @@ export function ItemFormDialog({
   const [error, setError] = useState<string | null>(null);
   const [docs, setDocs] = useState<DocWithUrl[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(allSuppliers ?? []);
+  const [autoFillType, setAutoFillType] = useState<ItemType | null>(null);
   const [selectedType, setSelectedType] = useState<ItemType>(item?.type ?? "activity");
 
   function open() {
     setError(null);
     setSelectedType(item?.type ?? "activity");
+    setAutoFillType(null);
+    setSuppliers(allSuppliers ?? []);
     dialogRef.current?.showModal();
     if (item && onLoadDocuments) {
       setDocsLoading(true);
@@ -211,7 +219,12 @@ export function ItemFormDialog({
       setError("El título es obligatorio");
       return;
     }
-    appendSerializedMetadata(formData, selectedType);
+    const submittedType = autoFillType ?? selectedType;
+    if (autoFillType) formData.set("type", autoFillType);
+    if (!formData.get("supplierId") || formData.get("supplierId") === "") {
+      formData.delete("supplierId");
+    }
+    appendSerializedMetadata(formData, submittedType);
     startTransition(async () => {
       try {
         await onSubmit(formData);
@@ -232,6 +245,13 @@ export function ItemFormDialog({
         showUndoToast({ message: "Item eliminado", onUndo: onUndoDelete });
       }
     });
+  }
+
+  function handleSupplierSelected(supplier: Supplier) {
+    if (supplier.type === "hotel" || supplier.type === "restaurant" || supplier.type === "transport") {
+      setAutoFillType(supplier.type);
+      setSelectedType(supplier.type);
+    }
   }
 
   function handleUpload() {
@@ -272,7 +292,10 @@ export function ItemFormDialog({
             <select
               name="type"
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value as ItemType)}
+              onChange={(e) => {
+                setSelectedType(e.target.value as ItemType);
+                setAutoFillType(null);
+              }}
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             >
               {itemTypes.map((t) => (
@@ -282,6 +305,18 @@ export function ItemFormDialog({
               ))}
             </select>
           </div>
+
+          {SUPPLIER_ENABLED_TYPES.has(selectedType) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Proveedor</label>
+              <SupplierCombobox
+                suppliers={suppliers}
+                name="supplierId"
+                defaultValue={item?.supplierId}
+                onSupplierSelected={handleSupplierSelected}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Título</label>

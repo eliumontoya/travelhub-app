@@ -10,6 +10,24 @@ import { ExportClientsCsvButton } from "@/components/export-clients-csv-button";
 import { TripBoardView } from "@/components/TripBoardView";
 import { DashboardFilters } from "./DashboardFilters";
 
+// Debug: capturar stack de warnings de key perdidas durante reconciliación.
+// Parche a nivel módulo para atrapar el warn ANTES de que React termine el
+// render, porque useEffect es too late (corre post-render).
+// TODO: remover cuando se identifique la causa.
+(() => {
+  const origWarn = console.warn.bind(console);
+  console.warn = (...args: unknown[]) => {
+    if (
+      typeof args[0] === "string" &&
+      args[0].includes('a unique "key" prop')
+    ) {
+      origWarn("[KeyWarning] Missing key. Component stack:");
+      origWarn(new Error("key-warning-capture").stack);
+    }
+    origWarn(...args);
+  };
+})();
+
 type TripsViewMode = "list" | "board";
 
 const statusMeta: Record<TripStatus, { label: string; color: string }> = {
