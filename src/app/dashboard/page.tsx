@@ -1,44 +1,17 @@
 import Link from "next/link";
 import {
-  ALL_CLIENTS_PAGE_SIZE,
-  ALL_TRIPS_PAGE_SIZE,
-  DEFAULT_PAGE_SIZE,
   getClientReferralSourceCounts,
-  getClients,
-  getClientsWithTags,
   getRecentActivity,
-  getTags,
   getTripsPerMonth,
   getTripStats,
-  getTripsWithClients,
   getUpcomingBirthdays,
   getUpcomingUnpublishedTrips,
 } from "@/lib/data";
-import type { TripCurrency, TripFilters, TripStatus } from "@/types";
 import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
-import { hasActiveTripFilters } from "@/lib/trip-filters";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
 import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
 import { ClientsByReferralSourceCard } from "@/components/ClientsByReferralSourceCard";
-import { DashboardExplorer } from "./DashboardExplorer";
-
-function parsePage(value: string | undefined): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
-}
-
-function deserializeFilters(sp: Record<string, string | undefined>): Partial<TripFilters> {
-  return {
-    query: sp.q || undefined,
-    status: sp.status?.split(",").filter(Boolean) as TripStatus[] | undefined,
-    dateFrom: sp.dateFrom || undefined,
-    dateTo: sp.dateTo || undefined,
-    clientIds: sp.client?.split(",").filter(Boolean),
-    tagIds: sp.tags?.split(",").filter(Boolean),
-    currency: sp.currency as TripCurrency | undefined,
-  };
-}
 
 const activityMeta = {
   trip: { icon: "🧳", label: "viaje" },
@@ -50,34 +23,8 @@ const activityActionLabel = {
   updated: "editado",
 };
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    page?: string;
-    clientsPage?: string;
-    q?: string;
-    status?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    client?: string;
-    tags?: string;
-    currency?: string;
-  }>;
-}) {
-  const sp = await searchParams;
-  const filters = deserializeFilters(sp);
-  const hasFilters = hasActiveTripFilters(filters);
-  const pageSize = hasFilters ? ALL_TRIPS_PAGE_SIZE : DEFAULT_PAGE_SIZE;
-
-  const tripsPage = parsePage(sp.page);
-  const clientsPageNum = parsePage(sp.clientsPage);
-
+export default async function DashboardPage() {
   const [
-    { items: trips, totalCount: tripsTotal },
-    { items: clients, totalCount: clientsTotal },
-    { items: allClients },
-    tags,
     stats,
     upcomingUnpublishedTrips,
     recentActivity,
@@ -85,10 +32,6 @@ export default async function DashboardPage({
     upcomingBirthdays,
     referralSourceCounts,
   ] = await Promise.all([
-    getTripsWithClients({ page: hasFilters ? 1 : tripsPage, pageSize, filters }),
-    getClientsWithTags({ page: clientsPageNum }),
-    getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
-    getTags(),
     getTripStats(),
     getUpcomingUnpublishedTrips(),
     getRecentActivity(),
@@ -96,9 +39,6 @@ export default async function DashboardPage({
     getUpcomingBirthdays(),
     getClientReferralSourceCounts(),
   ]);
-
-  const tripsTotalPages = Math.max(1, Math.ceil(tripsTotal / pageSize));
-  const clientsTotalPages = Math.max(1, Math.ceil(clientsTotal / DEFAULT_PAGE_SIZE));
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -126,13 +66,24 @@ export default async function DashboardPage({
       )}
 
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mis viajes</h1>
-        <Link
-          href="/dashboard/trips/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-        >
-          + Nuevo viaje
-        </Link>
+        <div>
+          <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Resumen ejecutivo</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/trips/new"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+          >
+            + Nuevo viaje
+          </Link>
+          <Link
+            href="/dashboard/clients"
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+          >
+            Ver clientes
+          </Link>
+        </div>
       </div>
 
       <DashboardKpiCards stats={stats} />
@@ -141,11 +92,11 @@ export default async function DashboardPage({
         <TripsTrendChart data={tripsPerMonth} />
       </div>
 
-      {upcomingBirthdays.length > 0 && (
-        <div className="mb-8 mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950">
-          <h2 className="mb-3 text-sm font-semibold text-amber-800 dark:text-amber-300">
-            🎂 Cumpleaños próximos (30 días)
-          </h2>
+      <section className="mb-8 mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950">
+        <h2 className="mb-3 text-sm font-semibold text-amber-800 dark:text-amber-300">
+          🎂 Cumpleaños próximos (30 días)
+        </h2>
+        {upcomingBirthdays.length > 0 ? (
           <ul className="space-y-2">
             {upcomingBirthdays.map((client) => (
               <li key={client.id} className="flex items-center justify-between text-sm">
@@ -167,8 +118,12 @@ export default async function DashboardPage({
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-amber-700 dark:text-amber-400">
+            No hay cumpleaños próximos registrados.
+          </p>
+        )}
+      </section>
 
       <div className="mt-8">
         <IntegrationsStatusCard />
@@ -176,17 +131,17 @@ export default async function DashboardPage({
 
       <ClientsByReferralSourceCard counts={referralSourceCounts} />
 
-      {recentActivity.length > 0 && (
-        <section className="mb-8 mt-6">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Actividad reciente
-          </h2>
+      <section className="mb-8 mt-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Actividad reciente
+        </h2>
+        {recentActivity.length > 0 ? (
           <ul className="grid gap-2">
             {recentActivity.map((event) => (
               <li key={`${event.entityType}-${event.id}`}>
                 <Link
                   href={event.href}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 sm:p-5 text-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 text-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 sm:p-5"
                 >
                   <span className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                     <span aria-hidden>{activityMeta[event.entityType].icon}</span>
@@ -202,76 +157,12 @@ export default async function DashboardPage({
               </li>
             ))}
           </ul>
-        </section>
-      )}
-
-      <DashboardExplorer
-        key={JSON.stringify(filters)}
-        trips={trips}
-        clients={clients}
-        tags={tags}
-        allClients={allClients}
-        initialFilters={filters}
-        hasActiveFilters={hasFilters}
-        tripsPagination={
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <Link
-              href={`/dashboard?page=${tripsPage - 1}&clientsPage=${clientsPageNum}`}
-              aria-disabled={tripsPage <= 1}
-              className={
-                tripsPage <= 1
-                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
-                  : "text-blue-600 hover:underline dark:text-blue-400"
-              }
-            >
-              ← Anteriores
-            </Link>
-            <span className="text-gray-400 dark:text-gray-500">
-              Página {tripsPage} de {tripsTotalPages}
-            </span>
-            <Link
-              href={`/dashboard?page=${tripsPage + 1}&clientsPage=${clientsPageNum}`}
-              aria-disabled={tripsPage >= tripsTotalPages}
-              className={
-                tripsPage >= tripsTotalPages
-                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
-                  : "text-blue-600 hover:underline dark:text-blue-400"
-              }
-            >
-              Siguientes →
-            </Link>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+            Todavía no hay actividad reciente.
           </div>
-        }
-        clientsPagination={
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <Link
-              href={`/dashboard?page=${tripsPage}&clientsPage=${clientsPageNum - 1}`}
-              aria-disabled={clientsPageNum <= 1}
-              className={
-                clientsPageNum <= 1
-                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
-                  : "text-blue-600 hover:underline dark:text-blue-400"
-              }
-            >
-              ← Anteriores
-            </Link>
-            <span className="text-gray-400 dark:text-gray-500">
-              Página {clientsPageNum} de {clientsTotalPages}
-            </span>
-            <Link
-              href={`/dashboard?page=${tripsPage}&clientsPage=${clientsPageNum + 1}`}
-              aria-disabled={clientsPageNum >= clientsTotalPages}
-              className={
-                clientsPageNum >= clientsTotalPages
-                  ? "pointer-events-none text-gray-300 dark:text-gray-600"
-                  : "text-blue-600 hover:underline dark:text-blue-400"
-              }
-            >
-              Siguientes →
-            </Link>
-          </div>
-        }
-      />
+        )}
+      </section>
     </main>
   );
 }
