@@ -10,6 +10,7 @@ import { TripStatus } from "@/types";
 export async function moveTripStatusAction(tripId: string, status: TripStatus) {
   await updateTrip(tripId, { status });
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/trips");
 }
 
 export async function bulkUpdateTripStatusAction(
@@ -20,4 +21,5 @@ export async function bulkUpdateTripStatusAction(
     await updateTrip(id, { status });
   }
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/trips");
 }

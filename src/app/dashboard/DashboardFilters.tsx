@@ -403,6 +403,6 @@ function deserializeFilters(searchParams: URLSearchParams): Partial<TripFilters>
   const tags = searchParams.get("tags");
   if (tags) filters.tagIds = tags.split(",");
   const currency = searchParams.get("currency") as TripCurrency | null;
-  if (currency) filters.currency = currency;
+  if (currency && CURRENCY_OPTIONS.includes(currency)) filters.currency = currency;
   return filters;
 }
