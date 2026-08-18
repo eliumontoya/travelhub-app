@@ -1,0 +1,52 @@
+schema: spec-driven
+artifact_store: hybrid
+baseline: baseline-from-current-implementation
+
+context: |
+  TravelHub is a Next.js App Router + TypeScript app for an independent travel agent.
+  Authenticated /dashboard routes use Server Components/Server Actions and src/lib/data.ts.
+  Data access is dual-mode: Supabase/Postgres when configured, in-memory mock data otherwise.
+  Public traveler routes /t/{slug} and client history routes /c/{slug} rely on published-trip access.
+  Supabase migrations are the source of truth for database schema, RLS, and storage buckets.
+
+testing:
+  strict_tdd: true
+  detected: 2026-08-18
+  commands:
+    typecheck: npx tsc --noEmit
+    lint: npm run lint
+    unit: npm run test
+    e2e: npm run test:e2e
+    build: npm run build
+  layers:
+    unit: Vitest
+    e2e: Playwright
+    integration: Supabase/mock data layer tests where applicable
+  coverage:
+    available: false
+    command: ""
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes.
+  specs:
+    - Mark baseline specs with baseline-from-current-implementation.
+    - Use RFC 2119 keywords: MUST, SHALL, SHOULD, MAY.
+    - Every requirement MUST include at least one Given/When/Then scenario.
+    - Specs describe observable behavior, not implementation internals.
+  design:
+    - Follow the existing App Router, Server Action, and data-layer conventions.
+  tasks:
+    - Group tasks by verification phase and keep them reviewable.
+  apply:
+    tdd: true
+    test_command: npm run test
+    guidelines:
+      - Do not bypass src/lib/data.ts for app data access.
+      - External integrations MUST degrade gracefully when keys are missing.
+  verify:
+    test_command: npm run test
+    build_command: npm run build
+    coverage_threshold: 0
+  archive:
+    - Preserve archived change folders as audit trail.
