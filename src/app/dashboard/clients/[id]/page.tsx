@@ -10,20 +10,24 @@ import {
 } from "@/lib/data";
 import { formatDateShort, formatTags, REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
 import { ClientDocuments } from "@/components/ClientDocuments";
+import { ClientCoverImage } from "@/components/ClientCoverImage";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { NoteHtml } from "@/components/NoteHtml";
 import {
   deleteClientDocumentAction,
   getClientDocumentsAction,
+  removeClientCoverAction,
   setClientTagsAction,
   updateClientAction,
+  uploadClientCoverAction,
   uploadClientDocumentAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
+const coversEnabled = documentsEnabled;
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -50,6 +54,13 @@ export default async function ClientDetailPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
+      {client.coverImageUrl ? (
+        <div className="mb-6 h-40 w-full overflow-hidden rounded-xl border border-gray-200">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={client.coverImageUrl} alt="Portada" className="h-full w-full object-cover" />
+        </div>
+      ) : null}
+
       <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
         ← Volver
       </Link>
@@ -200,6 +211,15 @@ export default async function ClientDetailPage({
             <p className="text-xs text-gray-500">Archivados</p>
           </div>
         )}
+      </div>
+
+      <div className="mb-8">
+        <ClientCoverImage
+          coverImageUrl={client.coverImageUrl}
+          coversEnabled={coversEnabled}
+          onUpload={uploadClientCoverAction.bind(null, client.id)}
+          onRemove={removeClientCoverAction.bind(null, client.id)}
+        />
       </div>
 
       <div className="mb-8">

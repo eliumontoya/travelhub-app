@@ -30,6 +30,8 @@ export interface Client {
   notes?: string;
   referralSource?: string | null;
   birthDate?: string;
+  /** Portada del perfil del cliente (vista pública /c/[slug]). Opcional. */
+  coverImageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

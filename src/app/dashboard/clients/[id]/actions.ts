@@ -5,8 +5,10 @@ import {
   deleteClientDocument,
   getClientDocuments,
   getOrCreateTag,
+  removeClientCoverImage,
   setClientTags,
   updateClient,
+  uploadClientCoverImage,
   uploadClientDocument,
 } from "@/lib/data";
 
@@ -38,6 +40,18 @@ export async function deleteClientDocumentAction(clientId: string, documentId: s
 
 export async function getClientDocumentsAction(clientId: string) {
   return getClientDocuments(clientId);
+}
+
+export async function uploadClientCoverAction(clientId: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadClientCoverImage(clientId, file);
+  revalidatePath(`/dashboard/clients/${clientId}`);
+}
+
+export async function removeClientCoverAction(clientId: string) {
+  await removeClientCoverImage(clientId);
+  revalidatePath(`/dashboard/clients/${clientId}`);
 }
 
 export async function setClientTagsAction(clientId: string, formData: FormData) {
