@@ -22,6 +22,7 @@ export const mockClients: Client[] = [
     phone: "+52 55 1234 5678",
     notes: "Luna de miel, prefieren hoteles boutique.",
     birthDate: "1990-08-01",
+    coverImageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=70",
     createdAt: "2026-06-01T10:00:00Z",
     updatedAt: "2026-06-01T10:00:00Z",
   },

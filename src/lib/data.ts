@@ -80,6 +80,7 @@ export type CreateClientInput = {
   notes?: string;
   referralSource?: string;
   birthDate?: string;
+  coverImageUrl?: string;
 };
 
 export async function getClients(params: PaginationParams = {}): Promise<PaginatedResult<Client>> {
@@ -174,6 +175,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.notes !== undefined) client.notes = input.notes;
     if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
     if (input.birthDate !== undefined) client.birthDate = input.birthDate;
+    if (input.coverImageUrl !== undefined) client.coverImageUrl = input.coverImageUrl;
     client.updatedAt = new Date().toISOString();
     return client;
   }
@@ -185,6 +187,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.referralSource !== undefined) patch.referral_source = input.referralSource || null;
   if (input.birthDate !== undefined) patch.birth_date = input.birthDate || null;
+  if (input.coverImageUrl !== undefined) patch.cover_image_url = input.coverImageUrl || null;
   const { data, error } = await supabase.from("clients").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return rowToClient(data);
@@ -200,6 +203,7 @@ function rowToClient(row: Record<string, unknown>): Client {
     notes: (row.notes as string) ?? undefined,
     referralSource: (row.referral_source as string) ?? null,
     birthDate: (row.birth_date as string) ?? undefined,
+    coverImageUrl: (row.cover_image_url as string) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: (row.updated_at as string) ?? (row.created_at as string),
   };
@@ -1163,7 +1167,7 @@ export async function getTripWithDetails(slug: string): Promise<TripWithDetails 
 }
 
 export type ClientTripHistory = {
-  client: Pick<Client, "name" | "slug">;
+  client: Pick<Client, "name" | "slug" | "coverImageUrl">;
   trips: Trip[];
 };
 
@@ -1184,12 +1188,12 @@ export async function getClientPublishedTripsBySlug(
     const trips = mockTrips
       .filter((t) => t.clientId === client.id && t.status === "published")
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    return { client: { name: client.name, slug: client.slug }, trips };
+    return { client: { name: client.name, slug: client.slug, coverImageUrl: client.coverImageUrl }, trips };
   }
   const supabase = await createServerSupabase();
   const { data: clientRow, error: clientError } = await supabase
     .from("clients")
-    .select("id, slug, name")
+    .select("id, slug, name, cover_image_url")
     .eq("slug", clientSlug)
     .maybeSingle();
   if (clientError) throw clientError;
@@ -1204,7 +1208,11 @@ export async function getClientPublishedTripsBySlug(
   if (tripsError) throw tripsError;
 
   return {
-    client: { name: clientRow.name as string, slug: clientRow.slug as string },
+    client: {
+      name: clientRow.name as string,
+      slug: clientRow.slug as string,
+      coverImageUrl: (clientRow.cover_image_url as string) ?? undefined,
+    },
     trips: (tripRows ?? []).map(rowToTrip),
   };
 }
@@ -2518,6 +2526,36 @@ export async function uploadClientDocument(clientId: string, file: File): Promis
     .single();
   if (error) throw error;
   return rowToClientDocument(data);
+}
+
+// ---------- Client cover image (issue #133) ----------
+// La portada del perfil del cliente se sirve en /c/[slug] sin autenticación,
+// por lo que vive en el bucket PÚBLICO "client-covers" (ver
+// 0031_client_cover_image.sql). Se guarda solo la URL pública en
+// clients.cover_image_url; no se registra fila adicional en ninguna tabla.
+
+const COVERS_BUCKET = "client-covers";
+
+export async function uploadClientCoverImage(
+  clientId: string,
+  file: File
+): Promise<string> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se puede subir la portada.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `clients/${clientId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(COVERS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+  const { data: publicUrlData } = supabase.storage.from(COVERS_BUCKET).getPublicUrl(path);
+  await updateClient(clientId, { coverImageUrl: publicUrlData.publicUrl });
+  return publicUrlData.publicUrl;
+}
+
+export async function removeClientCoverImage(clientId: string): Promise<void> {
+  await updateClient(clientId, { coverImageUrl: undefined });
 }
 
 export async function getClientDocuments(
