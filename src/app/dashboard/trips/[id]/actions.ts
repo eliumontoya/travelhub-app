@@ -31,6 +31,7 @@ import {
   updateTripInternalNotes,
   uploadItemDocument,
   uploadTripPhoto,
+  moveItemToDay,
 } from "@/lib/data";
 import { ItemType, TripCurrency } from "@/types";
 import { validateItemMetadata } from "@/lib/item-metadata-schemas";
@@ -180,6 +181,17 @@ export async function deleteItemAction(tripId: string, itemId: string) {
 
 export async function restoreItemAction(tripId: string, itemId: string) {
   await restoreItem(itemId);
+  revalidateTrip(tripId);
+}
+
+export async function moveItemToDayAction(
+  tripId: string,
+  itemId: string,
+  formData: FormData
+) {
+  const targetDayId = String(formData.get("targetDayId") ?? "").trim();
+  if (!targetDayId) return;
+  await moveItemToDay(itemId, targetDayId);
   revalidateTrip(tripId);
 }
 

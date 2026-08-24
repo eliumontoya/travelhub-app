@@ -2239,6 +2239,38 @@ export async function restoreItem(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// Reasigna un item a otro día del mismo viaje (issue #132) sin borrarlo.
+// Lo coloca al final del día destino (sort_order = max + 1) para no romper
+// el orden relativo de los items ya existentes en ese día.
+export async function moveItemToDay(itemId: string, targetDayId: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const item = mockItems.find((i) => i.id === itemId);
+    if (!item) return;
+    item.tripDayId = targetDayId;
+    const maxSort = mockItems
+      .filter((i) => i.tripDayId === targetDayId && i.id !== itemId)
+      .reduce((max, i) => Math.max(max, i.sortOrder), -1);
+    item.sortOrder = maxSort + 1;
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { data: siblings, error: siblingsError } = await supabase
+    .from("items")
+    .select("sort_order")
+    .eq("trip_day_id", targetDayId)
+    .is("deleted_at", null);
+  if (siblingsError) throw siblingsError;
+  const maxSort = (siblings ?? []).reduce(
+    (max, row) => Math.max(max, (row.sort_order as number) ?? 0),
+    -1
+  );
+  const { error } = await supabase
+    .from("items")
+    .update({ trip_day_id: targetDayId, sort_order: maxSort + 1 })
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
 export async function getItemById(id: string): Promise<Item | null> {
   if (!isSupabaseConfigured()) {
     const found = mockItems.find((i) => i.id === id && !i.deletedAt);
