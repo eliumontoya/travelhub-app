@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { ClientDocument } from "@/types";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 
 type DocWithUrl = ClientDocument & { url: string | null };
 
@@ -21,10 +22,17 @@ export function ClientDocuments({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [docs, setDocs] = useState<DocWithUrl[]>(documents);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   function handleUpload() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError(MAX_UPLOAD_ERROR);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setUploadError(null);
     const formData = new FormData();
     formData.set("file", file);
     startTransition(async () => {
@@ -47,6 +55,11 @@ export function ClientDocuments({
       <h3 className="text-sm font-medium text-gray-700">
         Documentos del cliente (pasaporte, identificación, etc.)
       </h3>
+      {uploadError && (
+        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {uploadError}
+        </p>
+      )}
       {docs.length > 0 ? (
         <ul className="mt-3 space-y-1">
           {docs.map((doc) => (
