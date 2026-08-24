@@ -39,6 +39,7 @@ function makeTrip(): TripWithDetails {
     tags: [],
     statusHistory: [],
     photos: [],
+    documents: [],
     packingItems: [],
     days: [
       {

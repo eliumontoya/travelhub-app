@@ -11,6 +11,7 @@ import {
   Tag,
   Trip,
   TripDay,
+  TripDocument,
   TripFeedback,
   TripFilters,
   TripPhoto,
@@ -1355,6 +1356,20 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
   if (packingError) throw packingError;
   const packingItems = (packingRows ?? []).map(rowToPackingItem);
 
+  const { data: tripDocRows, error: tripDocsError } = await supabase
+    .from("trip_documents")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("created_at", { ascending: false });
+  if (tripDocsError) throw tripDocsError;
+  const documents = await Promise.all(
+    (tripDocRows ?? []).map(async (row) => {
+      const doc = rowToTripDocument(row);
+      const url = await getSignedDocumentUrl(doc.filePath);
+      return { ...doc, url };
+    })
+  );
+
   return {
     ...trip,
     clients,
@@ -1362,6 +1377,7 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     tags,
     statusHistory,
     photos,
+    documents,
     days,
     packingItems,
   };
@@ -2560,6 +2576,83 @@ function rowToClientDocument(row: Record<string, unknown>): ClientDocument {
   return {
     id: row.id as string,
     clientId: row.client_id as string,
+    filePath: row.file_path as string,
+    filename: row.filename as string,
+    mimeType: (row.mime_type as string) ?? undefined,
+    createdAt: row.created_at as string,
+  };
+}
+
+// ---------- Global trip documents (no atados a un item específico) ----------
+// Reutiliza el bucket privado "trip-documents" (ver 0002_storage_bucket.sql)
+// bajo el prefijo "trips/{tripId}/...", registrados en la tabla
+// trip_documents (ver 0031_trip_documents.sql). A diferencia de
+// client_documents (ocultos en /t/{slug}), estos SÍ se exponen en la vista
+// pública cuando el viaje está publicado, igual que documents (item-level).
+
+export async function uploadTripDocument(tripId: string, file: File): Promise<TripDocument> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se pueden subir documentos.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `trips/${tripId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+  const { data, error } = await supabase
+    .from("trip_documents")
+    .insert({
+      trip_id: tripId,
+      file_path: path,
+      filename: file.name,
+      mime_type: file.type || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToTripDocument(data);
+}
+
+export async function getTripDocuments(
+  tripId: string
+): Promise<(TripDocument & { url: string | null })[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("trip_documents")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return Promise.all(
+    (data ?? []).map(async (row) => {
+      const doc = rowToTripDocument(row);
+      const url = await getSignedDocumentUrl(doc.filePath);
+      return { ...doc, url };
+    })
+  );
+}
+
+export async function deleteTripDocument(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = await createServerSupabase();
+  const { data: row } = await supabase
+    .from("trip_documents")
+    .select("file_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (row?.file_path) {
+    await supabase.storage.from(DOCUMENTS_BUCKET).remove([row.file_path as string]);
+  }
+  const { error } = await supabase.from("trip_documents").delete().eq("id", id);
+  if (error) throw error;
+}
+
+function rowToTripDocument(row: Record<string, unknown>): TripDocument {
+  return {
+    id: row.id as string,
+    tripId: row.trip_id as string,
     filePath: row.file_path as string,
     filename: row.filename as string,
     mimeType: (row.mime_type as string) ?? undefined,

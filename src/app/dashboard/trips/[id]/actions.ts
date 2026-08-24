@@ -30,6 +30,9 @@ import {
   updateTripDay,
   updateTripInternalNotes,
   uploadItemDocument,
+  uploadTripDocument,
+  getTripDocuments,
+  deleteTripDocument,
   uploadTripPhoto,
   moveItemToDay,
 } from "@/lib/data";
@@ -371,6 +374,24 @@ export async function deleteTripPhotoAction(tripId: string, slug: string, photoI
   await deleteTripPhoto(photoId);
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+export async function uploadTripDocumentAction(tripId: string, slug: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadTripDocument(tripId, file);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+export async function deleteTripDocumentAction(tripId: string, slug: string, documentId: string) {
+  await deleteTripDocument(documentId);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+export async function getTripDocumentsAction(tripId: string) {
+  return getTripDocuments(tripId);
 }
 
 // Clona un viaje completo (días + items, sin documentos) en un nuevo viaje en
