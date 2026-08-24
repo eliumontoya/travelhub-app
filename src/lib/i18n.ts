@@ -22,6 +22,7 @@ export const dictionary = {
       transport: "Transporte",
       note: "Nota",
     } satisfies Record<ItemType, string>,
+    packingList: "Checklist de equipaje",
   },
   en: {
     calendarButton: "+ Calendar",
@@ -38,6 +39,7 @@ export const dictionary = {
       transport: "Transport",
       note: "Note",
     } satisfies Record<ItemType, string>,
+    packingList: "Packing checklist",
   },
 } satisfies Record<Lang, unknown>;
 
