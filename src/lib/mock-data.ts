@@ -621,6 +621,8 @@ export function getTripById(id: string): TripWithDetails | null {
 export const mockSiteSettings: SiteSettings = {
   email: "contacto@example.com",
   phone: "+52 000 000 0000",
+  agencyName: "",
+  logoUrl: "",
 };
 
 // Feedback del cliente post-viaje (issue #46), espejo de la tabla

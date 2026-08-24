@@ -268,6 +268,8 @@ export interface TripWithDetails extends Trip {
 export interface SiteSettings {
   email: string;
   phone: string;
+  agencyName?: string;
+  logoUrl?: string;
 }
 
 export interface TripFeedback {

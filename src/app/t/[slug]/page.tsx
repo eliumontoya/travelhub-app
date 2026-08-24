@@ -88,7 +88,24 @@ export default async function PublicTripPage({
         }}
       >
         <div className="mx-auto w-full max-w-2xl px-4 pb-6 text-white">
-          <div className="mb-2 flex justify-end">
+          <div className="mb-2 flex items-start justify-between gap-4">
+            {(contact.logoUrl || contact.agencyName) && (
+              <div className="flex items-center gap-3">
+                {contact.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={contact.logoUrl}
+                    alt={contact.agencyName ?? "Logo"}
+                    className="h-12 w-auto rounded-lg bg-white/90 p-1 object-contain shadow-sm"
+                  />
+                )}
+                {contact.agencyName && (
+                  <span className="text-base font-semibold drop-shadow">
+                    {contact.agencyName}
+                  </span>
+                )}
+              </div>
+            )}
             <LanguageToggle lang={lang} />
           </div>
           <h1 className="text-3xl font-bold">{trip.title}</h1>
