@@ -61,3 +61,19 @@ The system MUST allow itinerary items to reference a supplier and SHOULD prefill
 - GIVEN an item has a supplier reference
 - WHEN the item appears in the editor
 - THEN supplier name and available location/contact context SHOULD be visible
+
+### Requirement: Sanitized note storage
+
+The data layer MUST store note text as HTML sanitized through a single server-side `sanitizeNote` helper before persisting `suppliers.notes`.
+
+#### Scenario: Script tags are stripped on write
+
+- GIVEN an agent submits a supplier note containing `<script>alert(1)</script>`
+- WHEN the value is persisted through `src/lib/data.ts`
+- THEN the stored value MUST NOT contain a `<script>` tag
+
+#### Scenario: Allowed formatting is preserved
+
+- GIVEN an agent submits `<p>Texto <strong>clave</strong></p><ul><li>a</li></ul>`
+- WHEN the value is persisted
+- THEN the stored value MUST retain `<strong>` and the `<ul>/<li>` list

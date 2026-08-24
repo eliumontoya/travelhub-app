@@ -28,6 +28,6 @@
 
 ## Phase 4 — Delivery
 
-- [ ] Commit logically (per file group)
-- [ ] Push branch `feat/issue-135-html-notes`
-- [ ] Open PR to `main` closing #135
+- [x] Commit logically (per file group) — merged via PR #146 (commits `dbd9af9`, `e0c913e`, `3278c70`, `04aa4a3`, merge `d2d7bbf`)
+- [x] Push branch `feat/issue-135-html-notes` — merged via PR #146
+- [x] Open PR to `main` closing #135 — merged via PR #146

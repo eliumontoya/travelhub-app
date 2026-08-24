@@ -65,3 +65,136 @@ The system MUST expose `/c/{clientSlug}` as a public history page containing onl
 - GIVEN a client has a public slug and at least one published trip
 - WHEN a visitor opens `/c/{clientSlug}`
 - THEN the visitor MUST see the client name and published trip links only
+
+### Requirement: Store client cover image URL
+
+The system MUST persist an optional cover image URL on each client.
+
+#### Scenario: Client has no cover by default
+
+- GIVEN a client with no cover image set
+- WHEN the client is loaded
+- THEN `coverImageUrl` MUST be `undefined` (or null) and the profile MUST render the default banner
+
+#### Scenario: Cover URL is persisted
+
+- GIVEN the agent uploads a cover image for a client
+- WHEN the client is reloaded
+- THEN the stored `coverImageUrl` MUST equal the uploaded image's public URL
+
+### Requirement: Upload a cover image from client detail
+
+The system MUST let the authenticated agent upload an image file as the client
+cover from the client detail page.
+
+#### Scenario: Successful upload
+
+- GIVEN Supabase is configured and the agent is on a client detail page
+- WHEN they choose an image file and submit it
+- THEN the system MUST upload it to the `client-covers` bucket, store its public URL on the client, and revalidate the client page
+
+#### Scenario: Replace existing cover
+
+- GIVEN a client already has a cover image
+- WHEN the agent uploads a new one
+- THEN the system MUST store the new URL, replacing the previous cover
+
+#### Scenario: Storage not configured
+
+- GIVEN Supabase is not configured
+- WHEN the agent views the client detail page
+- THEN the system MUST hide the upload control and show a "configure Supabase" hint (mirroring other upload features)
+
+### Requirement: Remove a cover image
+
+The system MUST let the agent clear the client's cover image.
+
+#### Scenario: Remove cover
+
+- GIVEN a client has a cover image
+- WHEN the agent removes it
+- THEN `coverImageUrl` MUST become undefined and the profile MUST render the default banner
+
+### Requirement: Render cover on public profile
+
+The public client history page (`/c/[slug]`) MUST render the cover image as the
+banner background when present.
+
+#### Scenario: Cover shown on public profile
+
+- GIVEN a client has a cover image
+- WHEN a visitor opens `/c/[slug]`
+- THEN the banner MUST use the cover image as its background
+
+#### Scenario: Default banner when no cover
+
+- GIVEN a client has no cover image
+- WHEN a visitor opens `/c/[slug]`
+- THEN the banner MUST render the default gray gradient background
+
+### Requirement: Public access to cover image
+
+The cover image object MUST be publicly readable so the unauthenticated
+`/c/[slug]` page can display it.
+
+#### Scenario: Anonymous read of cover object
+
+- GIVEN a cover image was uploaded to `client-covers`
+- WHEN an unauthenticated client requests its public URL
+- THEN the object MUST be returned (bucket is public, owner-only write)
+
+### Requirement: Sanitized note storage
+
+The data layer MUST store note text as HTML sanitized through a single server-side `sanitizeNote` helper before persisting `client.notes`.
+
+#### Scenario: Script tags are stripped on write
+
+- GIVEN an agent submits a note containing `<script>alert(1)</script>`
+- WHEN the value is persisted through `src/lib/data.ts`
+- THEN the stored value MUST NOT contain a `<script>` tag
+
+#### Scenario: Allowed formatting is preserved
+
+- GIVEN an agent submits `<p>Texto <strong>clave</strong></p><ul><li>a</li></ul>`
+- WHEN the value is persisted
+- THEN the stored value MUST retain `<strong>` and the `<ul>/<li>` list
+
+### Requirement: Safe note rendering
+
+The system MUST render note HTML through a `NoteHtml` component that
+re-sanitizes before output, so untrusted or legacy content cannot inject
+scripts, event handlers, or `javascript:` URLs into the DOM.
+
+#### Scenario: XSS payload is neutralized on render
+
+- GIVEN a stored note `<img src=x onerror=alert(1)><a href="javascript:evil()">x</a>`
+- WHEN it is rendered via `NoteHtml`
+- THEN the output MUST NOT contain `onerror` and MUST NOT contain `javascript:`
+
+#### Scenario: Links open safely
+
+- GIVEN a rendered note contains an `<a href="https://ok.com">`
+- WHEN it is displayed
+- THEN the anchor MUST include `target="_blank"` and `rel="noopener noreferrer"`
+
+### Requirement: Rich text editor for client notes
+
+The client note input MUST use a `RichTextEditor` supporting bold, italic,
+underline, unordered/ordered lists, and links, submitting sanitized HTML via a
+form field named `notes`.
+
+#### Scenario: Toolbar produces HTML
+
+- GIVEN the agent selects text and clicks "Negrita"
+- WHEN the form is submitted
+- THEN `formData.get("notes")` MUST contain `<strong>` markup for that text
+
+### Requirement: Plain-text export
+
+The client CSV export MUST contain note text with HTML tags stripped.
+
+#### Scenario: CSV has no markup
+
+- GIVEN a client note `<p>Hola <strong>mundo</strong></p>`
+- WHEN the agent exports clients to CSV
+- THEN the Notes column for that client MUST contain `Hola mundo`
