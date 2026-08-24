@@ -17,6 +17,7 @@ import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
+import { PackingListManager } from "@/components/PackingListManager";
 import { PrintButton } from "@/components/PrintButton";
 import type { ItemWithSupplier } from "@/types";
 
@@ -163,6 +164,12 @@ export default async function PublicTripPage({
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
               <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCost(totalCost, trip.currency)}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
+            </div>
+          )}
+
+          {trip.packingItems.length > 0 && (
+            <div className="mb-6">
+              <PackingListManager items={trip.packingItems} readOnly title={t.packingList} />
             </div>
           )}
 
