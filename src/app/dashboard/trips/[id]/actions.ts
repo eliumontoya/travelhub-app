@@ -9,6 +9,7 @@ import {
   createTripDay,
   deleteDocument,
   deleteItem,
+  duplicateItem,
   deletePackingItem,
   deleteTripDay,
   deleteTripPhoto,
@@ -179,6 +180,15 @@ export async function deleteItemAction(tripId: string, itemId: string) {
 
 export async function restoreItemAction(tripId: string, itemId: string) {
   await restoreItem(itemId);
+  revalidateTrip(tripId);
+}
+
+export async function duplicateItemAction(
+  tripId: string,
+  sourceItemId: string,
+  targetDayId: string
+) {
+  await duplicateItem(sourceItemId, targetDayId);
   revalidateTrip(tripId);
 }
 
