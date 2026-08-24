@@ -2271,6 +2271,63 @@ export async function moveItemToDay(itemId: string, targetDayId: string): Promis
   if (error) throw error;
 }
 
+export async function getItemById(id: string): Promise<Item | null> {
+  if (!isSupabaseConfigured()) {
+    const found = mockItems.find((i) => i.id === id && !i.deletedAt);
+    return found ? { ...found } : null;
+  }
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("items")
+    .select(
+      "id, trip_day_id, type, title, start_time, end_time, location, lat, lng, confirmation_code, notes, cost, supplier_id, sort_order, item_metadata, deleted_at"
+    )
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToItem(data) : null;
+}
+
+async function getNextItemSortOrder(tripDayId: string): Promise<number> {
+  if (!isSupabaseConfigured()) {
+    return mockItems.filter((i) => i.tripDayId === tripDayId && !i.deletedAt).length;
+  }
+  const supabase = await createServerSupabase();
+  const { count, error } = await supabase
+    .from("items")
+    .select("id", { count: "exact", head: true })
+    .eq("trip_day_id", tripDayId)
+    .is("deleted_at", null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function duplicateItem(
+  sourceItemId: string,
+  targetDayId: string
+): Promise<Item> {
+  const source = await getItemById(sourceItemId);
+  if (!source) throw new Error("Item no encontrado");
+  const sortOrder = await getNextItemSortOrder(targetDayId);
+  return createItem({
+    tripDayId: targetDayId,
+    type: source.type,
+    title: source.title,
+    startTime: source.startTime,
+    endTime: source.endTime,
+    location: source.location,
+    lat: source.lat,
+    lng: source.lng,
+    confirmationCode: source.confirmationCode,
+    notes: source.notes,
+    cost: source.cost,
+    supplierId: source.supplierId,
+    metadata: (source.metadata as unknown as Record<string, unknown> | null) ?? null,
+    sortOrder,
+  });
+}
+
 export async function reorderItems(order: { id: string; sortOrder: number }[]): Promise<void> {
   if (!isSupabaseConfigured()) {
     for (const { id, sortOrder } of order) {

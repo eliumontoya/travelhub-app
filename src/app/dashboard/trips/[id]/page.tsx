@@ -42,6 +42,7 @@ import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton"
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
+import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
@@ -60,6 +61,7 @@ import {
   deleteItemAction,
   deleteTripPhotoAction,
   duplicateTripAction,
+  duplicateItemAction,
   deletePackingItemAction,
   editDayAction,
   editItemAction,
@@ -543,6 +545,21 @@ export default async function TripEditorPage({
                           onLoadDocuments={getItemDocumentsAction.bind(null, item.id)}
                           onUploadDocument={uploadDocumentAction.bind(null, trip.id, item.id)}
                           onDeleteDocument={deleteDocumentAction.bind(null, trip.id)}
+                        />
+                        <DuplicateItemDialog
+                          itemTitle={item.title}
+                          days={trip.days.map((d) => ({ id: d.id, date: d.date }))}
+                          sourceDayId={day.id}
+                          onDuplicate={duplicateItemAction.bind(null, trip.id, item.id)}
+                          trigger={
+                            <button
+                              type="button"
+                              title="Duplicar en otro día"
+                              className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                            >
+                              ⧉
+                            </button>
+                          }
                         />
                       </div>
                     </div>

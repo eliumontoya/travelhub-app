@@ -9,6 +9,7 @@ import {
   createTripDay,
   deleteDocument,
   deleteItem,
+  duplicateItem,
   deletePackingItem,
   deleteTripDay,
   deleteTripPhoto,
@@ -191,6 +192,15 @@ export async function moveItemToDayAction(
   const targetDayId = String(formData.get("targetDayId") ?? "").trim();
   if (!targetDayId) return;
   await moveItemToDay(itemId, targetDayId);
+  revalidateTrip(tripId);
+}
+
+export async function duplicateItemAction(
+  tripId: string,
+  sourceItemId: string,
+  targetDayId: string
+) {
+  await duplicateItem(sourceItemId, targetDayId);
   revalidateTrip(tripId);
 }
 
