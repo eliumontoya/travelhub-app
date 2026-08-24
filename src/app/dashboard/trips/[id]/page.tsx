@@ -35,6 +35,7 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 import { TripPhotoGallery } from "@/components/TripPhotoGallery";
+import { TripCoverImage } from "@/components/TripCoverImage";
 import { TripDocuments } from "@/components/TripDocuments";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
@@ -89,6 +90,8 @@ import {
   uploadDocumentAction,
   uploadTripDocumentAction,
   uploadTripPhotoAction,
+  uploadTripCoverAction,
+  removeTripCoverAction,
   getTripDocumentsAction,
 } from "./actions";
 
@@ -96,6 +99,7 @@ const documentsEnabled = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 const photosEnabled = documentsEnabled;
+const coversEnabled = photosEnabled;
 
 const statusMeta = {
   draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
@@ -320,6 +324,15 @@ export default async function TripEditorPage({
           <DuplicateTripButton onDuplicate={duplicateTripAction.bind(null, trip.id)} />
           <PrintButton />
         </div>
+      </div>
+
+      <div className="mb-6 print:hidden">
+        <TripCoverImage
+          coverImageUrl={trip.coverImageUrl}
+          coversEnabled={coversEnabled}
+          onUpload={uploadTripCoverAction.bind(null, trip.id, trip.slug)}
+          onRemove={removeTripCoverAction.bind(null, trip.id, trip.slug)}
+        />
       </div>
 
       <div className="mb-6 print:hidden">
