@@ -16,7 +16,18 @@ export default async function ClientTripHistoryPage({
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16 dark:bg-gray-950">
-      <div className="flex h-40 items-end bg-gray-800 sm:h-48">
+      <div
+        className="flex h-40 items-end bg-gray-800 sm:h-48"
+        style={
+          client.coverImageUrl
+            ? {
+                backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.1)), url(${client.coverImageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
         <div className="mx-auto w-full max-w-2xl px-4 pb-6 text-white">
           <p className="text-sm text-white/70">Historial de viajes</p>
           <h1 className="text-3xl font-bold">{client.name}</h1>
