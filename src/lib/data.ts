@@ -38,6 +38,7 @@ import {
 } from "@/lib/mock-data";
 import { createClient as createServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slugify";
+import { sanitizeStorageKey } from "@/lib/constants";
 import { hasActiveTripFilters, tripMatchesFilters } from "@/lib/trip-filters";
 
 // Capa de acceso a datos. Si Supabase está configurado (NEXT_PUBLIC_SUPABASE_URL
@@ -2467,7 +2468,7 @@ export async function uploadItemDocument(itemId: string, file: File): Promise<It
     throw new Error("Supabase no está configurado; no se pueden subir documentos.");
   }
   const supabase = await createServerSupabase();
-  const path = `${itemId}/${Date.now()}-${file.name}`;
+  const path = `${itemId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
@@ -2526,7 +2527,7 @@ export async function uploadClientDocument(clientId: string, file: File): Promis
     throw new Error("Supabase no está configurado; no se pueden subir documentos.");
   }
   const supabase = await createServerSupabase();
-  const path = `clients/${clientId}/${Date.now()}-${file.name}`;
+  const path = `clients/${clientId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
@@ -2561,7 +2562,7 @@ export async function uploadClientCoverImage(
     throw new Error("Supabase no está configurado; no se puede subir la portada.");
   }
   const supabase = await createServerSupabase();
-  const path = `clients/${clientId}/${Date.now()}-${file.name}`;
+  const path = `clients/${clientId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(COVERS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
@@ -2633,7 +2634,7 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<Tr
     throw new Error("Supabase no está configurado; no se pueden subir documentos.");
   }
   const supabase = await createServerSupabase();
-  const path = `trips/${tripId}/${Date.now()}-${file.name}`;
+  const path = `trips/${tripId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
@@ -2797,7 +2798,7 @@ export async function uploadTripPhoto(tripId: string, file: File): Promise<TripP
     throw new Error("Supabase no está configurado; no se pueden subir fotos.");
   }
   const supabase = await createServerSupabase();
-  const path = `${tripId}/${Date.now()}-${file.name}`;
+  const path = `${tripId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(PHOTOS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
@@ -2946,7 +2947,7 @@ export async function uploadSiteLogo(file: File): Promise<string> {
     throw new Error("Supabase no está configurado; no se puede subir el logo.");
   }
   const supabase = await createServerSupabase();
-  const path = `logo/${Date.now()}-${file.name}`;
+  const path = `logo/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(SITE_ASSETS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
