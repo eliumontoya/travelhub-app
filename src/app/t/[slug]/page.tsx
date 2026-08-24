@@ -90,9 +90,9 @@ export default async function PublicTripPage({
         }}
       >
         <div className="mx-auto w-full max-w-2xl px-4 pb-6 text-white">
-          <div className="mb-2 flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             {(contact.logoUrl || contact.agencyName) && (
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3">
                 {contact.logoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -102,33 +102,38 @@ export default async function PublicTripPage({
                   />
                 )}
                 {contact.agencyName && (
-                  <span className="text-base font-semibold drop-shadow">
+                  <span className="text-base font-semibold drop-shadow break-words">
                     {contact.agencyName}
                   </span>
                 )}
               </div>
             )}
-            <LanguageToggle lang={lang} />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-3xl font-bold">{trip.title}</h1>
+              <p className="mt-1 text-sm text-white/80">
+                {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
+                {" · "}
+                {trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}
+              </p>
+              <p className="mt-1 text-sm text-white/80">
+                <a href={`mailto:${contact.email}`} className="hover:underline">
+                  {contact.email}
+                </a>
+                {" · "}
+                <a
+                  href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}
+                  className="hover:underline"
+                >
+                  {contact.phone}
+                </a>
+              </p>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold">{trip.title}</h1>
-          <p className="mt-1 text-sm text-white/80">
-            {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
-            {" · "}
-            {trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}
-          </p>
-          <p className="mt-1 text-sm text-white/80">
-            <a href={`mailto:${contact.email}`} className="hover:underline">
-              {contact.email}
-            </a>
-            {" · "}
-            <a
-              href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}
-              className="hover:underline"
-            >
-              {contact.phone}
-            </a>
-          </p>
         </div>
+      </div>
+
+      <div className="mx-auto mt-4 max-w-2xl px-4 print:hidden">
+        <LanguageToggle lang={lang} variant="light" />
       </div>
 
       <div className="hidden print:block px-4 pt-4">

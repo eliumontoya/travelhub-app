@@ -4,7 +4,15 @@ import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Lang, LANG_QUERY_PARAM, LANG_STORAGE_KEY, isLang } from "@/lib/i18n";
 
-export function LanguageToggle({ lang }: { lang: Lang }) {
+type LanguageToggleVariant = "dark" | "light";
+
+export function LanguageToggle({
+  lang,
+  variant = "dark",
+}: {
+  lang: Lang;
+  variant?: LanguageToggleVariant;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -27,13 +35,23 @@ export function LanguageToggle({ lang }: { lang: Lang }) {
     router.replace(`${pathname}?${params.toString()}`);
   }
 
+  const containerCls =
+    variant === "light"
+      ? "inline-flex overflow-hidden rounded-md border border-gray-300 text-xs dark:border-gray-600"
+      : "inline-flex overflow-hidden rounded-md border border-white/40 text-xs";
+
+  const btn = (active: boolean) =>
+    variant === "light"
+      ? `px-2 py-1 ${active ? "bg-gray-900 text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"}`
+      : `px-2 py-1 ${active ? "bg-white text-gray-900" : "text-white/80 hover:bg-white/10"}`;
+
   return (
-    <div className="inline-flex overflow-hidden rounded-md border border-white/40 text-xs">
+    <div className={containerCls}>
       <button
         type="button"
         onClick={() => setLang("es")}
         aria-pressed={lang === "es"}
-        className={`px-2 py-1 ${lang === "es" ? "bg-white text-gray-900" : "text-white/80 hover:bg-white/10"}`}
+        className={btn(lang === "es")}
       >
         ES
       </button>
@@ -41,7 +59,7 @@ export function LanguageToggle({ lang }: { lang: Lang }) {
         type="button"
         onClick={() => setLang("en")}
         aria-pressed={lang === "en"}
-        className={`px-2 py-1 ${lang === "en" ? "bg-white text-gray-900" : "text-white/80 hover:bg-white/10"}`}
+        className={btn(lang === "en")}
       >
         EN
       </button>
