@@ -2572,7 +2572,19 @@ export async function uploadClientCoverImage(
 }
 
 export async function removeClientCoverImage(clientId: string): Promise<void> {
-  await updateClient(clientId, { coverImageUrl: undefined });
+  if (!isSupabaseConfigured()) {
+    const client = mockClients.find((c) => c.id === clientId);
+    if (!client) throw new Error("Cliente no encontrado");
+    client.coverImageUrl = undefined;
+    client.updatedAt = new Date().toISOString();
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("clients")
+    .update({ cover_image_url: null })
+    .eq("id", clientId);
+  if (error) throw error;
 }
 
 export async function getClientDocuments(
