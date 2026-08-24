@@ -158,6 +158,28 @@ export default async function PublicTripPage({
             </div>
           )}
 
+          {trip.documents.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Documentos del viaje</h2>
+              <ul className="space-y-1">
+                {trip.documents.map((doc) =>
+                  doc.url ? (
+                    <li key={doc.id}>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {doc.filename}
+                      </a>
+                    </li>
+                  ) : null
+                )}
+              </ul>
+            </div>
+          )}
+
           {trip.showCostsToClient && (
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
