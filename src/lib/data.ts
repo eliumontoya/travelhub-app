@@ -2768,7 +2768,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     .eq("id", 1)
     .maybeSingle();
   if (error) throw error;
-  return data ? rowToSiteSettings(data) : { email: "", phone: "" };
+  return data
+    ? rowToSiteSettings(data)
+    : { email: "", phone: "", agencyName: "", logoUrl: "" };
 }
 
 export async function updateSiteSettings(
@@ -2777,12 +2779,16 @@ export async function updateSiteSettings(
   if (!isSupabaseConfigured()) {
     if (input.email !== undefined) mockSiteSettings.email = input.email;
     if (input.phone !== undefined) mockSiteSettings.phone = input.phone;
+    if (input.agencyName !== undefined) mockSiteSettings.agencyName = input.agencyName;
+    if (input.logoUrl !== undefined) mockSiteSettings.logoUrl = input.logoUrl;
     return mockSiteSettings;
   }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = { id: 1 };
   if (input.email !== undefined) patch.email = input.email;
   if (input.phone !== undefined) patch.phone = input.phone;
+  if (input.agencyName !== undefined) patch.agency_name = input.agencyName;
+  if (input.logoUrl !== undefined) patch.logo_url = input.logoUrl;
   const { data, error } = await supabase
     .from("site_settings")
     .upsert(patch)
@@ -2796,7 +2802,25 @@ function rowToSiteSettings(row: Record<string, unknown>): SiteSettings {
   return {
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
+    agencyName: (row.agency_name as string) ?? "",
+    logoUrl: (row.logo_url as string) ?? "",
   };
+}
+
+const SITE_ASSETS_BUCKET = "site-assets";
+
+export async function uploadSiteLogo(file: File): Promise<string> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se puede subir el logo.");
+  }
+  const supabase = await createServerSupabase();
+  const path = `logo/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(SITE_ASSETS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+  const { data } = supabase.storage.from(SITE_ASSETS_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 // ---------- Trip feedback (issue #46) ----------
