@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Trip } from "@/types";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export function TripInstructionsDialog({
   trigger,
@@ -46,11 +47,9 @@ export function TripInstructionsDialog({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Instrucciones</label>
-            <textarea
+            <RichTextEditor
               name="instructions"
               defaultValue={trip.instructions}
-              rows={6}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               placeholder="Mensaje de bienvenida, instrucciones de llegada, contactos de emergencia…"
             />
           </div>
