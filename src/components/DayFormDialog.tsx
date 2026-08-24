@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { TripDay } from "@/types";
 import { showUndoToast } from "@/components/UndoToast";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export function DayFormDialog({
   trigger,
@@ -78,12 +79,7 @@ export function DayFormDialog({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Notas</label>
-            <textarea
-              name="notes"
-              defaultValue={day?.notes}
-              rows={2}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+            <RichTextEditor name="notes" defaultValue={day?.notes} placeholder="Notas del día (admite negrita, listas, enlaces…)" />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

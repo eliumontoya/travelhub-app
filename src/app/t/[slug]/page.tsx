@@ -11,6 +11,7 @@ import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
 import { TripFeedbackForm } from "@/components/TripFeedbackForm";
 import { SupplierInfo } from "@/components/SupplierInfo";
+import { NoteHtml } from "@/components/NoteHtml";
 import { submitTripFeedbackAction } from "./actions";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
@@ -211,7 +212,10 @@ export default async function PublicTripPage({
                                 <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                               )}
                               {item.notes && (
-                                <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">{item.notes}</p>
+                                <NoteHtml
+                                  html={item.notes}
+                                  className="mt-1 text-sm text-gray-400 dark:text-gray-500"
+                                />
                               )}
                               {item.confirmationCode && (
                                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">

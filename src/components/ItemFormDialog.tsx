@@ -6,6 +6,7 @@ import { itemTypeMeta } from "@/lib/item-meta";
 import { LocationInput } from "@/components/LocationInput";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
@@ -430,12 +431,7 @@ export function ItemFormDialog({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Notas</label>
-            <textarea
-              name="notes"
-              defaultValue={item?.notes}
-              rows={2}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+            <RichTextEditor name="notes" defaultValue={item?.notes} placeholder="Detalles del item (admite negrita, listas, enlaces…)" />
           </div>
 
           {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
