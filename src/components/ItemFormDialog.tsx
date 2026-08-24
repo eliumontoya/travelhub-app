@@ -7,6 +7,7 @@ import { LocationInput } from "@/components/LocationInput";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
@@ -191,6 +192,7 @@ export function ItemFormDialog({
   const [error, setError] = useState<string | null>(null);
   const [docs, setDocs] = useState<DocWithUrl[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>(allSuppliers ?? []);
   const [autoFillType, setAutoFillType] = useState<ItemType | null>(null);
   const [selectedType, setSelectedType] = useState<ItemType>(item?.type ?? "activity");
@@ -203,6 +205,7 @@ export function ItemFormDialog({
 
   function open() {
     setError(null);
+    setUploadError(null);
     setSelectedType(item?.type ?? "activity");
     setAutoFillType(null);
     setSuppliers(allSuppliers ?? []);
@@ -294,6 +297,12 @@ export function ItemFormDialog({
   function handleUpload() {
     const file = fileInputRef.current?.files?.[0];
     if (!file || !onUploadDocument) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError(MAX_UPLOAD_ERROR);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setUploadError(null);
     const formData = new FormData();
     formData.set("file", file);
     startTransition(async () => {
@@ -482,6 +491,11 @@ export function ItemFormDialog({
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Documentos adjuntos
               </label>
+              {uploadError && (
+                <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {uploadError}
+                </p>
+              )}
               {docsLoading && <p className="text-sm text-gray-400">Cargando…</p>}
               {!docsLoading && docs.length > 0 && (
                 <ul className="mb-3 space-y-1">

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { TripDocument } from "@/types";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 
 type DocWithUrl = TripDocument & { url: string | null };
 
@@ -21,10 +22,17 @@ export function TripDocuments({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [docs, setDocs] = useState<DocWithUrl[]>(documents);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   function handleUpload() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError(MAX_UPLOAD_ERROR);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setUploadError(null);
     const formData = new FormData();
     formData.set("file", file);
     startTransition(async () => {
@@ -45,6 +53,12 @@ export function TripDocuments({
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:hidden dark:border-gray-800 dark:bg-gray-900">
       <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">Documentos del viaje</h3>
+
+      {uploadError && (
+        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
+          {uploadError}
+        </p>
+      )}
 
       {docs.length > 0 ? (
         <ul className="mb-4 space-y-1">
