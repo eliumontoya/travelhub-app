@@ -35,6 +35,7 @@ import { TripClientsManager } from "@/components/TripClientsManager";
 import { TripTagsManager } from "@/components/TripTagsManager";
 import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 import { TripPhotoGallery } from "@/components/TripPhotoGallery";
+import { TripDocuments } from "@/components/TripDocuments";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
@@ -60,6 +61,7 @@ import {
   deleteDocumentAction,
   deleteItemAction,
   deleteTripPhotoAction,
+  deleteTripDocumentAction,
   duplicateTripAction,
   duplicateItemAction,
   deletePackingItemAction,
@@ -85,7 +87,9 @@ import {
   updateTripInternalNotesAction,
   updateTripTravelerCountAction,
   uploadDocumentAction,
+  uploadTripDocumentAction,
   uploadTripPhotoAction,
+  getTripDocumentsAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
@@ -324,6 +328,16 @@ export default async function TripEditorPage({
           photosEnabled={photosEnabled}
           onUpload={uploadTripPhotoAction.bind(null, trip.id, trip.slug)}
           onDelete={deleteTripPhotoAction.bind(null, trip.id, trip.slug)}
+        />
+      </div>
+
+      <div className="mb-6 print:hidden">
+        <TripDocuments
+          documents={trip.documents}
+          documentsEnabled={documentsEnabled}
+          onUpload={uploadTripDocumentAction.bind(null, trip.id, trip.slug)}
+          onDelete={deleteTripDocumentAction.bind(null, trip.id, trip.slug)}
+          onRefresh={getTripDocumentsAction.bind(null, trip.id)}
         />
       </div>
 
