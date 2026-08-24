@@ -148,7 +148,10 @@ export default async function PublicTripPage({
         <div className="lg:max-w-2xl">
           {trip.instructions && (
             <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:shadow-none print:border-gray-300 dark:border-gray-800 dark:bg-gray-900">
-              <p className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{trip.instructions}</p>
+              <NoteHtml
+                html={trip.instructions}
+                className="text-sm text-gray-700 dark:text-gray-300"
+              />
             </div>
           )}
 
