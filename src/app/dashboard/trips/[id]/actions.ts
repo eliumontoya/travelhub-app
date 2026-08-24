@@ -33,6 +33,7 @@ import {
   uploadTripPhoto,
   moveItemToDay,
 } from "@/lib/data";
+import { sendItineraryEmail } from "@/lib/email";
 import { ItemType, TripCurrency } from "@/types";
 import { validateItemMetadata } from "@/lib/item-metadata-schemas";
 
@@ -371,6 +372,43 @@ export async function deleteTripPhotoAction(tripId: string, slug: string, photoI
   await deleteTripPhoto(photoId);
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
+}
+
+// Envío manual del itinerario por correo (issue #136). Toma los destinatarios
+// desde el campo "recipients" (separados por coma) y un mensaje opcional; por
+// defecto el diálogo los pre-carga con los emails de los clientes asignados.
+export async function sendItineraryEmailAction(
+  tripId: string,
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
+  const trip = await getTripById(tripId);
+  if (!trip) {
+    return { ok: false, message: "Viaje no encontrado." };
+  }
+
+  const recipients = String(formData.get("recipients") ?? "")
+    .split(",")
+    .map((r) => r.trim())
+    .filter(Boolean);
+  if (recipients.length === 0) {
+    return { ok: false, message: "Agrega al menos un correo destinatario." };
+  }
+
+  const message = String(formData.get("message") ?? "").trim() || undefined;
+
+  try {
+    const result = await sendItineraryEmail(trip, recipients, message);
+    if (!result.ok) {
+      return { ok: false, message: result.reason ?? "No se pudo enviar el correo." };
+    }
+    revalidateTrip(tripId);
+    return { ok: true, message: `Itinerario enviado a ${recipients.length} destinatario(s).` };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "No se pudo enviar el correo.",
+    };
+  }
 }
 
 // Clona un viaje completo (días + items, sin documentos) en un nuevo viaje en
