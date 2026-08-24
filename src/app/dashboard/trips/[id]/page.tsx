@@ -41,6 +41,7 @@ import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
+import { SendItineraryEmailDialog } from "@/components/SendItineraryEmailDialog";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
 import { WeatherBadge } from "@/components/WeatherBadge";
@@ -300,6 +301,17 @@ export default async function TripEditorPage({
           </Link>
           <CopyUrlButtonClient slug={trip.slug} />
           <CopyTripSummaryButtonClient trip={trip} />
+          <SendItineraryEmailDialog
+            trip={trip}
+            trigger={
+              <button
+                type="button"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Enviar por correo
+              </button>
+            }
+          />
           <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
           <SaveAsTemplateDialog
             defaultTitle={trip.title}
