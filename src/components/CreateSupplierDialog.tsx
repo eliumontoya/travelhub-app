@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Supplier } from "@/types";
 import { SUPPLIER_TYPES } from "@/lib/constants";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import {
   createSupplierAction,
   updateSupplierAction,
@@ -186,12 +187,10 @@ export function CreateSupplierDialog({
           <label htmlFor="supplier-notes" className="block text-sm font-medium text-gray-700">
             Notas
           </label>
-          <textarea
-            id="supplier-notes"
+          <RichTextEditor
             name="notes"
-            rows={2}
             defaultValue={supplier?.notes}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            placeholder="Notas del proveedor (admite negrita, listas, enlaces…)"
           />
         </div>
 

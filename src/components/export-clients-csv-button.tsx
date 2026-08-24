@@ -17,9 +17,16 @@ function escapeCsvField(value: string): string {
   return value;
 }
 
+function htmlToText(html: string): string {
+  // Notes are stored as sanitized HTML; for a plain-text CSV export we keep
+  // only the text content.
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
 function buildCsv(clients: Client[]): string {
   const rows = clients.map((client) =>
-    [client.name, client.email, client.phone, client.notes ?? "", client.createdAt]
+    [client.name, client.email, client.phone, htmlToText(client.notes ?? ""), client.createdAt]
       .map((field) => escapeCsvField(field))
       .join(",")
   );

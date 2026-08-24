@@ -1,3 +1,4 @@
+import { sanitizeNote } from "@/lib/sanitize";
 import {
   Client,
   ClientDocument,
@@ -171,7 +172,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.name !== undefined) client.name = input.name;
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
-    if (input.notes !== undefined) client.notes = input.notes;
+    if (input.notes !== undefined) client.notes = sanitizeNote(input.notes);
     if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
     if (input.birthDate !== undefined) client.birthDate = input.birthDate;
     client.updatedAt = new Date().toISOString();
@@ -679,7 +680,7 @@ export async function updateSupplier(
     if (input.address !== undefined) supplier.address = input.address;
     if (input.lat !== undefined) supplier.lat = input.lat;
     if (input.lng !== undefined) supplier.lng = input.lng;
-    if (input.notes !== undefined) supplier.notes = input.notes;
+    if (input.notes !== undefined) supplier.notes = sanitizeNote(input.notes);
     if (input.tags !== undefined) supplier.tags = input.tags;
     supplier.updatedAt = new Date().toISOString();
     return supplier;
@@ -1690,7 +1691,7 @@ export async function updateTripInternalNotes(id: string, internalNotes: string 
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("trips")
-    .update({ internal_notes: internalNotes })
+    .update({ internal_notes: sanitizeNote(internalNotes) })
     .eq("id", id);
   if (error) throw error;
 }
@@ -1970,7 +1971,7 @@ export async function createTripDay(input: CreateTripDayInput): Promise<TripDay>
       id: uid(),
       tripId: input.tripId,
       date: input.date,
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       sortOrder:
         input.sortOrder ??
         mockTripDays.filter((d) => d.tripId === input.tripId).length,
@@ -1984,7 +1985,7 @@ export async function createTripDay(input: CreateTripDayInput): Promise<TripDay>
     .insert({
       trip_id: input.tripId,
       date: input.date,
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       sort_order: input.sortOrder ?? 0,
     })
     .select()
@@ -1998,14 +1999,14 @@ export async function updateTripDay(id: string, input: UpdateTripDayInput): Prom
     const day = mockTripDays.find((d) => d.id === id);
     if (!day) throw new Error("Día no encontrado");
     if (input.date !== undefined) day.date = input.date;
-    if (input.notes !== undefined) day.notes = input.notes;
+    if (input.notes !== undefined) day.notes = sanitizeNote(input.notes);
     if (input.sortOrder !== undefined) day.sortOrder = input.sortOrder;
     return day;
   }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.date !== undefined) patch.date = input.date;
-  if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.notes !== undefined) patch.notes = sanitizeNote(input.notes);
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   const { data, error } = await supabase
     .from("trip_days")
@@ -2162,7 +2163,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lat: input.lat,
       lng: input.lng,
       confirmation_code: input.confirmationCode,
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       cost: input.cost ?? null,
       supplier_id: input.supplierId || null,
       sort_order: input.sortOrder ?? 0,
@@ -2186,7 +2187,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
     if (input.lat !== undefined) item.lat = input.lat;
     if (input.lng !== undefined) item.lng = input.lng;
     if (input.confirmationCode !== undefined) item.confirmationCode = input.confirmationCode;
-    if (input.notes !== undefined) item.notes = input.notes;
+    if (input.notes !== undefined) item.notes = sanitizeNote(input.notes);
     if (input.cost !== undefined) item.cost = input.cost;
     if (input.supplierId !== undefined) item.supplierId = input.supplierId || undefined;
     if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
@@ -2203,7 +2204,7 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   if (input.lat !== undefined) patch.lat = input.lat;
   if (input.lng !== undefined) patch.lng = input.lng;
   if (input.confirmationCode !== undefined) patch.confirmation_code = input.confirmationCode;
-  if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.notes !== undefined) patch.notes = sanitizeNote(input.notes);
   if (input.cost !== undefined) patch.cost = input.cost ?? null;
   if (input.supplierId !== undefined) patch.supplier_id = input.supplierId || null;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;

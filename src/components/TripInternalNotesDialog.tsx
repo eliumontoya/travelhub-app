@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export function TripInternalNotesDialog({
   trigger,
@@ -48,11 +49,9 @@ export function TripInternalNotesDialog({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Notas</label>
-            <textarea
+            <RichTextEditor
               name="internalNotes"
               defaultValue={internalNotes ?? ""}
-              rows={6}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               placeholder="Preferencias del cliente, alertas internas, comisiones, proveedores…"
             />
           </div>

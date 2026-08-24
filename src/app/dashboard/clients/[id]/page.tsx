@@ -11,6 +11,8 @@ import {
 import { formatDateShort, formatTags, REFERRAL_SOURCE_OPTIONS } from "@/lib/item-meta";
 import { ClientDocuments } from "@/components/ClientDocuments";
 import { TripTagsManager } from "@/components/TripTagsManager";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { NoteHtml } from "@/components/NoteHtml";
 import {
   deleteClientDocumentAction,
   getClientDocumentsAction,
@@ -58,7 +60,9 @@ export default async function ClientDetailPage({
           <p className="mt-1 text-sm text-gray-500">
             {client.email} · {client.phone}
           </p>
-          {client.notes && <p className="mt-1 text-sm text-gray-500">{client.notes}</p>}
+          {client.notes && (
+            <NoteHtml html={client.notes} className="mt-1 text-sm text-gray-500" />
+          )}
           <p className="mt-1 text-xs text-gray-400">
             Alta: {new Date(client.createdAt).toLocaleDateString("es-MX")}
           </p>
@@ -144,12 +148,7 @@ export default async function ClientDetailPage({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Notas</label>
-            <textarea
-              name="notes"
-              defaultValue={client.notes}
-              rows={3}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+            <RichTextEditor name="notes" defaultValue={client.notes} placeholder="Preferencias, alertas, contexto del cliente…" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Cómo llegó el cliente</label>
