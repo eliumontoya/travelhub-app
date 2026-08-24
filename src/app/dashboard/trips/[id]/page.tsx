@@ -22,6 +22,7 @@ import {
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
+import { MoveItemToDayDialog } from "@/components/MoveItemToDayDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { GenerateDaysButton } from "@/components/GenerateDaysButton";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
@@ -66,6 +67,7 @@ import {
   getItemDocumentsAction,
   moveDayAction,
   moveItemAction,
+  moveItemToDayAction,
   publishTripStatusAction,
   restoreDayAction,
   restoreItemAction,
@@ -508,6 +510,23 @@ export default async function TripEditorPage({
                           disableDown={itemIdx === itemOrder.length - 1}
                           onMoveUp={moveItemAction.bind(null, trip.id, itemOrder, item.id, "up")}
                           onMoveDown={moveItemAction.bind(null, trip.id, itemOrder, item.id, "down")}
+                        />
+                        <MoveItemToDayDialog
+                          tripId={trip.id}
+                          itemId={item.id}
+                          days={trip.days.map((d) => ({ id: d.id, date: d.date }))}
+                          currentDayId={day.id}
+                          onMove={moveItemToDayAction}
+                          trigger={
+                            <button
+                              type="button"
+                              className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                              aria-label="Mover a otro día"
+                              title="Mover a otro día"
+                            >
+                              📅
+                            </button>
+                          }
                         />
                         <ItemFormDialog
                           item={item}
