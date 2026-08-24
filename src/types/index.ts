@@ -119,6 +119,15 @@ export interface TripPhoto {
   createdAt: string;
 }
 
+export interface TripDocument {
+  id: string;
+  tripId: string;
+  filePath: string;
+  filename: string;
+  mimeType?: string;
+  createdAt: string;
+}
+
 export interface Supplier {
   id: string;
   name: string;
@@ -260,6 +269,8 @@ export interface TripWithDetails extends Trip {
   statusHistory: TripStatusHistoryEntry[];
   /** Fotos de la galería del viaje (0..N), ordenadas por sortOrder. */
   photos: (TripPhoto & { url: string | null })[];
+  /** Documentos globales del viaje (0..N), no atados a un item específico. */
+  documents: (TripDocument & { url: string | null })[];
   days: (TripDay & { items: Item[] })[];
   /** Checklist de equipaje del viaje (0..N), ordenado por sortOrder. */
   packingItems: PackingItem[];

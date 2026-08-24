@@ -2,6 +2,7 @@ import {
   Client,
   Trip,
   TripDay,
+  TripDocument,
   Item,
   Tag,
   TripPhoto,
@@ -608,7 +609,8 @@ export function getTripWithDetails(slug: string): TripWithDetails | null {
   const packingItems = mockPackingItems
     .filter((p) => p.tripId === trip.id)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  return { ...trip, clients, client, tags, statusHistory, photos, days, packingItems };
+  const documents: (TripDocument & { url: string | null })[] = [];
+  return { ...trip, clients, client, tags, statusHistory, photos, documents, days, packingItems };
 }
 
 export function getTripById(id: string): TripWithDetails | null {
