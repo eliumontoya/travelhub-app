@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { revalidatePath } from "next/cache";
-import { uploadTripCoverImage, removeTripCoverImage } from "@/lib/data";
+import { getTripById, uploadTripCoverImage, removeTripCoverImage } from "@/lib/data";
 
 vi.mock("@/lib/data", async () => {
   const actual = await vi.importActual<typeof import("@/lib/data")>("@/lib/data");
@@ -8,6 +8,7 @@ vi.mock("@/lib/data", async () => {
     ...actual,
     uploadTripCoverImage: vi.fn(),
     removeTripCoverImage: vi.fn(),
+    getTripById: vi.fn(),
   };
 });
 
@@ -26,6 +27,7 @@ describe("trip cover actions", () => {
     const file = new File(["x"], "cover.jpg", { type: "image/jpeg" });
     const formData = new FormData();
     formData.set("file", file);
+    vi.mocked(getTripById).mockResolvedValueOnce({ id: "trip1", status: "draft" } as never);
 
     await actions.uploadTripCoverAction("trip1", "slug1", formData);
 
@@ -35,6 +37,8 @@ describe("trip cover actions", () => {
   });
 
   it("removes and revalidates dashboard and public paths", async () => {
+    vi.mocked(getTripById).mockResolvedValueOnce({ id: "trip2", status: "draft" } as never);
+
     await actions.removeTripCoverAction("trip2", "slug2");
 
     expect(removeTripCoverImage).toHaveBeenCalledWith("trip2");

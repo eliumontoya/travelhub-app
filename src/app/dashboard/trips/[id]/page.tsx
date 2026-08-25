@@ -47,6 +47,7 @@ import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { NoteHtml } from "@/components/NoteHtml";
+import { travelerPreviewHref } from "@/lib/trip-visibility";
 import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
 import { PrintButton } from "@/components/PrintButton";
@@ -135,6 +136,9 @@ export default async function TripEditorPage({
   );
   const hasAnyCost = trip.days.some((day) => day.items.some((item) => item.cost !== undefined));
   const budgetDiff = trip.budget !== undefined ? trip.budget - totalCost : undefined;
+  const isPublished = trip.status === "published";
+  const isEditable = !isPublished;
+  const travelerHref = travelerPreviewHref(trip.slug, trip.id, trip.status);
 
   const dayWeather = await Promise.all(
     trip.days.map((day) => {
@@ -190,11 +194,11 @@ export default async function TripEditorPage({
                 </button>
               </form>
               <Link
-                href={`/t/${trip.slug}`}
+                href={travelerHref}
                 target="_blank"
                 className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
               >
-                Vista previa
+                {trip.status === "draft" ? "Vista previa borrador" : "Vista previa"}
               </Link>
               <Link
                 href={`/dashboard/trips/${trip.id}/quote`}
@@ -202,11 +206,21 @@ export default async function TripEditorPage({
               >
                 Cotización
               </Link>
-              <CopyUrlButtonClient slug={trip.slug} />
-              <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
+              {trip.status === "published" && (
+                <>
+                  <CopyUrlButtonClient slug={trip.slug} />
+                  <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
+                </>
+              )}
             </div>
           </div>
         </div>
+
+        {isPublished && (
+          <div className="border-b border-green-100 bg-green-50 px-5 py-3 text-sm text-green-800 print:hidden dark:border-green-950 dark:bg-green-950/20 dark:text-green-300">
+            Viaje publicado bloqueado. Pásalo a borrador para editar días, itinerario o acciones.
+          </div>
+        )}
 
         <div className="grid gap-6 p-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] lg:p-5 print:block print:p-0">
           <aside className="print:hidden">
@@ -229,6 +243,7 @@ export default async function TripEditorPage({
                   </a>
                 ))}
               </nav>
+              {isEditable && (
               <div className="mt-4 space-y-2">
                 <DayFormDialog
                   trigger={
@@ -248,6 +263,7 @@ export default async function TripEditorPage({
                   />
                 )}
               </div>
+              )}
             </div>
           </aside>
 
@@ -295,6 +311,7 @@ export default async function TripEditorPage({
                           : `${day.items.length} ${day.items.length === 1 ? "item configurado" : "items configurados"}`}
                       </p>
                     </div>
+                    {isEditable && (
                     <div className="flex items-center gap-2 self-start print:hidden">
                       <ReorderButtons
                         disableUp={dayIdx === 0}
@@ -314,6 +331,7 @@ export default async function TripEditorPage({
                         onUndoDelete={restoreDayAction.bind(null, trip.id, day.id)}
                       />
                     </div>
+                    )}
                   </div>
 
                   {day.notes && (
@@ -328,7 +346,7 @@ export default async function TripEditorPage({
                   <div className="space-y-3">
                     {day.items.length === 0 && (
                       <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 print:hidden dark:border-amber-950 dark:bg-amber-950/20 dark:text-amber-300">
-                        Este día está vacío. Agrega vuelos, hoteles, actividades o notas para completar el itinerario.
+{isEditable ? "Este día está vacío. Agrega vuelos, hoteles, actividades o notas para completar el itinerario." : "Este día no tiene items."}
                       </div>
                     )}
 
@@ -379,6 +397,7 @@ export default async function TripEditorPage({
                               </p>
                             )}
                           </div>
+                          {isEditable && (
                           <div className="flex items-center gap-2 self-end sm:self-start print:hidden">
                             <ReorderButtons
                               disableUp={itemIdx === 0}
@@ -435,10 +454,12 @@ export default async function TripEditorPage({
                               }
                             />
                           </div>
+                          )}
                         </div>
                       );
                     })}
 
+                    {isEditable && (
                     <ItemFormDialog
                       allSuppliers={allSuppliers}
                       trigger={
@@ -451,11 +472,13 @@ export default async function TripEditorPage({
                       }
                       onSubmit={addItemAction.bind(null, trip.id, day.id)}
                     />
+                    )}
                   </div>
                 </div>
               );
             })}
 
+            {isEditable && (
             <div className="flex flex-col gap-2 sm:flex-row lg:hidden print:hidden">
               <DayFormDialog
                 trigger={
@@ -474,12 +497,15 @@ export default async function TripEditorPage({
                 />
               )}
             </div>
+            )}
           </section>
 
           <aside className="space-y-4 print:hidden">
             <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Acciones</h2>
               <div className="mt-3 grid grid-cols-1 gap-2">
+                {isEditable ? (
+                <>
                 <form action={setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient)}>
                   <button
                     type="submit"
@@ -586,6 +612,14 @@ export default async function TripEditorPage({
                   }
                   onSubmit={updateTripCommissionAction.bind(null, trip.id)}
                 />
+                </>
+                ) : (
+                  <p className="rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-300">
+                    Las acciones de edición están bloqueadas mientras el viaje está publicado.
+                  </p>
+                )}
+                {isEditable && (
+                <>
                 <CopyTripSummaryButtonClient trip={trip} />
                 <SaveAsTemplateDialog
                   defaultTitle={trip.title}
@@ -600,6 +634,8 @@ export default async function TripEditorPage({
                   onSubmit={saveTripAsTemplateAction.bind(null, trip.id)}
                 />
                 <DuplicateTripButton onDuplicate={duplicateTripAction.bind(null, trip.id)} />
+                </>
+                )}
                 <PrintButton />
               </div>
             </section>
@@ -665,20 +701,25 @@ export default async function TripEditorPage({
               )}
             </section>
 
+            {isEditable && (
             <TripCoverImage
               coverImageUrl={trip.coverImageUrl}
               coversEnabled={coversEnabled}
               onUpload={uploadTripCoverAction.bind(null, trip.id, trip.slug)}
               onRemove={removeTripCoverAction.bind(null, trip.id, trip.slug)}
             />
+            )}
 
+            {isEditable && (
             <TripPhotoGallery
               photos={trip.photos}
               photosEnabled={photosEnabled}
               onUpload={uploadTripPhotoAction.bind(null, trip.id, trip.slug)}
               onDelete={deleteTripPhotoAction.bind(null, trip.id, trip.slug)}
             />
+            )}
 
+            {isEditable && (
             <TripDocuments
               documents={trip.documents}
               documentsEnabled={documentsEnabled}
@@ -686,13 +727,16 @@ export default async function TripEditorPage({
               onDelete={deleteTripDocumentAction.bind(null, trip.id, trip.slug)}
               onRefresh={getTripDocumentsAction.bind(null, trip.id)}
             />
+            )}
 
+            {isEditable && (
             <PackingListManager
               items={trip.packingItems}
               onAdd={addPackingItemAction.bind(null, trip.id)}
               onToggle={togglePackingItemAction.bind(null, trip.id)}
               onDelete={deletePackingItemAction.bind(null, trip.id)}
             />
+            )}
 
             {trip.statusHistory.length > 0 && (
               <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">

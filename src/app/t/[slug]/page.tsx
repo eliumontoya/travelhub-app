@@ -21,16 +21,21 @@ import { getDailyWeather } from "@/lib/weather";
 import { PackingListManager } from "@/components/PackingListManager";
 import { PrintButton } from "@/components/PrintButton";
 import type { ItemWithSupplier } from "@/types";
+import { isTravelerTripVisible } from "@/lib/trip-visibility";
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const previewToken = getPreviewToken(resolvedSearchParams);
   const trip = await getTripWithDetails(slug);
 
-  if (!trip) {
+  if (!trip || !isTravelerTripVisible(trip.status, trip.id, previewToken)) {
     return { title: "Itinerario no encontrado" };
   }
 
@@ -57,9 +62,11 @@ export default async function PublicTripPage({
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
   const lang = getLangFromSearchParams(resolvedSearchParams) ?? DEFAULT_LANG;
+  const previewToken = getPreviewToken(resolvedSearchParams);
   const t = dictionary[lang];
   const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
-  if (!trip || trip.status !== "published") notFound();
+  if (!trip || !isTravelerTripVisible(trip.status, trip.id, previewToken)) notFound();
+  const isDraftPreview = trip.status === "draft";
 
   const totalCost = trip.showCostsToClient
     ? trip.days.reduce(
@@ -81,6 +88,12 @@ export default async function PublicTripPage({
   return (
     <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0 dark:bg-gray-950">
       <ThemeToggle className="fixed right-4 top-4 z-30 print:hidden" />
+
+      {isDraftPreview && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-800 print:hidden dark:border-amber-950 dark:bg-amber-950/30 dark:text-amber-300">
+          Vista previa de borrador: esta URL temporal solo sirve para revisión. La URL final se activa al publicar el viaje.
+        </div>
+      )}
 
       <section
         className="bg-gray-900 bg-cover bg-center print:hidden"
@@ -360,4 +373,10 @@ export default async function PublicTripPage({
       </div>
     </main>
   );
+}
+
+
+function getPreviewToken(searchParams: Record<string, string | string[] | undefined>): string | undefined {
+  const raw = searchParams.preview;
+  return Array.isArray(raw) ? raw[0] : raw;
 }

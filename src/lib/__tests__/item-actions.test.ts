@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createItem: vi.fn(),
   updateItem: vi.fn(),
   revalidatePath: vi.fn(),
+  getTripById: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -21,7 +22,7 @@ vi.mock("@/lib/data", () => ({
   generateTripDays: vi.fn(),
   getItemDocuments: vi.fn(),
   getOrCreateTag: vi.fn(),
-  getTripById: vi.fn(),
+  getTripById: mocks.getTripById,
   reorderItems: vi.fn(),
   reorderTripDays: vi.fn(),
   restoreItem: vi.fn(),
@@ -41,7 +42,11 @@ vi.mock("@/lib/data", () => ({
 import { addItemAction, editItemAction } from "@/app/dashboard/trips/[id]/actions";
 
 describe("item server action metadata validation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   it("rejects invalid metadata and does not save", async () => {
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
     const formData = new FormData();
     formData.set("type", "flight");
     formData.set("title", "AA 1234");
@@ -58,6 +63,7 @@ describe("item server action metadata validation", () => {
     formData.set("type", "note");
     formData.set("title", "Nota");
     formData.set("metadata", "null");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
     mocks.createItem.mockResolvedValueOnce({ id: "item-1" });
 
     await addItemAction("trip-1", "day-1", formData);
@@ -69,5 +75,16 @@ describe("item server action metadata validation", () => {
       metadata: null,
     }));
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/trips/trip-1");
+  });
+
+  it("blocks edits when the trip is published", async () => {
+    const formData = new FormData();
+    formData.set("type", "note");
+    formData.set("title", "Nota");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "published" });
+
+    await expect(addItemAction("trip-1", "day-1", formData)).rejects.toThrow("viaje publicado está bloqueado");
+
+    expect(mocks.createItem).not.toHaveBeenCalled();
   });
 });
