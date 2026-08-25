@@ -8,6 +8,14 @@ import {
   restoreSupplier,
 } from "@/lib/data";
 
+
+function parseOptionalCoordinate(value: FormDataEntryValue | null): number | undefined {
+  const raw = String(value ?? "").trim();
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 function parseSupplierTags(formData: FormData): string[] {
   return String(formData.get("tags") ?? "")
     .split(",")
@@ -33,6 +41,9 @@ export async function createSupplierAction(
       contactEmail: (formData.get("contactEmail") as string)?.trim() || undefined,
       website: (formData.get("website") as string)?.trim() || undefined,
       address: (formData.get("address") as string)?.trim() || undefined,
+      lat: parseOptionalCoordinate(formData.get("lat")),
+      lng: parseOptionalCoordinate(formData.get("lng")),
+      googlePlaceId: (formData.get("googlePlaceId") as string)?.trim() || undefined,
       notes: (formData.get("notes") as string)?.trim() || undefined,
       tags: parseSupplierTags(formData),
     });
@@ -59,6 +70,9 @@ export async function updateSupplierAction(
       contactEmail: (formData.get("contactEmail") as string)?.trim() || undefined,
       website: (formData.get("website") as string)?.trim() || undefined,
       address: (formData.get("address") as string)?.trim() || undefined,
+      lat: parseOptionalCoordinate(formData.get("lat")),
+      lng: parseOptionalCoordinate(formData.get("lng")),
+      googlePlaceId: (formData.get("googlePlaceId") as string)?.trim() || undefined,
       notes: (formData.get("notes") as string)?.trim() || undefined,
       tags: parseSupplierTags(formData),
     });

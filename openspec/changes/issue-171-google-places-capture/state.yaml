@@ -1,0 +1,15 @@
+schemaName: gentle-ai.sdd-state/v1
+project: travelhub-app
+change: issue-171-google-places-capture
+artifactStore: hybrid
+phase: verify
+nextRecommended: pr
+status: verified
+createdAt: "2026-08-25"
+updatedAt: "2026-08-25"
+artifacts:
+  proposal: openspec/changes/issue-171-google-places-capture/proposal.md
+  spec: openspec/changes/issue-171-google-places-capture/specs/supplier-catalog/spec.md
+  design: openspec/changes/issue-171-google-places-capture/design.md
+  tasks: openspec/changes/issue-171-google-places-capture/tasks.md
+  verifyReport: openspec/changes/issue-171-google-places-capture/verify-report.md
