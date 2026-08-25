@@ -6,7 +6,7 @@ import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
-import { LocationMap } from "@/components/LocationMap";
+import { LocationActions } from "@/components/LocationMap";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { TripDaySidebar } from "@/components/TripDaySidebar";
 import { TripFeedbackForm } from "@/components/TripFeedbackForm";
@@ -15,6 +15,7 @@ import { NoteHtml } from "@/components/NoteHtml";
 import { submitTripFeedbackAction } from "./actions";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
+import { resolveItemLocation } from "@/lib/item-location";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
@@ -209,7 +210,8 @@ export default async function PublicTripPage({
                   {day.items.map((rawItem) => {
                     const item = rawItem as ItemWithSupplier;
                     const meta = itemTypeMeta[item.type];
-                    const tzLabel = getApproxUtcOffsetLabel(item.lat, item.lng);
+                    const resolvedLocation = resolveItemLocation(item);
+                    const tzLabel = getApproxUtcOffsetLabel(resolvedLocation?.lat ?? item.lat, resolvedLocation?.lng ?? item.lng);
                     const metadataSummary = formatItemMetadataSummary(item);
                     const detailRows = formatItemDetailRows(item);
                     const hasDetails = Boolean(
@@ -217,7 +219,7 @@ export default async function PublicTripPage({
                       item.confirmationCode ||
                       (trip.showCostsToClient && item.cost !== undefined) ||
                       detailRows.length > 0 ||
-                      (item.lat !== undefined && item.lng !== undefined) ||
+                      Boolean(resolvedLocation) ||
                       item.supplier ||
                       Boolean(item.documents?.length)
                     );
@@ -253,8 +255,8 @@ export default async function PublicTripPage({
                                   />
                                 )}
                               </div>
-                              {item.location && (
-                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
+                              {resolvedLocation && (
+                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{resolvedLocation.label}</p>
                               )}
                               {metadataSummary && (
                                 <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
@@ -327,11 +329,18 @@ export default async function PublicTripPage({
                                       <SupplierInfo
                                         name={item.supplier.name}
                                         address={item.supplier.address}
+                                        lat={item.supplier.lat}
+                                        lng={item.supplier.lng}
                                       />
                                     )}
-                                    {item.lat !== undefined && item.lng !== undefined && (
+                                    {resolvedLocation && (
                                       <div className="print:hidden">
-                                        <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                        <LocationActions
+                                          lat={resolvedLocation.lat}
+                                          lng={resolvedLocation.lng}
+                                          address={resolvedLocation.address}
+                                          label={resolvedLocation.label}
+                                        />
                                       </div>
                                     )}
                                   </div>

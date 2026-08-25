@@ -46,8 +46,11 @@ import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
 import { WeatherBadge } from "@/components/WeatherBadge";
+import { LocationActions } from "@/components/LocationMap";
 import { NoteHtml } from "@/components/NoteHtml";
 import { travelerPreviewHref } from "@/lib/trip-visibility";
+import { resolveItemLocation } from "@/lib/item-location";
+import type { ItemWithSupplier } from "@/types";
 import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
 import { PrintButton } from "@/components/PrintButton";
@@ -351,9 +354,11 @@ export default async function TripEditorPage({
                     )}
 
                     {day.items.map((item) => {
+                      const itemWithSupplier = item as ItemWithSupplier;
                       const meta = itemTypeMeta[item.type];
                       const itemIdx = itemOrder.findIndex((i) => i.id === item.id);
-                      const tzLabel = getApproxUtcOffsetLabel(item.lat, item.lng);
+                      const resolvedLocation = resolveItemLocation(itemWithSupplier);
+                      const tzLabel = getApproxUtcOffsetLabel(resolvedLocation?.lat ?? item.lat, resolvedLocation?.lng ?? item.lng);
                       return (
                         <div
                           key={item.id}
@@ -378,8 +383,8 @@ export default async function TripEditorPage({
                                 />
                               )}
                             </div>
-                            {item.location && (
-                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
+                            {resolvedLocation && (
+                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{resolvedLocation.label}</p>
                             )}
                             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
                               {item.cost !== undefined && (
@@ -395,6 +400,16 @@ export default async function TripEditorPage({
                               <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
                                 {formatItemMetadataSummary(item)}
                               </p>
+                            )}
+                            {resolvedLocation && (
+                              <div className="print:hidden">
+                                <LocationActions
+                                  lat={resolvedLocation.lat}
+                                  lng={resolvedLocation.lng}
+                                  address={resolvedLocation.address}
+                                  label={resolvedLocation.label}
+                                />
+                              </div>
                             )}
                           </div>
                           {isEditable && (
