@@ -26,8 +26,7 @@ The system MUST render `/t/{slug}` only for trips whose status is `published`; d
 
 ### Requirement: Traveler itinerary content
 
-The public page MUST show the trip's own cover image (its `coverImageUrl`), title, date, and traveler summary, configured contact email and phone, instructions, days, items, notes, confirmation details, maps or map links, weather, photos, and optional cost summary. The rendered cover MUST be the trip's per-trip image, NOT the client's cover.
-(Previously: listed a generic "cover" without clarifying it is the trip's own per-trip `coverImageUrl`, not the client's cover — risk of #153 regression)
+The public page MUST show the trip's own cover image (its `coverImageUrl`), title, date, and traveler summary, configured contact email and phone, instructions, days, items, notes, confirmation details, maps or map links, weather, photos, optional cost summary, and packing checklist (when items exist). The rendered cover MUST be the trip's per-trip image, NOT the client's cover.
 
 #### Scenario: Show public itinerary details
 
@@ -48,6 +47,22 @@ The public page MUST show the trip's own cover image (its `coverImageUrl`), titl
 - THEN the hero and OpenGraph image MUST use the trip's `coverImageUrl`
 - AND MUST NOT use the client's cover image
 
+### Requirement: Agency branding on cover
+
+The cover hero of `/t/{slug}` MUST render the agency's `logoUrl` and `agencyName` from `site_settings` when present. When both are absent, the cover MUST render without branding (no regression).
+
+#### Scenario: Cover with agency branding
+
+- GIVEN `logoUrl` and `agencyName` are configured in `site_settings`
+- WHEN a traveler opens `/t/{slug}`
+- THEN the cover hero MUST display the logo image and agency name in the top-left corner, without obscuring the trip title or dates
+
+#### Scenario: Cover without agency branding
+
+- GIVEN `logoUrl` or `agencyName` is empty in `site_settings`
+- WHEN a traveler opens `/t/{slug}`
+- THEN the cover MUST render as it does today (no branding overlay, no regression)
+
 ### Requirement: Traveler actions
 
 The public page MUST let travelers add items or the whole trip to calendar, switch supported language labels, and submit post-trip feedback.
@@ -63,3 +78,45 @@ The public page MUST let travelers add items or the whole trip to calendar, swit
 - GIVEN a traveler submits a rating outside 1-5
 - WHEN the feedback action runs
 - THEN the system MUST ignore the invalid submission
+
+### Requirement: Public checklist visibility
+
+The public trip page `/t/{slug}` MUST render the packing checklist when the trip has at least one packing item.
+
+#### Scenario: Trip has packing items
+
+- GIVEN a published trip has one or more packing items
+- WHEN a traveler opens `/t/{slug}`
+- THEN the packing checklist MUST be visible with every item's label
+
+#### Scenario: Trip has no packing items
+
+- GIVEN a published trip has zero packing items
+- WHEN a traveler opens `/t/{slug}`
+- THEN the packing checklist MUST NOT be rendered
+
+### Requirement: Read-only public checklist
+
+The public packing checklist MUST NOT expose add, delete, or server-persisted toggle actions to anonymous travelers.
+
+#### Scenario: No add/delete controls
+
+- GIVEN a traveler is viewing the public checklist
+- WHEN the checklist renders
+- THEN no "add item" input and no delete controls MUST be present
+
+#### Scenario: Local-only toggle
+
+- GIVEN a traveler toggles a packing item checkbox in the public view
+- WHEN the toggle occurs
+- THEN the checked state MUST update locally in the browser and MUST NOT be persisted to the server
+
+### Requirement: Agent checklist unchanged
+
+The authenticated dashboard packing checklist MUST retain add, toggle (persisted), and delete behavior.
+
+#### Scenario: Agent toggles persist
+
+- GIVEN an agent toggles a packing item in the dashboard
+- WHEN the action completes
+- THEN the new checked state MUST be persisted and re-rendered

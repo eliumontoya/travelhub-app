@@ -55,3 +55,31 @@ The dashboard workspace MUST support moving trip status from board interactions 
 - GIVEN the agent selected multiple trips
 - WHEN they run a bulk publish or archive action
 - THEN every selected trip MUST receive the requested status
+
+### Requirement: Site branding settings
+
+`SiteSettings` MUST include `agencyName` and `logoUrl` fields, persisted in the `site_settings` singleton table. The `/dashboard/settings` form MUST allow editing the agency name and uploading or manually entering a logo URL. When Supabase is not configured, the logo MUST be settable via manual URL only.
+
+#### Scenario: Read site branding defaults
+
+- GIVEN Supabase is not configured
+- WHEN `getSiteSettings()` is called
+- THEN `agencyName` and `logoUrl` MUST return empty strings
+
+#### Scenario: Update site branding
+
+- GIVEN valid branding fields
+- WHEN `updateSiteSettings({ agencyName, logoUrl })` is called
+- THEN the singleton row MUST be updated and `/t/[slug]` MUST be revalidated
+
+#### Scenario: Dashboard settings form with branding
+
+- GIVEN an authenticated agent on `/dashboard/settings`
+- WHEN they enter an agency name and upload a logo (or paste a URL)
+- THEN `agencyName` and `logoUrl` MUST persist and the cover MUST reflect them
+
+#### Scenario: Manual logo URL without Supabase
+
+- GIVEN Supabase is not configured
+- WHEN the agent pastes a manual logo URL
+- THEN `logoUrl` MUST be saved without a Storage upload

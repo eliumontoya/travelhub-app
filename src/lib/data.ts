@@ -141,7 +141,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       slug: generateClientSlug(input.name),
       email: input.email ?? "",
       phone: input.phone ?? "",
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       referralSource: input.referralSource ?? null,
       birthDate: input.birthDate,
       createdAt: now,
@@ -158,7 +158,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       slug: generateClientSlug(input.name),
       email: input.email,
       phone: input.phone,
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       referral_source: input.referralSource,
       birth_date: input.birthDate || null,
     })
@@ -642,7 +642,7 @@ export async function createSupplier(input: CreateSupplierInput): Promise<Suppli
       address: input.address,
       lat: input.lat,
       lng: input.lng,
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       tags: input.tags ?? [],
       createdAt: now,
       updatedAt: now,
@@ -662,7 +662,7 @@ export async function createSupplier(input: CreateSupplierInput): Promise<Suppli
       address: input.address || null,
       lat: input.lat ?? null,
       lng: input.lng ?? null,
-      notes: input.notes || null,
+      notes: sanitizeNote(input.notes) || null,
       tags: input.tags ?? [],
     })
     .select()
@@ -2165,7 +2165,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       lat: input.lat,
       lng: input.lng,
       confirmationCode: input.confirmationCode,
-      notes: input.notes,
+      notes: sanitizeNote(input.notes),
       cost: input.cost,
       supplierId: input.supplierId,
       metadata: (input.metadata ?? null) as unknown as Item["metadata"],
@@ -2573,7 +2573,19 @@ export async function uploadClientCoverImage(
 }
 
 export async function removeClientCoverImage(clientId: string): Promise<void> {
-  await updateClient(clientId, { coverImageUrl: undefined });
+  if (!isSupabaseConfigured()) {
+    const client = mockClients.find((c) => c.id === clientId);
+    if (!client) throw new Error("Cliente no encontrado");
+    client.coverImageUrl = undefined;
+    client.updatedAt = new Date().toISOString();
+    return;
+  }
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("clients")
+    .update({ cover_image_url: null })
+    .eq("id", clientId);
+  if (error) throw error;
 }
 
 export async function getClientDocuments(

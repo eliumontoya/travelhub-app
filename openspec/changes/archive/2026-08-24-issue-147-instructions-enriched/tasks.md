@@ -15,6 +15,6 @@
 - [x] SDD artifacts under `openspec/changes/issue-147-instructions-enriched/`
 
 ## 5. Verify
-- [ ] `npx tsc --noEmit` passes
-- [ ] `npm run build` passes
-- [ ] Existing tests pass
+- [x] `npx tsc --noEmit` passes
+- [x] `npm run build` passes
+- [x] Existing tests pass
