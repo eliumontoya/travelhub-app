@@ -1166,7 +1166,7 @@ export async function getTripWithDetails(slug: string): Promise<TripWithDetails 
     .maybeSingle();
   if (error) throw error;
   if (!tripRow) return null;
-  return assembleTripWithDetails(tripRow);
+  return assemblePublicTripWithDetails(tripRow);
 }
 
 export type ClientTripHistory = {
@@ -1217,6 +1217,121 @@ export async function getClientPublishedTripsBySlug(
       coverImageUrl: (clientRow.cover_image_url as string) ?? undefined,
     },
     trips: (tripRows ?? []).map(rowToTrip),
+  };
+}
+
+async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): Promise<TripWithDetails> {
+  const supabase = await createServerSupabase();
+  const trip = rowToTrip(tripRow);
+
+  const { data: photoRows, error: photosError } = await supabase
+    .from("trip_photos")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (photosError) throw photosError;
+  const photos = (photoRows ?? []).map((row) => {
+    const photo = rowToTripPhoto(row);
+    const { data: publicUrlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(photo.filePath);
+    return { ...photo, url: publicUrlData.publicUrl };
+  });
+
+  const { data: dayRows, error: daysError } = await supabase
+    .from("trip_days")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true });
+  if (daysError) throw daysError;
+
+  const dayIds = (dayRows ?? []).map((d) => d.id as string);
+  let itemRows: Record<string, unknown>[] = [];
+  if (dayIds.length) {
+    const { data, error: itemsError } = await supabase
+      .from("items")
+      .select("*")
+      .in("trip_day_id", dayIds)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true });
+    if (itemsError) throw itemsError;
+    itemRows = data ?? [];
+  }
+
+  const itemIds = itemRows.map((i) => i.id as string);
+  let documentRows: Record<string, unknown>[] = [];
+  if (itemIds.length) {
+    const { data, error: docsError } = await supabase
+      .from("documents")
+      .select("*")
+      .in("item_id", itemIds);
+    if (docsError) throw docsError;
+    documentRows = data ?? [];
+  }
+
+  const supplierIds = [
+    ...new Set(itemRows.map((i) => i.supplier_id as string).filter(Boolean)),
+  ];
+  let supplierById = new Map<string, Pick<Supplier, "name" | "address" | "lat" | "lng">>();
+  if (supplierIds.length) {
+    const { data: supplierRows, error: suppError } = await supabase
+      .from("suppliers")
+      .select("id, name, address, lat, lng")
+      .in("id", supplierIds);
+    if (suppError) throw suppError;
+    supplierById = new Map(
+      (supplierRows ?? []).map((r) => [
+        r.id as string,
+        {
+          name: r.name as string,
+          address: (r.address as string) ?? undefined,
+          lat: r.lat !== null && r.lat !== undefined ? Number(r.lat) : undefined,
+          lng: r.lng !== null && r.lng !== undefined ? Number(r.lng) : undefined,
+        },
+      ])
+    );
+  }
+
+  const days = (dayRows ?? []).map((d) => {
+    const day = rowToTripDay(d);
+    const items = itemRows
+      .filter((i) => i.trip_day_id === day.id)
+      .map((i) => {
+        const item: ItemWithSupplier = rowToItem(i);
+        item.documents = documentRows
+          .filter((doc) => doc.item_id === item.id)
+          .map(rowToDocument);
+        if (item.supplierId && supplierById.has(item.supplierId)) {
+          item.supplier = supplierById.get(item.supplierId);
+        }
+        return item;
+      });
+    return { ...day, items };
+  });
+
+  const { data: tripDocRows, error: tripDocsError } = await supabase
+    .from("trip_documents")
+    .select("*")
+    .eq("trip_id", trip.id)
+    .order("created_at", { ascending: false });
+  if (tripDocsError) throw tripDocsError;
+  const documents = await Promise.all(
+    (tripDocRows ?? []).map(async (row) => {
+      const doc = rowToTripDocument(row);
+      const url = await getSignedDocumentUrl(doc.filePath);
+      return { ...doc, url };
+    })
+  );
+
+  return {
+    ...trip,
+    clients: [],
+    client: {} as Client,
+    tags: [],
+    statusHistory: [],
+    photos,
+    documents,
+    days,
+    packingItems: [],
   };
 }
 
