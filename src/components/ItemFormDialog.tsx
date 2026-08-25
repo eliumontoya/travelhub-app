@@ -8,6 +8,7 @@ import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
+import { shouldAutofillSupplierLocation } from "@/lib/item-location";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
@@ -270,9 +271,11 @@ export function ItemFormDialog({
     }
 
     setTitleValue((current) => (current.trim() ? current : supplier.name));
-    if (supplier.address) setLocationValue(supplier.address);
-    setLatValue(supplier.lat);
-    setLngValue(supplier.lng);
+    if (shouldAutofillSupplierLocation({ currentLocation: locationValue, currentLat: latValue, currentLng: lngValue })) {
+      if (supplier.address) setLocationValue(supplier.address);
+      setLatValue(supplier.lat);
+      setLngValue(supplier.lng);
+    }
 
     const nextMetadata: Record<string, string> = {};
     if (supplier.type === "hotel") {
