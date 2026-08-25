@@ -24,6 +24,29 @@ The system MUST render `/t/{slug}` only for trips whose status is `published`; d
 - WHEN a traveler opens its public slug
 - THEN the system MUST return a not-found response
 
+### Requirement: Draft traveler preview URL
+
+The system MUST keep the final traveler URL `/t/{slug}` inactive for draft trips, while allowing the authenticated agent to open a temporary preview URL for draft review. Draft preview rendering MUST be visually identified as a preview and MUST NOT make copy/share controls expose the final public URL before publication.
+
+#### Scenario: Draft final URL remains unavailable
+
+- GIVEN a trip is still in draft
+- WHEN `/t/{slug}` is opened without a preview token
+- THEN the system MUST return a not-found response
+
+#### Scenario: Draft preview URL renders for agent review
+
+- GIVEN a trip is still in draft
+- WHEN the agent opens the dashboard preview link with its temporary preview token
+- THEN `/t/{slug}` MUST render the traveler view
+- AND the page MUST show that it is a draft preview
+
+#### Scenario: Published URL renders without preview token
+
+- GIVEN a trip has status `published`
+- WHEN a traveler opens `/t/{slug}`
+- THEN the traveler view MUST render without requiring a preview token
+
 ### Requirement: Traveler itinerary content
 
 The public page MUST show the trip's own cover image (its `coverImageUrl`), title, date, and traveler summary, configured contact email and phone, instructions, days, items, notes, confirmation details, maps or map links, weather, photos, optional cost summary, and packing checklist (when items exist). The rendered cover MUST be the trip's per-trip image, NOT the client's cover.
@@ -46,6 +69,35 @@ The public page MUST show the trip's own cover image (its `coverImageUrl`), titl
 - WHEN the traveler opens `/t/[slug]`
 - THEN the hero and OpenGraph image MUST use the trip's `coverImageUrl`
 - AND MUST NOT use the client's cover image
+
+### Requirement: Complete traveler item details
+
+The public traveler itinerary MUST keep each item card scannable by showing primary details first (name, type, time, location, and type-specific summary) and MUST provide a non-intrusive way to reveal complete item details. Expanded item details MUST include every traveler-relevant field available for that item: notes, confirmation/reference values, costs when the trip allows cost visibility, structured metadata, supplier information, maps/coordinates, and item documents with download/view links when available.
+
+#### Scenario: Expand item details
+
+- GIVEN a published trip item has traveler-relevant notes, metadata, supplier details, map coordinates, or attached item documents
+- WHEN a traveler opens the public itinerary
+- THEN the item card MUST show a control to reveal more details
+- AND expanding it MUST show the complete details without navigating away from the itinerary
+
+#### Scenario: Keep item cards scannable
+
+- GIVEN a published trip has multiple itinerary items
+- WHEN the traveler scans the day list
+- THEN each item MUST still show its name, type, time when present, location when present, and compact metadata summary before expansion
+
+#### Scenario: Respect cost visibility in expanded details
+
+- GIVEN an item has a cost
+- WHEN `showCostsToClient` is false
+- THEN the expanded item details MUST NOT show the cost
+
+#### Scenario: Show item documents in details
+
+- GIVEN a published trip item has attached documents with signed URLs
+- WHEN the traveler expands the item details
+- THEN the documents MUST appear as links within the item details
 
 ### Requirement: Public itinerary data access boundaries
 
