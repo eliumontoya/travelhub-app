@@ -1291,22 +1291,26 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
     );
   }
 
-  const days = (dayRows ?? []).map((d) => {
+  const days = await Promise.all((dayRows ?? []).map(async (d) => {
     const day = rowToTripDay(d);
-    const items = itemRows
+    const items = await Promise.all(itemRows
       .filter((i) => i.trip_day_id === day.id)
-      .map((i) => {
+      .map(async (i) => {
         const item: ItemWithSupplier = rowToItem(i);
-        item.documents = documentRows
+        item.documents = await Promise.all(documentRows
           .filter((doc) => doc.item_id === item.id)
-          .map(rowToDocument);
+          .map(async (docRow) => {
+            const doc = rowToDocument(docRow);
+            const url = await getSignedDocumentUrl(doc.fileUrl);
+            return { ...doc, url };
+          }));
         if (item.supplierId && supplierById.has(item.supplierId)) {
           item.supplier = supplierById.get(item.supplierId);
         }
         return item;
-      });
+      }));
     return { ...day, items };
-  });
+  }));
 
   const { data: tripDocRows, error: tripDocsError } = await supabase
     .from("trip_documents")
@@ -1453,22 +1457,26 @@ async function assembleTripWithDetails(tripRow: Record<string, unknown>): Promis
     );
   }
 
-  const days = (dayRows ?? []).map((d) => {
+  const days = await Promise.all((dayRows ?? []).map(async (d) => {
     const day = rowToTripDay(d);
-    const items = itemRows
+    const items = await Promise.all(itemRows
       .filter((i) => i.trip_day_id === day.id)
-      .map((i) => {
+      .map(async (i) => {
         const item: ItemWithSupplier = rowToItem(i);
-        item.documents = documentRows
+        item.documents = await Promise.all(documentRows
           .filter((doc) => doc.item_id === item.id)
-          .map(rowToDocument);
+          .map(async (docRow) => {
+            const doc = rowToDocument(docRow);
+            const url = await getSignedDocumentUrl(doc.fileUrl);
+            return { ...doc, url };
+          }));
         if (item.supplierId && supplierById.has(item.supplierId)) {
           item.supplier = supplierById.get(item.supplierId);
         }
         return item;
-      });
+      }));
     return { ...day, items };
-  });
+  }));
 
   const statusHistory = await getTripStatusHistory(trip.id);
 
