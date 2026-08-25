@@ -807,7 +807,7 @@ export type UpdateTripInput = Partial<{
   slug: string;
   startDate: string;
   endDate: string;
-  coverImageUrl: string;
+  coverImageUrl: string | null;
   instructions: string | null;
   travelerCount: number;
   budget: number | null;
@@ -1620,7 +1620,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.slug !== undefined) trip.slug = input.slug;
     if (input.startDate !== undefined) trip.startDate = input.startDate;
     if (input.endDate !== undefined) trip.endDate = input.endDate;
-    if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl;
+    if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl ?? undefined;
     if (input.instructions !== undefined) trip.instructions = input.instructions ? sanitizeNote(input.instructions) : undefined;
     if (input.travelerCount !== undefined) trip.travelerCount = input.travelerCount;
     if (input.budget !== undefined) trip.budget = input.budget ?? undefined;
@@ -2835,6 +2835,66 @@ export async function deleteTripPhoto(id: string): Promise<void> {
     await supabase.storage.from(PHOTOS_BUCKET).remove([row.file_path as string]);
   }
   const { error } = await supabase.from("trip_photos").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- Trip cover image (issue #153) ----------
+// La portada del viaje se sirve en /t/[slug] sin autenticación, por lo que
+// reutiliza el bucket PÚBLICO "trip-photos" (ver 0012_trip_photos.sql) bajo
+// el prefijo "covers/{tripId}/...". A diferencia del client-cover, al
+// reemplazar/eliminar se borra el objeto anterior para evitar huérfanos.
+
+export function storagePathFromPublicUrl(bucket: string, url: string): string | null {
+  const marker = `/public/${bucket}/`;
+  const i = url.indexOf(marker);
+  return i >= 0 ? url.slice(i + marker.length) : null;
+}
+
+async function removeTripCoverObjectIfExists(tripId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = await createServerSupabase();
+  const { data: row } = await supabase
+    .from("trips")
+    .select("cover_image_url")
+    .eq("id", tripId)
+    .maybeSingle();
+  const currentUrl = row?.cover_image_url as string | null;
+  if (!currentUrl) return;
+  const path = storagePathFromPublicUrl(PHOTOS_BUCKET, currentUrl);
+  if (!path) return;
+  await supabase.storage.from(PHOTOS_BUCKET).remove([path]);
+}
+
+export async function uploadTripCoverImage(tripId: string, file: File): Promise<string> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase no está configurado; no se puede subir la portada.");
+  }
+  await removeTripCoverObjectIfExists(tripId);
+  const supabase = await createServerSupabase();
+  const path = `covers/${tripId}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+  if (uploadError) throw uploadError;
+  const { data: publicUrlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path);
+  await updateTrip(tripId, { coverImageUrl: publicUrlData.publicUrl });
+  return publicUrlData.publicUrl;
+}
+
+export async function removeTripCoverImage(tripId: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const trip = mockTrips.find((t) => t.id === tripId);
+    if (!trip) throw new Error("Viaje no encontrado");
+    trip.coverImageUrl = undefined;
+    trip.updatedAt = new Date().toISOString();
+    return;
+  }
+  await removeTripCoverObjectIfExists(tripId);
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("trips")
+    .update({ cover_image_url: null })
+    .eq("id", tripId);
   if (error) throw error;
 }
 
