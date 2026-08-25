@@ -21,12 +21,22 @@ const ALLOWED_TAGS = [
   "code",
   "pre",
   "hr",
+  "table",
+  "thead",
+  "tbody",
+  "tfoot",
+  "tr",
+  "th",
+  "td",
+  "caption",
 ];
 
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ALLOWED_TAGS,
   allowedAttributes: {
     a: ["href", "target", "rel"],
+    th: ["colspan", "rowspan"],
+    td: ["colspan", "rowspan"],
   },
   allowedSchemes: ["http", "https", "mailto"],
   allowedSchemesByTag: { a: ["http", "https", "mailto"] },

@@ -35,6 +35,18 @@ describe("sanitizeNote", () => {
   it("preserves plain text notes unchanged", () => {
     expect(sanitizeNote("nota simple")).toBe("nota simple");
   });
+
+  it("keeps pasted tables while stripping unsafe table attributes", () => {
+    const html = '<table style="color:red"><tbody><tr onclick="bad()"><th colspan="2">Día</th></tr><tr><td>Vuelo</td><td>10:00</td></tr></tbody></table>';
+    const safe = sanitizeNote(html);
+
+    expect(safe).toContain("<table>");
+    expect(safe).toContain("<tbody>");
+    expect(safe).toContain('<th colspan="2">Día</th>');
+    expect(safe).toContain("<td>Vuelo</td>");
+    expect(safe).not.toContain("style=");
+    expect(safe).not.toContain("onclick");
+  });
 });
 
 describe("noteToPlainText", () => {
