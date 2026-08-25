@@ -10,13 +10,19 @@ Maintain reusable supplier records that can be referenced from itinerary items.
 
 ### Requirement: Supplier CRUD
 
-The system MUST let the agent create, list, update, soft-delete, force-delete after confirmation, and restore suppliers with name, type, contact fields, website, address, coordinates, notes, and tags.
+The system MUST let the agent create, list, update, soft-delete, force-delete after confirmation, and restore suppliers with name, type, contact fields, website, address, coordinates, notes, tags, and an optional Google Places identifier.
 
 #### Scenario: Create supplier
 
 - GIVEN the agent opens the supplier catalog
 - WHEN they submit a supplier with a name and type
 - THEN the supplier MUST appear in the active supplier list
+
+#### Scenario: Create supplier with Google place metadata
+
+- GIVEN a supplier submission includes name, type, address, latitude, longitude, and `googlePlaceId`
+- WHEN it is persisted
+- THEN the saved supplier MUST retain address, coordinates, and `googlePlaceId`
 
 #### Scenario: Block unconfirmed delete with references
 
@@ -29,6 +35,30 @@ The system MUST let the agent create, list, update, soft-delete, force-delete af
 - GIVEN a supplier was soft-deleted
 - WHEN the agent restores it
 - THEN the supplier MUST reappear in active catalog results
+
+
+### Requirement: Google Places-assisted supplier capture
+
+The system MUST provide optional Google Places-assisted supplier capture when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is configured and MUST keep manual supplier capture usable when the key is missing or the Google script fails.
+
+#### Scenario: Autocomplete fills supplier fields
+
+- GIVEN Google Places is configured
+- WHEN the agent selects a result with name, formatted address, geometry, and place id
+- THEN supplier name, address, latitude, longitude, and `googlePlaceId` MUST be filled before submission
+
+#### Scenario: Autocomplete values remain editable
+
+- GIVEN autocomplete filled supplier fields
+- WHEN the agent edits those fields before saving
+- THEN the manually edited values MUST be submitted
+
+#### Scenario: Manual fallback
+
+- GIVEN the Google key is missing or the Google script fails
+- WHEN the supplier dialog opens
+- THEN manual supplier fields MUST remain usable
+- AND the UI SHOULD explain that Places search is unavailable or not configured
 
 ### Requirement: Supplier catalog discovery
 
