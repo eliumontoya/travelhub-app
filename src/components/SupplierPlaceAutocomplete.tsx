@@ -10,7 +10,7 @@ export type SupplierPlaceSelection = {
   lng?: number;
 };
 
-type PlaceLike = {
+export type PlaceLike = {
   id?: string;
   displayName?: string | { text?: string };
   formattedAddress?: string;
@@ -32,8 +32,11 @@ type PlaceAutocompleteElementLike = HTMLElement & {
   includedPrimaryTypes?: string[];
 };
 
-type GooglePlacesLibrary = {
+export type GooglePlacesLibrary = {
   PlaceAutocompleteElement: new (opts?: Record<string, unknown>) => PlaceAutocompleteElementLike;
+  Place?: {
+    searchByText: (request: Record<string, unknown>) => Promise<{ places: PlaceLike[] }>;
+  };
 };
 
 type GooglePlacesWindow = Window & {
@@ -51,7 +54,7 @@ function getGoogleWindow(): GooglePlacesWindow | undefined {
   return window as GooglePlacesWindow;
 }
 
-function loadGooglePlacesScript(apiKey: string): Promise<void> {
+export function loadGooglePlacesScript(apiKey: string): Promise<void> {
   const googleWindow = getGoogleWindow();
   if (googleWindow?.google?.maps?.importLibrary) return Promise.resolve();
   if (placesScriptPromise) return placesScriptPromise;
@@ -66,12 +69,12 @@ function loadGooglePlacesScript(apiKey: string): Promise<void> {
   return placesScriptPromise;
 }
 
-function getDisplayName(displayName: PlaceLike["displayName"]): string | undefined {
+export function getDisplayName(displayName: PlaceLike["displayName"]): string | undefined {
   if (typeof displayName === "string") return displayName;
   return displayName?.text;
 }
 
-function getCoordinate(
+export function getCoordinate(
   location: PlaceLike["location"],
   key: "lat" | "lng"
 ): number | undefined {

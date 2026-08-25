@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Supplier } from "@/types";
 import { CreateSupplierDialog } from "@/components/CreateSupplierDialog";
+import { SupplierPlaceEnrichmentDialog } from "@/components/SupplierPlaceEnrichmentDialog";
 import { showUndoToast } from "@/components/UndoToast";
 import {
   softDeleteSupplierAction,
@@ -31,6 +32,7 @@ export function SupplierCatalogClient({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [enrichingSupplier, setEnrichingSupplier] = useState<Supplier | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [searchText, setSearchText] = useState(currentQuery);
   const [tagText, setTagText] = useState(currentTag);
@@ -204,6 +206,13 @@ export function SupplierCatalogClient({
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
+                      onClick={() => setEnrichingSupplier(supplier)}
+                      className="mr-2 text-sm text-blue-600 hover:underline"
+                    >
+                      Completar desde Google
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setEditingSupplier(supplier)}
                       className="mr-2 text-sm text-blue-600 hover:underline"
                     >
@@ -259,6 +268,20 @@ export function SupplierCatalogClient({
           router.refresh();
         }}
       />
+
+      {/* Enrichment dialog */}
+      {enrichingSupplier && (
+        <SupplierPlaceEnrichmentDialog
+          key={enrichingSupplier.id}
+          open={enrichingSupplier !== null}
+          supplier={enrichingSupplier}
+          onClose={() => setEnrichingSupplier(null)}
+          onUpdated={() => {
+            setEnrichingSupplier(null);
+            router.refresh();
+          }}
+        />
+      )}
 
       {/* Edit dialog */}
       <CreateSupplierDialog
