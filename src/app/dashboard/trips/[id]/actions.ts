@@ -34,6 +34,8 @@ import {
   getTripDocuments,
   deleteTripDocument,
   uploadTripPhoto,
+  uploadTripCoverImage,
+  removeTripCoverImage,
   moveItemToDay,
 } from "@/lib/data";
 import { ItemType, TripCurrency } from "@/types";
@@ -372,6 +374,20 @@ export async function uploadTripPhotoAction(tripId: string, slug: string, formDa
 
 export async function deleteTripPhotoAction(tripId: string, slug: string, photoId: string) {
   await deleteTripPhoto(photoId);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+export async function uploadTripCoverAction(tripId: string, slug: string, formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+  await uploadTripCoverImage(tripId, file);
+  revalidateTrip(tripId);
+  revalidatePath(`/t/${slug}`);
+}
+
+export async function removeTripCoverAction(tripId: string, slug: string) {
+  await removeTripCoverImage(tripId);
   revalidateTrip(tripId);
   revalidatePath(`/t/${slug}`);
 }
