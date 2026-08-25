@@ -10,25 +10,36 @@ export type SupplierPlaceSelection = {
   lng?: number;
 };
 
-type GooglePlace = {
-  place_id?: string;
-  name?: string;
-  formatted_address?: string;
-  geometry?: { location?: { lat: () => number; lng: () => number } };
+type PlaceLike = {
+  id?: string;
+  displayName?: string | { text?: string };
+  formattedAddress?: string;
+  location?: { lat: () => number; lng: () => number } | { lat: number; lng: number };
+  fetchFields: (opts: { fields: string[] }) => Promise<void>;
+};
+
+type PlacePredictionLike = {
+  placeId?: string;
+  toPlace: () => PlaceLike;
+};
+
+type PlaceSelectEvent = Event & {
+  placePrediction?: PlacePredictionLike;
+};
+
+type PlaceAutocompleteElementLike = HTMLElement & {
+  placeholder?: string;
+  includedPrimaryTypes?: string[];
+};
+
+type GooglePlacesLibrary = {
+  PlaceAutocompleteElement: new (opts?: Record<string, unknown>) => PlaceAutocompleteElementLike;
 };
 
 type GooglePlacesWindow = Window & {
   google?: {
     maps: {
-      places: {
-        Autocomplete: new (
-          input: HTMLInputElement,
-          opts?: Record<string, unknown>
-        ) => {
-          addListener: (event: string, handler: () => void) => void;
-          getPlace: () => GooglePlace;
-        };
-      };
+      importLibrary?: (library: "places") => Promise<GooglePlacesLibrary>;
     };
   };
 };
@@ -42,11 +53,11 @@ function getGoogleWindow(): GooglePlacesWindow | undefined {
 
 function loadGooglePlacesScript(apiKey: string): Promise<void> {
   const googleWindow = getGoogleWindow();
-  if (googleWindow?.google?.maps?.places) return Promise.resolve();
+  if (googleWindow?.google?.maps?.importLibrary) return Promise.resolve();
   if (placesScriptPromise) return placesScriptPromise;
   placesScriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("No se pudo cargar Google Places"));
@@ -55,41 +66,68 @@ function loadGooglePlacesScript(apiKey: string): Promise<void> {
   return placesScriptPromise;
 }
 
+function getDisplayName(displayName: PlaceLike["displayName"]): string | undefined {
+  if (typeof displayName === "string") return displayName;
+  return displayName?.text;
+}
+
+function getCoordinate(
+  location: PlaceLike["location"],
+  key: "lat" | "lng"
+): number | undefined {
+  if (!location) return undefined;
+  const value = location[key];
+  return typeof value === "function" ? value() : value;
+}
+
 export function SupplierPlaceAutocomplete({
   onPlaceSelect,
 }: {
   onPlaceSelect: (place: SupplierPlaceSelection) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"missing-key" | "loading" | "ready" | "error">(
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? "loading" : "missing-key"
   );
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
-    if (!apiKey || !inputRef.current) return;
+    if (!apiKey || !containerRef.current) return;
     let cancelled = false;
+    const container = containerRef.current;
     setStatus("loading");
+    container.replaceChildren();
 
     loadGooglePlacesScript(apiKey)
-      .then(() => {
+      .then(async () => {
         const googleWindow = getGoogleWindow();
-        if (cancelled || !inputRef.current || !googleWindow?.google) return;
-        const autocomplete = new googleWindow.google.maps.places.Autocomplete(inputRef.current, {
-          fields: ["place_id", "name", "formatted_address", "geometry"],
+        const placesLibrary = await googleWindow?.google?.maps.importLibrary?.("places");
+        if (cancelled || !container || !placesLibrary?.PlaceAutocompleteElement) return;
+
+        const autocompleteElement = new placesLibrary.PlaceAutocompleteElement({
+          includedPrimaryTypes: ["establishment"],
         });
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace() as GooglePlace;
-          const location = place.geometry?.location;
-          if (!place.place_id) return;
+        autocompleteElement.placeholder = "Hotel, aeropuerto, restaurante…";
+        autocompleteElement.className = "block w-full";
+        autocompleteElement.addEventListener("gmp-select", async (event) => {
+          const placePrediction = (event as PlaceSelectEvent).placePrediction;
+          if (!placePrediction) return;
+          const place = placePrediction.toPlace();
+          await place.fetchFields({
+            fields: ["id", "displayName", "formattedAddress", "location"],
+          });
+          const googlePlaceId = place.id ?? placePrediction.placeId;
+          if (!googlePlaceId) return;
           onPlaceSelect({
-            googlePlaceId: place.place_id,
-            name: place.name,
-            address: place.formatted_address,
-            lat: location?.lat(),
-            lng: location?.lng(),
+            googlePlaceId,
+            name: getDisplayName(place.displayName),
+            address: place.formattedAddress,
+            lat: getCoordinate(place.location, "lat"),
+            lng: getCoordinate(place.location, "lng"),
           });
         });
+
+        container.replaceChildren(autocompleteElement);
         setStatus("ready");
       })
       .catch(() => {
@@ -98,22 +136,23 @@ export function SupplierPlaceAutocomplete({
 
     return () => {
       cancelled = true;
+      container.replaceChildren();
     };
   }, [apiKey, onPlaceSelect]);
 
   return (
     <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
-      <label htmlFor="supplier-place-search" className="block text-sm font-medium text-blue-950">
-        Buscar en Google Places
-      </label>
-      <input
-        ref={inputRef}
-        id="supplier-place-search"
-        type="text"
-        disabled={!apiKey || status === "error"}
-        className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-500"
-        placeholder={apiKey ? "Hotel, aeropuerto, restaurante…" : "Configura Google Places para buscar"}
-      />
+      <label className="block text-sm font-medium text-blue-950">Buscar en Google Places</label>
+      {apiKey && status !== "error" ? (
+        <div ref={containerRef} className="mt-1 [&_gmp-place-autocomplete]:w-full" />
+      ) : (
+        <input
+          type="text"
+          disabled
+          className="mt-1 w-full rounded-lg border border-blue-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
+          placeholder="Configura Google Places para buscar"
+        />
+      )}
       {status === "missing-key" && (
         <p className="mt-1 text-xs text-blue-800">
           Google Places no está configurado. Captura el proveedor manualmente.
@@ -129,7 +168,7 @@ export function SupplierPlaceAutocomplete({
       )}
       {status === "error" && (
         <p className="mt-1 text-xs text-blue-800">
-          Google Places no está disponible. Puedes capturar el proveedor manualmente.
+          Google Places no está disponible. Verifica que la key permita Maps JavaScript API y Places API (New), o captura el proveedor manualmente.
         </p>
       )}
     </div>

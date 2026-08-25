@@ -90,9 +90,9 @@ manual de proveedores y un link simple a Google Maps en vez de mapa embebido),
 así que este paso es completamente opcional.
 
 1. Ve a https://console.cloud.google.com/ y crea (o reusa) un proyecto.
-2. Habilita las APIs **"Places API"** y **"Maps Embed API"**.
+2. Habilita las APIs **"Maps JavaScript API"**, **"Places API (New)"** y **"Maps Embed API"**.
 3. Ve a **APIs & Services → Credentials → Create Credentials → API key**.
-4. Restringe la key a esas dos APIs y a tus dominios HTTP referrer autorizados
+4. Restringe la key a esas APIs y a tus dominios HTTP referrer autorizados
    (por ejemplo `localhost:3000` para desarrollo y el dominio de producción).
 5. Pega la key en `.env.local` como `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
 6. Reinicia `npm run dev`.
