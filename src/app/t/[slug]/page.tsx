@@ -183,6 +183,15 @@ export default async function PublicTripPage({
                   </span>
                 </header>
 
+                {day.notes && (
+                  <div className="mb-4 rounded-xl border border-dashed border-blue-100 bg-blue-50/50 px-3 py-2 print:border-gray-200 print:bg-white dark:border-blue-950 dark:bg-blue-950/20">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-400">
+                      Nota del día
+                    </p>
+                    <NoteHtml html={day.notes} className="text-sm text-gray-600 dark:text-gray-400" />
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {day.items.map((rawItem) => {
                     const item = rawItem as ItemWithSupplier;
