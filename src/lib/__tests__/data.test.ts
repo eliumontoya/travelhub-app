@@ -222,6 +222,37 @@ describe("data layer (mock mode)", () => {
       expect(updated.lat).toBe(19.04144);
       expect(updated.lng).toBe(-98.20627);
     });
+
+    it("enriches only confirmed Google fields while preserving existing supplier details", async () => {
+      const created = await createSupplier({
+        name: "Hotel Curado",
+        type: "hotel",
+        contactPhone: "+52 55 0000 0000",
+        contactEmail: "reservas@example.com",
+        website: "https://hotel.example.com",
+        notes: "Notas internas",
+        tags: ["vip"],
+      });
+
+      const enriched = await updateSupplier(created.id, {
+        address: "Paseo de la Reforma 1, CDMX",
+        lat: 19.433,
+        lng: -99.133,
+        googlePlaceId: "ChIJ-confirmed-enrichment",
+      });
+
+      expect(enriched.name).toBe("Hotel Curado");
+      expect(enriched.type).toBe("hotel");
+      expect(enriched.contactPhone).toBe("+52 55 0000 0000");
+      expect(enriched.contactEmail).toBe("reservas@example.com");
+      expect(enriched.website).toBe("https://hotel.example.com");
+      expect(enriched.notes).toBe("Notas internas");
+      expect(enriched.tags).toEqual(["vip"]);
+      expect(enriched.address).toBe("Paseo de la Reforma 1, CDMX");
+      expect(enriched.lat).toBe(19.433);
+      expect(enriched.lng).toBe(-99.133);
+      expect(enriched.googlePlaceId).toBe("ChIJ-confirmed-enrichment");
+    });
   });
 
 });
