@@ -83,15 +83,17 @@ Con esto, `/dashboard/**` queda protegido por el middleware
 
 ## 6. (Opcional) Google Maps API key
 
-Habilita autocomplete de ubicación en el formulario de items y el mapa
-embebido en la vista pública. **Todo funciona sin esta key** (input de texto
-plano sin autocomplete, y un link simple a Google Maps en vez de mapa
-embebido), así que este paso es completamente opcional.
+Habilita autocomplete de ubicación en el formulario de items, captura asistida
+de proveedores con Google Places y el mapa embebido en la vista pública.
+**Todo funciona sin esta key** (input de texto plano sin autocomplete, captura
+manual de proveedores y un link simple a Google Maps en vez de mapa embebido),
+así que este paso es completamente opcional.
 
 1. Ve a https://console.cloud.google.com/ y crea (o reusa) un proyecto.
 2. Habilita las APIs **"Places API"** y **"Maps Embed API"**.
 3. Ve a **APIs & Services → Credentials → Create Credentials → API key**.
-4. Restringe la key a esas dos APIs y, si quieres, a tu dominio.
+4. Restringe la key a esas dos APIs y a tus dominios HTTP referrer autorizados
+   (por ejemplo `localhost:3000` para desarrollo y el dominio de producción).
 5. Pega la key en `.env.local` como `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
 6. Reinicia `npm run dev`.
 
@@ -102,7 +104,7 @@ embebido), así que este paso es completamente opcional.
 | `NEXT_PUBLIC_SUPABASE_URL` | No (fallback a mocks) | cliente y servidor |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No (fallback a mocks) | cliente y servidor |
 | `SUPABASE_SERVICE_ROLE_KEY` | No (reservada, no usada por el código actual) | solo servidor, nunca exponer |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | No (fallback sin mapa/autocomplete) | cliente |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | No (fallback sin mapa/autocomplete/captura Places) | cliente |
 
 Nota: el código actual (`src/lib/supabase/*`, `src/lib/data.ts`) opera con
 la **anon key** dentro de las políticas RLS del usuario autenticado — no

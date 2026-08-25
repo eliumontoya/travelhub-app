@@ -141,6 +141,7 @@ export interface Supplier {
   address?: string;
   lat?: number;
   lng?: number;
+  googlePlaceId?: string;
   notes?: string;
   tags: string[];
   deletedAt?: string;

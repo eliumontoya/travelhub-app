@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Supplier } from "@/types";
 import { SUPPLIER_TYPES } from "@/lib/constants";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { SupplierPlaceAutocomplete, SupplierPlaceSelection } from "@/components/SupplierPlaceAutocomplete";
 import {
   createSupplierAction,
   updateSupplierAction,
@@ -25,15 +26,27 @@ export function CreateSupplierDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState(supplier?.name ?? "");
+  const [address, setAddress] = useState(supplier?.address ?? "");
+  const [lat, setLat] = useState(supplier?.lat?.toString() ?? "");
+  const [lng, setLng] = useState(supplier?.lng?.toString() ?? "");
+  const [googlePlaceId, setGooglePlaceId] = useState(supplier?.googlePlaceId ?? "");
 
   const isEditing = Boolean(supplier);
 
   useEffect(() => {
     if (open && dialogRef.current && !dialogRef.current.open) {
-      setError(null);
       dialogRef.current.showModal();
     }
   }, [open]);
+
+  const handlePlaceSelect = useCallback((place: SupplierPlaceSelection) => {
+    if (place.name) setName(place.name);
+    if (place.address) setAddress(place.address);
+    if (place.lat !== undefined) setLat(String(place.lat));
+    if (place.lng !== undefined) setLng(String(place.lng));
+    setGooglePlaceId(place.googlePlaceId);
+  }, []);
 
   function close() {
     dialogRef.current?.close();
@@ -87,7 +100,8 @@ export function CreateSupplierDialog({
             name="name"
             type="text"
             required
-            defaultValue={supplier?.name}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             placeholder="Nombre del proveedor"
           />
@@ -110,6 +124,8 @@ export function CreateSupplierDialog({
             ))}
           </select>
         </div>
+
+        <SupplierPlaceAutocomplete onPlaceSelect={handlePlaceSelect} />
 
         <div>
           <label htmlFor="supplier-phone" className="block text-sm font-medium text-gray-700">
@@ -161,12 +177,49 @@ export function CreateSupplierDialog({
             id="supplier-address"
             name="address"
             type="text"
-            defaultValue={supplier?.address}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             placeholder="Calle y número, Ciudad"
           />
         </div>
 
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="supplier-lat" className="block text-sm font-medium text-gray-700">
+              Latitud
+            </label>
+            <input
+              id="supplier-lat"
+              name="lat"
+              type="number"
+              step="any"
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="19.432608"
+            />
+          </div>
+          <div>
+            <label htmlFor="supplier-lng" className="block text-sm font-medium text-gray-700">
+              Longitud
+            </label>
+            <input
+              id="supplier-lng"
+              name="lng"
+              type="number"
+              step="any"
+              value={lng}
+              onChange={(e) => setLng(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="-99.133209"
+            />
+          </div>
+        </div>
+        <input type="hidden" name="googlePlaceId" value={googlePlaceId} readOnly />
+        {googlePlaceId && (
+          <p className="text-xs text-gray-500">Google Place ID capturado para futuras actualizaciones.</p>
+        )}
 
         <div>
           <label htmlFor="supplier-tags" className="block text-sm font-medium text-gray-700">

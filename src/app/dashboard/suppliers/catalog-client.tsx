@@ -251,6 +251,7 @@ export function SupplierCatalogClient({
 
       {/* Create dialog */}
       <CreateSupplierDialog
+        key={showCreateDialog ? "create-open" : "create-closed"}
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onCreated={() => {
@@ -261,6 +262,7 @@ export function SupplierCatalogClient({
 
       {/* Edit dialog */}
       <CreateSupplierDialog
+        key={editingSupplier?.id ?? "edit-closed"}
         open={editingSupplier !== null}
         supplier={editingSupplier ?? undefined}
         onClose={() => setEditingSupplier(null)}

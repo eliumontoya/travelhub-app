@@ -123,6 +123,7 @@ export function SupplierCombobox({
       )}
 
       <CreateSupplierDialog
+        key={showCreateDialog ? "create-open" : "create-closed"}
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onCreated={handleSupplierCreated}

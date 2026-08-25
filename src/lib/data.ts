@@ -560,6 +560,7 @@ export type CreateSupplierInput = {
   lng?: number;
   notes?: string;
   tags?: string[];
+  googlePlaceId?: string;
 };
 
 export type SupplierFilterParams = {
@@ -642,6 +643,7 @@ export async function createSupplier(input: CreateSupplierInput): Promise<Suppli
       address: input.address,
       lat: input.lat,
       lng: input.lng,
+      googlePlaceId: input.googlePlaceId,
       notes: sanitizeNote(input.notes),
       tags: input.tags ?? [],
       createdAt: now,
@@ -662,6 +664,7 @@ export async function createSupplier(input: CreateSupplierInput): Promise<Suppli
       address: input.address || null,
       lat: input.lat ?? null,
       lng: input.lng ?? null,
+      google_place_id: input.googlePlaceId || null,
       notes: sanitizeNote(input.notes) || null,
       tags: input.tags ?? [],
     })
@@ -686,6 +689,7 @@ export async function updateSupplier(
     if (input.address !== undefined) supplier.address = input.address;
     if (input.lat !== undefined) supplier.lat = input.lat;
     if (input.lng !== undefined) supplier.lng = input.lng;
+    if (input.googlePlaceId !== undefined) supplier.googlePlaceId = input.googlePlaceId;
     if (input.notes !== undefined) supplier.notes = sanitizeNote(input.notes);
     if (input.tags !== undefined) supplier.tags = input.tags;
     supplier.updatedAt = new Date().toISOString();
@@ -701,6 +705,7 @@ export async function updateSupplier(
   if (input.address !== undefined) patch.address = input.address || null;
   if (input.lat !== undefined) patch.lat = input.lat ?? null;
   if (input.lng !== undefined) patch.lng = input.lng ?? null;
+  if (input.googlePlaceId !== undefined) patch.google_place_id = input.googlePlaceId || null;
   if (input.notes !== undefined) patch.notes = input.notes || null;
   if (input.tags !== undefined) patch.tags = input.tags;
   patch.updated_at = new Date().toISOString();
@@ -776,6 +781,7 @@ function rowToSupplier(row: Record<string, unknown>): Supplier {
     address: (row.address as string) ?? undefined,
     lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : undefined,
     lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : undefined,
+    googlePlaceId: (row.google_place_id as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     deletedAt: (row.deleted_at as string) ?? undefined,

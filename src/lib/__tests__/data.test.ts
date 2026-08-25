@@ -17,6 +17,9 @@ import {
   getClientTripSummary,
   getTags,
   getOrCreateTag,
+  createSupplier,
+  updateSupplier,
+  getSupplierById,
 } from "@/lib/data";
 
 describe("data layer (mock mode)", () => {
@@ -178,4 +181,47 @@ describe("data layer (mock mode)", () => {
       expect(tag1.id).toBe(tag2.id);
     });
   });
+
+  describe("supplier Google place metadata", () => {
+    it("preserves Google place metadata when creating a supplier", async () => {
+      const created = await createSupplier({
+        name: "Hotel Google Test",
+        type: "hotel",
+        address: "Av. Test 123, CDMX",
+        lat: 19.432608,
+        lng: -99.133209,
+        googlePlaceId: "ChIJ-google-test",
+        tags: ["google"],
+      });
+
+      expect(created.googlePlaceId).toBe("ChIJ-google-test");
+      expect(created.address).toBe("Av. Test 123, CDMX");
+      expect(created.lat).toBe(19.432608);
+      expect(created.lng).toBe(-99.133209);
+
+      const found = await getSupplierById(created.id);
+      expect(found?.googlePlaceId).toBe("ChIJ-google-test");
+    });
+
+    it("preserves Google place metadata when updating a supplier", async () => {
+      const created = await createSupplier({
+        name: "Proveedor Manual",
+        type: "restaurant",
+        tags: [],
+      });
+
+      const updated = await updateSupplier(created.id, {
+        address: "Calle Actualizada 456, Puebla",
+        lat: 19.04144,
+        lng: -98.20627,
+        googlePlaceId: "ChIJ-updated-place",
+      });
+
+      expect(updated.googlePlaceId).toBe("ChIJ-updated-place");
+      expect(updated.address).toBe("Calle Actualizada 456, Puebla");
+      expect(updated.lat).toBe(19.04144);
+      expect(updated.lng).toBe(-98.20627);
+    });
+  });
+
 });
