@@ -101,6 +101,7 @@ export interface ItemDocument {
   fileName: string;
   mimeType?: string;
   uploadedAt: string;
+  url?: string | null;
 }
 
 export interface ClientDocument {

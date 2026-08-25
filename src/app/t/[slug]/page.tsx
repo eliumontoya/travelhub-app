@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
-import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
+import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { AddTripToCalendarButton } from "@/components/AddTripToCalendarButton";
 import { LocationMap } from "@/components/LocationMap";
@@ -210,6 +210,17 @@ export default async function PublicTripPage({
                     const item = rawItem as ItemWithSupplier;
                     const meta = itemTypeMeta[item.type];
                     const tzLabel = getApproxUtcOffsetLabel(item.lat, item.lng);
+                    const metadataSummary = formatItemMetadataSummary(item);
+                    const detailRows = formatItemDetailRows(item);
+                    const hasDetails = Boolean(
+                      item.notes ||
+                      item.confirmationCode ||
+                      (trip.showCostsToClient && item.cost !== undefined) ||
+                      detailRows.length > 0 ||
+                      (item.lat !== undefined && item.lng !== undefined) ||
+                      item.supplier ||
+                      Boolean(item.documents?.length)
+                    );
                     return (
                       <div
                         key={item.id}
@@ -223,9 +234,12 @@ export default async function PublicTripPage({
                             >
                               {meta.icon}
                             </span>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
+                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                                  {t.itemType[item.type]}
+                                </span>
                                 {item.startTime && (
                                   <span className="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:ring-gray-800">
                                     {item.startTime}
@@ -242,39 +256,86 @@ export default async function PublicTripPage({
                               {item.location && (
                                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                               )}
-                              {item.notes && (
-                                <NoteHtml
-                                  html={item.notes}
-                                  className="mt-2 text-sm text-gray-500 dark:text-gray-400"
-                                />
-                              )}
-                              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                                {item.confirmationCode && (
-                                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                                    {t.confirmationLabel}: {item.confirmationCode}
-                                  </p>
-                                )}
-                                {trip.showCostsToClient && item.cost !== undefined && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Costo: {formatCost(item.cost, trip.currency)}
-                                  </p>
-                                )}
-                              </div>
-                              {formatItemMetadataSummary(item) && (
+                              {metadataSummary && (
                                 <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
-                                  {formatItemMetadataSummary(item)}
+                                  {metadataSummary}
                                 </p>
                               )}
-                              {item.lat !== undefined && item.lng !== undefined && (
-                                <div className="print:hidden">
-                                  <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
-                                </div>
-                              )}
-                              {item.supplier && (
-                                <SupplierInfo
-                                  name={item.supplier.name}
-                                  address={item.supplier.address}
-                                />
+                              {hasDetails && (
+                                <details className="group mt-3 rounded-lg border border-gray-200 bg-white/70 p-3 open:bg-white print:border-0 print:bg-white print:p-0 dark:border-gray-800 dark:bg-gray-900/60 dark:open:bg-gray-900">
+                                  <summary className="cursor-pointer list-none text-sm font-medium text-blue-600 hover:text-blue-700 print:hidden dark:text-blue-400 dark:hover:text-blue-300">
+                                    <span className="group-open:hidden">Ver más detalles</span>
+                                    <span className="hidden group-open:inline">Ver menos</span>
+                                  </summary>
+                                  <div className="mt-3 space-y-3 print:mt-0">
+                                    {item.notes && (
+                                      <NoteHtml
+                                        html={item.notes}
+                                        className="text-sm text-gray-600 dark:text-gray-400"
+                                      />
+                                    )}
+                                    {(item.confirmationCode || (trip.showCostsToClient && item.cost !== undefined) || detailRows.length > 0) && (
+                                      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                                        {item.confirmationCode && (
+                                          <div>
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t.confirmationLabel}</dt>
+                                            <dd className="text-gray-700 dark:text-gray-300">{item.confirmationCode}</dd>
+                                          </div>
+                                        )}
+                                        {trip.showCostsToClient && item.cost !== undefined && (
+                                          <div>
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Costo</dt>
+                                            <dd className="text-gray-700 dark:text-gray-300">{formatCost(item.cost, trip.currency)}</dd>
+                                          </div>
+                                        )}
+                                        {detailRows.map((row) => (
+                                          <div key={`${item.id}-${row.label}`}>
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">{row.label}</dt>
+                                            <dd className="text-gray-700 dark:text-gray-300">{row.value}</dd>
+                                          </div>
+                                        ))}
+                                      </dl>
+                                    )}
+                                    {Boolean(item.documents?.length) && (
+                                      <div>
+                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Documentos</p>
+                                        <ul className="space-y-2">
+                                          {item.documents?.map((doc) => (
+                                            <li key={doc.id}>
+                                              {doc.url ? (
+                                                <a
+                                                  href={doc.url}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:underline dark:border-gray-800 dark:bg-gray-950 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                >
+                                                  <span>📎</span>
+                                                  <span className="truncate">{doc.fileName}</span>
+                                                </a>
+                                              ) : (
+                                                <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                                                  <span>📎</span>
+                                                  <span className="truncate">{doc.fileName}</span>
+                                                </span>
+                                              )}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {item.supplier && (
+                                      <SupplierInfo
+                                        name={item.supplier.name}
+                                        address={item.supplier.address}
+                                      />
+                                    )}
+                                    {item.lat !== undefined && item.lng !== undefined && (
+                                      <div className="print:hidden">
+                                        <LocationMap lat={item.lat} lng={item.lng} label={item.location ?? item.title} />
+                                      </div>
+                                    )}
+                                  </div>
+                                </details>
                               )}
                             </div>
                           </div>
