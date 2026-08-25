@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useEffect, useRef } from "react";
 
 type RichTextEditorProps = {
@@ -45,22 +46,27 @@ export function RichTextEditor({ name, defaultValue, placeholder, className }: R
     exec("createLink", url);
   }
 
+  function keepEditorSelection(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+  }
+
   return (
     <div className="mt-1">
       <div className={TOOLBAR_BASE}>
-        <button type="button" className={TOOLBAR_BTN} title="Negrita" onClick={() => exec("bold")}>
+        <button type="button" className={TOOLBAR_BTN} title="Negrita" onMouseDown={keepEditorSelection} onClick={() => exec("bold")}>
           <b>B</b>
         </button>
-        <button type="button" className={TOOLBAR_BTN} title="Cursiva" onClick={() => exec("italic")}>
+        <button type="button" className={TOOLBAR_BTN} title="Cursiva" onMouseDown={keepEditorSelection} onClick={() => exec("italic")}>
           <i>I</i>
         </button>
-        <button type="button" className={TOOLBAR_BTN} title="Subrayado" onClick={() => exec("underline")}>
+        <button type="button" className={TOOLBAR_BTN} title="Subrayado" onMouseDown={keepEditorSelection} onClick={() => exec("underline")}>
           <u>U</u>
         </button>
         <button
           type="button"
           className={TOOLBAR_BTN}
           title="Lista con viñetas"
+          onMouseDown={keepEditorSelection}
           onClick={() => exec("insertUnorderedList")}
         >
           • Lista
@@ -69,11 +75,12 @@ export function RichTextEditor({ name, defaultValue, placeholder, className }: R
           type="button"
           className={TOOLBAR_BTN}
           title="Lista numerada"
+          onMouseDown={keepEditorSelection}
           onClick={() => exec("insertOrderedList")}
         >
           1. Lista
         </button>
-        <button type="button" className={TOOLBAR_BTN} title="Enlace" onClick={addLink}>
+        <button type="button" className={TOOLBAR_BTN} title="Enlace" onMouseDown={keepEditorSelection} onClick={addLink}>
           🔗 Enlace
         </button>
       </div>
