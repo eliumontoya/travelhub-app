@@ -264,7 +264,8 @@ export async function deleteTripAction(tripId: string, formData: FormData) {
   }
   await deleteTrip(tripId);
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  revalidatePath("/dashboard/trips");
+  redirect("/dashboard/trips");
 }
 
 export async function setShowCostsToClientAction(

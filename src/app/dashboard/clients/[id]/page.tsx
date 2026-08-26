@@ -61,7 +61,7 @@ export default async function ClientDetailPage({
         </div>
       ) : null}
 
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
+      <Link href="/dashboard/clients" className="text-sm text-gray-500 hover:underline">
         ← Volver
       </Link>
 
