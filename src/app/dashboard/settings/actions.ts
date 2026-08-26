@@ -42,7 +42,7 @@ export async function updateSettingsAction(
   // marca son globales, no por viaje (ver design D4).
   revalidatePath("/t/[slug]", "page");
 
-  return null;
+  redirect("/dashboard?settingsSaved=1");
 }
 
 export async function signOutAction() {

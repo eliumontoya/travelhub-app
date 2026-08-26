@@ -12,6 +12,7 @@ import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
 import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
 import { ClientsByReferralSourceCard } from "@/components/ClientsByReferralSourceCard";
+import { hasSettingsSavedFlash, type DashboardFlashSearchParams } from "@/lib/dashboard-flash";
 
 const activityMeta = {
   trip: { icon: "🧳", label: "viaje" },
@@ -23,7 +24,13 @@ const activityActionLabel = {
   updated: "editado",
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<DashboardFlashSearchParams>;
+}) {
+  const params = await searchParams;
+  const showSettingsSaved = hasSettingsSavedFlash(params);
   const [
     stats,
     upcomingUnpublishedTrips,
@@ -42,6 +49,15 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
+      {showSettingsSaved && (
+        <div
+          role="status"
+          className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+        >
+          Configuración guardada correctamente.
+        </div>
+      )}
+
       {upcomingUnpublishedTrips.length > 0 && (
         <div
           role="alert"
