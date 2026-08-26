@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Supplier } from "@/types";
 import { CreateSupplierDialog } from "@/components/CreateSupplierDialog";
 import { SupplierPlaceEnrichmentDialog } from "@/components/SupplierPlaceEnrichmentDialog";
+import { SupplierGooglePlaceBadge } from "@/components/SupplierGooglePlaceBadge";
 import { showUndoToast } from "@/components/UndoToast";
 import {
   softDeleteSupplierAction,
@@ -181,7 +182,10 @@ export function SupplierCatalogClient({
               {suppliers.map((supplier) => (
                 <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                    {supplier.name}
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                      <span>{supplier.name}</span>
+                      <SupplierGooglePlaceBadge googlePlaceId={supplier.googlePlaceId} />
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                     {supplier.type.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
