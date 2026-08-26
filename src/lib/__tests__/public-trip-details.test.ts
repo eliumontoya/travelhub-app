@@ -25,6 +25,15 @@ const rowsByTable: Record<string, Record<string, unknown>[]> = {
   trip_photos: [],
   trip_days: [],
   trip_documents: [],
+  packing_items: [
+    {
+      id: "packing-1",
+      trip_id: "trip-public-1",
+      label: "Pasaporte",
+      checked: false,
+      sort_order: 0,
+    },
+  ],
 };
 
 function createQuery(table: string) {
@@ -42,8 +51,8 @@ function createQuery(table: string) {
 const supabase = {
   from: vi.fn((table: string) => {
     queriedTables.push(table);
-    if (table === "trip_clients" || table === "packing_items") {
-      throw new Error(`Public trip render must not query private table ${table}`);
+    if (table === "trip_clients" || table === "trip_tags" || table === "trip_status_history") {
+      throw new Error(`Public trip render must not query private dashboard table ${table}`);
     }
     return createQuery(table);
   }),
@@ -68,8 +77,18 @@ describe("public trip details", () => {
     const trip = await getTripWithDetails("safari-africa");
 
     expect(trip?.coverImageUrl).toBe("https://example.com/safari.jpg");
-    expect(queriedTables).toEqual(["trips", "trip_photos", "trip_days", "trip_documents"]);
+    expect(trip?.packingItems).toEqual([
+      { id: "packing-1", tripId: "trip-public-1", label: "Pasaporte", checked: false, sortOrder: 0 },
+    ]);
+    expect(queriedTables).toEqual([
+      "trips",
+      "trip_photos",
+      "trip_days",
+      "trip_documents",
+      "packing_items",
+    ]);
     expect(queriedTables).not.toContain("trip_clients");
-    expect(queriedTables).not.toContain("packing_items");
+    expect(queriedTables).not.toContain("trip_tags");
+    expect(queriedTables).not.toContain("trip_status_history");
   });
 });
