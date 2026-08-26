@@ -16,7 +16,7 @@ export default async function NewTripPage({
 
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">
+      <Link href="/dashboard/trips" className="text-sm text-gray-500 hover:underline">
         ← Volver
       </Link>
 

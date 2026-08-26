@@ -154,7 +154,7 @@ export default async function TripEditorPage({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 print:max-w-3xl print:py-0">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:underline print:hidden dark:text-gray-400">
+      <Link href="/dashboard/trips" className="text-sm text-gray-500 hover:underline print:hidden dark:text-gray-400">
         ← Volver
       </Link>
 
@@ -657,15 +657,6 @@ export default async function TripEditorPage({
               </div>
             </section>
 
-            <section className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/10">
-              <h2 className="text-sm font-semibold text-red-800 dark:text-red-300">Zona de peligro</h2>
-              <p className="mt-2 text-sm text-red-700 dark:text-red-300">
-                Borra definitivamente este viaje y sus datos relacionados.
-              </p>
-              <div className="mt-3">
-                <DeleteTripDialog tripTitle={trip.title} action={deleteTripAction.bind(null, trip.id)} />
-              </div>
-            </section>
 
             <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Finanzas</h2>
@@ -756,14 +747,6 @@ export default async function TripEditorPage({
             />
             )}
 
-            {isEditable && (
-            <PackingListManager
-              items={trip.packingItems}
-              onAdd={addPackingItemAction.bind(null, trip.id)}
-              onToggle={togglePackingItemAction.bind(null, trip.id)}
-              onDelete={deletePackingItemAction.bind(null, trip.id)}
-            />
-            )}
 
             {trip.statusHistory.length > 0 && (
               <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
@@ -814,6 +797,25 @@ export default async function TripEditorPage({
                 </div>
               </section>
             )}
+
+            {isEditable && (
+            <PackingListManager
+              items={trip.packingItems}
+              onAdd={addPackingItemAction.bind(null, trip.id)}
+              onToggle={togglePackingItemAction.bind(null, trip.id)}
+              onDelete={deletePackingItemAction.bind(null, trip.id)}
+            />
+            )}
+
+            <section className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/10">
+              <h2 className="text-sm font-semibold text-red-800 dark:text-red-300">Zona de peligro</h2>
+              <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+                Borra definitivamente este viaje y sus datos relacionados.
+              </p>
+              <div className="mt-3">
+                <DeleteTripDialog tripTitle={trip.title} action={deleteTripAction.bind(null, trip.id)} />
+              </div>
+            </section>
           </aside>
         </div>
       </section>
