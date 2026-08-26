@@ -6,6 +6,8 @@ import { ExportClientsCsvButton } from "@/components/export-clients-csv-button";
 import { formatTags } from "@/lib/item-meta";
 import { normalizeFilterText } from "@/lib/trip-filters";
 import type { Client, Tag } from "@/types";
+import { deleteClientAction } from "./actions";
+import { DeleteClientButton } from "./DeleteClientButton";
 
 type ClientListItem = Client & { tags: Tag[] };
 
@@ -47,28 +49,35 @@ export function ClientsExplorer({
 
       <div className="grid gap-3">
         {filteredClients.map((client) => (
-          <Link
+          <div
             key={client.id}
-            href={`/dashboard/clients/${client.id}`}
             className="rounded-lg border border-gray-200 bg-white p-4 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
           >
-            <p className="font-medium text-gray-900 dark:text-gray-100">{client.name}</p>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {[client.email, client.phone].filter(Boolean).join(" · ")}
-            </p>
-            {client.tags.length > 0 && (
-              <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                {formatTags(client.tags).map((name) => (
-                  <li
-                    key={name}
-                    className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                  >
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <Link href={`/dashboard/clients/${client.id}`} className="min-w-0 flex-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100">{client.name}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {[client.email, client.phone].filter(Boolean).join(" · ")}
+                </p>
+                {client.tags.length > 0 && (
+                  <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                    {formatTags(client.tags).map((name) => (
+                      <li
+                        key={name}
+                        className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      >
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Link>
+              <DeleteClientButton
+                clientName={client.name}
+                action={deleteClientAction.bind(null, client.id)}
+              />
+            </div>
+          </div>
         ))}
         {clients.length === 0 && (
           <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
