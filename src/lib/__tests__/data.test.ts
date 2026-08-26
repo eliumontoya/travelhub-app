@@ -9,7 +9,13 @@ import {
   getClients,
   getClientById,
   createClient,
+  createItem,
+  createPackingItem,
+  createTrip,
+  createTripDay,
+  deleteTrip,
   updateClient,
+  getTripById,
   getTrips,
   getTripsWithClients,
   getTripWithDetails,
@@ -17,10 +23,24 @@ import {
   getClientTripSummary,
   getTags,
   getOrCreateTag,
+  setTripTags,
+  updateTripInternalNotes,
   createSupplier,
   updateSupplier,
   getSupplierById,
 } from "@/lib/data";
+import {
+  mockItems,
+  mockPackingItems,
+  mockTripClients,
+  mockTripDays,
+  mockTripFeedback,
+  mockTripInternalNotes,
+  mockTripPhotos,
+  mockTrips,
+  mockTripStatusHistory,
+  mockTripTags,
+} from "@/lib/mock-data";
 
 describe("data layer (mock mode)", () => {
   describe("getClients", () => {
@@ -85,6 +105,60 @@ describe("data layer (mock mode)", () => {
       for (const trip of result.items) {
         expect(trip.isTemplate).toBe(false);
       }
+    });
+  });
+
+  describe("deleteTrip", () => {
+    it("borra el viaje y sus datos relacionados en modo mock", async () => {
+      const trip = await createTrip({
+        clientIds: ["c1"],
+        title: "Viaje a borrar",
+        slug: `viaje-a-borrar-${Date.now()}`,
+        startDate: "2026-10-01",
+        endDate: "2026-10-02",
+      });
+      const day = await createTripDay({ tripId: trip.id, date: "2026-10-01" });
+      const item = await createItem({ tripDayId: day.id, type: "note", title: "Nota" });
+      const tag = await getOrCreateTag(`tag-borrar-${Date.now()}`);
+      await setTripTags(trip.id, [tag.id]);
+      await createPackingItem({ tripId: trip.id, label: "Pasaporte" });
+      await updateTripInternalNotes(trip.id, "Nota privada");
+      mockTripStatusHistory.push({
+        id: `hist-${trip.id}`,
+        tripId: trip.id,
+        fromStatus: "draft",
+        toStatus: "archived",
+        changedAt: new Date().toISOString(),
+      });
+      mockTripPhotos.push({
+        id: `photo-${trip.id}`,
+        tripId: trip.id,
+        filePath: "mock/photo.jpg",
+        fileName: "photo.jpg",
+        sortOrder: 0,
+        createdAt: new Date().toISOString(),
+      });
+      mockTripFeedback.push({
+        id: `feedback-${trip.id}`,
+        tripId: trip.id,
+        rating: 5,
+        comment: "ok",
+        createdAt: new Date().toISOString(),
+      });
+
+      await deleteTrip(trip.id);
+
+      expect(await getTripById(trip.id)).toBeNull();
+      expect(mockTrips.some((row) => row.id === trip.id)).toBe(false);
+      expect(mockTripDays.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockItems.some((row) => row.id === item.id)).toBe(false);
+      expect(mockTripClients.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockTripTags.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockPackingItems.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockTripStatusHistory.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockTripPhotos.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockTripFeedback.some((row) => row.tripId === trip.id)).toBe(false);
+      expect(mockTripInternalNotes[trip.id]).toBeUndefined();
     });
   });
 

@@ -44,6 +44,7 @@ import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton"
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
+import { DeleteTripDialog } from "@/components/DeleteTripDialog";
 import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { LocationActions } from "@/components/LocationMap";
@@ -68,6 +69,7 @@ import {
   deleteItemAction,
   deleteTripPhotoAction,
   deleteTripDocumentAction,
+  deleteTripAction,
   duplicateTripAction,
   duplicateItemAction,
   deletePackingItemAction,
@@ -655,6 +657,16 @@ export default async function TripEditorPage({
               </div>
             </section>
 
+            <section className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/10">
+              <h2 className="text-sm font-semibold text-red-800 dark:text-red-300">Zona de peligro</h2>
+              <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+                Borra definitivamente este viaje y sus datos relacionados.
+              </p>
+              <div className="mt-3">
+                <DeleteTripDialog tripTitle={trip.title} action={deleteTripAction.bind(null, trip.id)} />
+              </div>
+            </section>
+
             <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Finanzas</h2>
               {(hasAnyCost || trip.budget !== undefined) ? (
@@ -819,4 +831,3 @@ function countDaysInRange(startDate: string, endDate: string): number | null {
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return null;
   return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 }
-
