@@ -94,7 +94,7 @@ The system MUST let the agent enrich an existing supplier from Google Places onl
 
 ### Requirement: Supplier catalog discovery
 
-The system MUST provide `/dashboard/suppliers` with searchable, filterable, paginated supplier results by query, type, and tags.
+The system MUST provide `/dashboard/suppliers` with searchable, filterable, paginated supplier results by query, type, and tags, and MUST visually identify suppliers that have a persisted Google Places identifier.
 
 #### Scenario: Search suppliers
 
@@ -107,6 +107,18 @@ The system MUST provide `/dashboard/suppliers` with searchable, filterable, pagi
 - GIVEN suppliers exist with different types or tags
 - WHEN the agent applies type or tag filters
 - THEN only matching active suppliers MUST be shown
+
+#### Scenario: Mark Google-matched suppliers
+
+- GIVEN a supplier has a non-empty `googlePlaceId`
+- WHEN the agent views `/dashboard/suppliers`
+- THEN that supplier row MUST show an accessible Google Maps/Places badge near the supplier name
+
+#### Scenario: Do not mark manual suppliers
+
+- GIVEN a supplier does not have a `googlePlaceId`
+- WHEN the agent views `/dashboard/suppliers`
+- THEN that supplier row MUST NOT show the Google Maps/Places badge
 
 ### Requirement: Supplier use in itinerary items
 
