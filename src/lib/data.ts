@@ -1332,6 +1332,14 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
     })
   );
 
+  const { data: packingRows, error: packingError } = await supabase
+    .from("packing_items")
+    .select("id, trip_id, label, checked, sort_order")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (packingError) throw packingError;
+  const packingItems = (packingRows ?? []).map(rowToPackingItem);
+
   return {
     ...trip,
     clients: [],
@@ -1341,7 +1349,7 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
     photos,
     documents,
     days,
-    packingItems: [],
+    packingItems,
   };
 }
 

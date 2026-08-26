@@ -103,6 +103,8 @@ The public traveler itinerary MUST keep each item card scannable by showing prim
 
 The public `/t/{slug}` page MUST assemble traveler itinerary data using only tables and fields that are safe for anonymous access under public RLS policies. It MUST NOT query dashboard-only private relation tables such as `trip_clients`, `trip_tags`, `trip_status_history` during public traveler rendering. Public rendering MUST still include the trip's own `coverImageUrl` when set.
 
+The `packing_items` table SHALL be treated as traveler-safe only for rows whose parent trip is `published`; anonymous users MUST NOT be able to insert, update, delete, or read checklist rows for draft or archived trips.
+
 #### Scenario: Render published trip without private relation reads
 
 - GIVEN a published trip has a `coverImageUrl`
@@ -110,6 +112,20 @@ The public `/t/{slug}` page MUST assemble traveler itinerary data using only tab
 - WHEN a traveler opens `/t/{slug}`
 - THEN the public page MUST render without querying those private relation tables
 - AND the top hero MUST use the trip's `coverImageUrl`
+
+#### Scenario: Read checklist for published public trip
+
+- GIVEN a published trip has one or more packing checklist rows
+- WHEN a traveler opens `/t/{slug}`
+- THEN the public page MAY read `packing_items` rows for that trip
+- AND the checklist MUST render in read-only mode below the travel documents section
+
+#### Scenario: Keep non-published checklist rows private
+
+- GIVEN a trip is draft or archived
+- WHEN an anonymous user attempts to read its checklist rows
+- THEN `packing_items` RLS MUST deny access to those rows
+- AND anonymous users MUST NOT be granted insert, update, or delete access to `packing_items`
 
 ### Requirement: Agency branding on cover
 
