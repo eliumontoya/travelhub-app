@@ -10,8 +10,10 @@ import {
   getClientById,
   createClient,
   updateClient,
+  deleteClient,
   getTrips,
   getTripsWithClients,
+  createTrip,
   getTripWithDetails,
   getTripsByClientId,
   getClientTripSummary,
@@ -75,6 +77,36 @@ describe("data layer (mock mode)", () => {
 
       const found = await getClientById(created.id);
       expect(found!.name).toBe("Updated Name");
+    });
+  });
+
+
+  describe("deleteClient", () => {
+    it("removes a client from mock storage", async () => {
+      const client = await createClient({ name: "Delete Me" });
+
+      await deleteClient(client.id);
+
+      await expect(getClientById(client.id)).resolves.toBeNull();
+    });
+
+    it("removes deleted-client relationships without deleting trips", async () => {
+      const client = await createClient({ name: "Assigned Delete" });
+      const trip = await createTrip({
+        clientIds: [client.id],
+        title: "Preserved Trip",
+        slug: `preserved-trip-${client.id}`,
+        startDate: "2026-01-01",
+        endDate: "2026-01-02",
+      });
+
+      await deleteClient(client.id);
+
+      const details = await getTripWithDetails(trip.slug);
+      expect(details).not.toBeNull();
+      expect(details!.id).toBe(trip.id);
+      expect(details!.clients.map((assigned) => assigned.id)).not.toContain(client.id);
+      await expect(getTripsByClientId(client.id)).resolves.toEqual([]);
     });
   });
 

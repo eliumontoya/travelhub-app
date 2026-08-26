@@ -1,7 +1,8 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { Client } from "@/types";
-import { createClient, getClientByEmail } from "@/lib/data";
+import { createClient, deleteClient, getClientByEmail, getClientById } from "@/lib/data";
 
 export async function createClientAction(
   formData: FormData
@@ -31,4 +32,20 @@ export async function createClientAction(
   } catch {
     return { error: "Error al crear el cliente." };
   }
+}
+
+export async function deleteClientAction(
+  clientId: string,
+  formData: FormData
+): Promise<void> {
+  const client = await getClientById(clientId);
+  if (!client) return;
+
+  const confirmationName = String(formData.get("confirmationName") ?? "").trim();
+  if (confirmationName !== client.name) return;
+
+  await deleteClient(clientId);
+  revalidatePath("/dashboard/clients");
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/clients/${clientId}`);
 }
