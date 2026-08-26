@@ -6,12 +6,12 @@ export function SupplierGooglePlaceBadge({ googlePlaceId }: { googlePlaceId?: st
     <span
       aria-label="Proveedor encontrado con Google Maps"
       title={`ID de Google Maps: ${placeId}`}
-      className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 shadow-sm dark:border-emerald-900/70 dark:bg-emerald-950/50 dark:text-emerald-300"
+      className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-600 dark:text-emerald-300"
     >
       <svg
         aria-hidden="true"
         viewBox="0 0 20 20"
-        className="h-3.5 w-3.5"
+        className="h-4 w-4"
         fill="currentColor"
       >
         <path
@@ -20,7 +20,6 @@ export function SupplierGooglePlaceBadge({ googlePlaceId }: { googlePlaceId?: st
           clipRule="evenodd"
         />
       </svg>
-      Verificado con Google Maps
     </span>
   );
 }
