@@ -11,6 +11,7 @@ import {
   deleteItem,
   duplicateItem,
   deletePackingItem,
+  deleteTrip,
   deleteTripDay,
   deleteTripPhoto,
   generateTripDays,
@@ -253,6 +254,17 @@ export async function moveItemAction(
 export async function publishTripStatusAction(tripId: string, status: "draft" | "published" | "archived") {
   await updateTrip(tripId, { status });
   revalidateTrip(tripId);
+}
+
+export async function deleteTripAction(tripId: string, formData: FormData) {
+  const trip = await getTripById(tripId);
+  if (!trip) throw new Error("Viaje no encontrado.");
+  if (String(formData.get("confirmTitle") ?? "") !== trip.title) {
+    throw new Error("La confirmación no coincide con el nombre del viaje.");
+  }
+  await deleteTrip(tripId);
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function setShowCostsToClientAction(

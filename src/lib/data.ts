@@ -1846,6 +1846,90 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   return rowToTrip(data);
 }
 
+export async function deleteTrip(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const tripIndex = mockTrips.findIndex((t) => t.id === id);
+    if (tripIndex < 0) throw new Error("Viaje no encontrado");
+    const dayIds = new Set(mockTripDays.filter((d) => d.tripId === id).map((d) => d.id));
+    const itemIds = new Set(mockItems.filter((i) => dayIds.has(i.tripDayId)).map((i) => i.id));
+
+    mockTrips.splice(tripIndex, 1);
+    removeWhere(mockTripDays, (day) => day.tripId === id);
+    removeWhere(mockItems, (item) => itemIds.has(item.id));
+    removeWhere(mockTripClients, (link) => link.tripId === id);
+    removeWhere(mockTripTags, (link) => link.tripId === id);
+    removeWhere(mockTripStatusHistory, (entry) => entry.tripId === id);
+    removeWhere(mockTripFeedback, (entry) => entry.tripId === id);
+    removeWhere(mockTripPhotos, (photo) => photo.tripId === id);
+    removeWhere(mockPackingItems, (item) => item.tripId === id);
+    delete mockTripInternalNotes[id];
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: tripRow, error: tripError } = await supabase
+    .from("trips")
+    .select("cover_image_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (tripError) throw tripError;
+  if (!tripRow) throw new Error("Viaje no encontrado");
+
+  const documentPaths: string[] = [];
+  const photoPaths: string[] = [];
+  const coverPath = storagePathFromPublicUrl(PHOTOS_BUCKET, (tripRow.cover_image_url as string | null) ?? "");
+  if (coverPath) photoPaths.push(coverPath);
+
+  const { data: tripDocs, error: tripDocsError } = await supabase
+    .from("trip_documents")
+    .select("file_path")
+    .eq("trip_id", id);
+  if (tripDocsError) throw tripDocsError;
+  documentPaths.push(...(tripDocs ?? []).map((row) => row.file_path as string).filter(Boolean));
+
+  const { data: photos, error: photosError } = await supabase
+    .from("trip_photos")
+    .select("file_path")
+    .eq("trip_id", id);
+  if (photosError) throw photosError;
+  photoPaths.push(...(photos ?? []).map((row) => row.file_path as string).filter(Boolean));
+
+  const { data: days, error: daysError } = await supabase
+    .from("trip_days")
+    .select("id")
+    .eq("trip_id", id);
+  if (daysError) throw daysError;
+  const dayIds = (days ?? []).map((row) => row.id as string);
+  if (dayIds.length) {
+    const { data: items, error: itemsError } = await supabase
+      .from("items")
+      .select("id")
+      .in("trip_day_id", dayIds);
+    if (itemsError) throw itemsError;
+    const itemIds = (items ?? []).map((row) => row.id as string);
+    if (itemIds.length) {
+      const { data: itemDocs, error: itemDocsError } = await supabase
+        .from("documents")
+        .select("file_url")
+        .in("item_id", itemIds);
+      if (itemDocsError) throw itemDocsError;
+      documentPaths.push(...(itemDocs ?? []).map((row) => row.file_url as string).filter(Boolean));
+    }
+  }
+
+  if (documentPaths.length) await supabase.storage.from(DOCUMENTS_BUCKET).remove(documentPaths);
+  if (photoPaths.length) await supabase.storage.from(PHOTOS_BUCKET).remove(photoPaths);
+
+  const { error } = await supabase.from("trips").delete().eq("id", id);
+  if (error) throw error;
+}
+
+function removeWhere<T>(items: T[], predicate: (item: T) => boolean): void {
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (predicate(items[i])) items.splice(i, 1);
+  }
+}
+
 // Notas privadas de agente (Tritones), NUNCA visibles en /t/[slug]. Se leen y
 // escriben a propósito por fuera de getTripById/getTripWithDetails/rowToTrip:
 // esa ruta compartida alimenta tanto el dashboard como la vista pública, así
