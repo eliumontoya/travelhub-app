@@ -196,6 +196,32 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
   return rowToClient(data);
 }
 
+export async function deleteClient(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const index = mockClients.findIndex((client) => client.id === id);
+    if (index === -1) return;
+
+    mockClients.splice(index, 1);
+
+    for (let i = mockClientTags.length - 1; i >= 0; i--) {
+      if (mockClientTags[i].clientId === id) mockClientTags.splice(i, 1);
+    }
+
+    for (let i = mockTripClients.length - 1; i >= 0; i--) {
+      if (mockTripClients[i].clientId === id) mockTripClients.splice(i, 1);
+    }
+
+    for (const trip of mockTrips) {
+      if (trip.clientId === id) trip.clientId = "";
+    }
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("clients").delete().eq("id", id);
+  if (error) throw error;
+}
+
 function rowToClient(row: Record<string, unknown>): Client {
   return {
     id: row.id as string,
@@ -1332,6 +1358,14 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
     })
   );
 
+  const { data: packingRows, error: packingError } = await supabase
+    .from("packing_items")
+    .select("id, trip_id, label, checked, sort_order")
+    .eq("trip_id", trip.id)
+    .order("sort_order", { ascending: true });
+  if (packingError) throw packingError;
+  const packingItems = (packingRows ?? []).map(rowToPackingItem);
+
   return {
     ...trip,
     clients: [],
@@ -1341,7 +1375,7 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
     photos,
     documents,
     days,
-    packingItems: [],
+    packingItems,
   };
 }
 
