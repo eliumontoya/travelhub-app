@@ -54,6 +54,57 @@ describe("decideWhatsAppInboundMessage", () => {
     );
   });
 
+
+  it("canonicalizes common provider enum synonyms before enforcing safety gates", async () => {
+    const provider = providerReturning({
+      intent: "schedule_inquiry",
+      summary: "Pregunta por horario de atención",
+      confidence: 0.91,
+      decision: "direct_answer",
+      responseText: approvedKnowledge[0].answer,
+      citedKnowledgeIds: ["knowledge-1"],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "Hola, ¿cuál es su horario de atención?" },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "inquiry",
+      confidence: 0.91,
+      decision: "auto_answer",
+      responseText: approvedKnowledge[0].answer,
+      citedKnowledgeIds: ["knowledge-1"],
+    });
+  });
+
+  it("extracts JSON objects from fenced provider output", async () => {
+    const provider = providerReturning(
+      `Here is the JSON:
+\`\`\`json
+${JSON.stringify({
+        intent: "faq",
+        summary: "Pregunta por horario de atención",
+        confidence: 0.91,
+        decision: "answer",
+        responseText: approvedKnowledge[0].answer,
+        citedKnowledgeIds: ["knowledge-1"],
+      })}
+\`\`\``
+    );
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "Hola, ¿cuál es su horario de atención?" },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "inquiry",
+      decision: "auto_answer",
+    });
+  });
+
   it("escalates when approved knowledge is insufficient", async () => {
     const provider = providerReturning({
       intent: "unknown",

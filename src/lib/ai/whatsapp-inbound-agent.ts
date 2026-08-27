@@ -173,11 +173,75 @@ function preflightEscalation(messageText: string): WhatsAppInboundAgentDecision 
   return null;
 }
 
-function parseProviderOutput(output: unknown) {
-  if (typeof output === "string") {
-    return providerOutputSchema.safeParse(JSON.parse(output));
+function extractJsonObjectString(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("```")) {
+    const withoutFence = trimmed
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+    if (withoutFence.startsWith("{") && withoutFence.endsWith("}")) return withoutFence;
   }
-  return providerOutputSchema.safeParse(output);
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) return trimmed.slice(firstBrace, lastBrace + 1);
+
+  return trimmed;
+}
+
+function canonicalizeProviderOutput(output: unknown): unknown {
+  if (!output || typeof output !== "object" || Array.isArray(output)) return output;
+
+  const candidate = { ...(output as Record<string, unknown>) };
+  const intent = typeof candidate.intent === "string" ? candidate.intent.toLowerCase().trim() : "";
+  const decision = typeof candidate.decision === "string" ? candidate.decision.toLowerCase().trim() : "";
+
+  const intentMap: Record<string, WhatsAppInboundIntent> = {
+    faq: "inquiry",
+    general: "inquiry",
+    question: "inquiry",
+    schedule: "inquiry",
+    schedule_inquiry: "inquiry",
+    hours: "inquiry",
+    hours_inquiry: "inquiry",
+    services: "inquiry",
+    service_inquiry: "inquiry",
+    pricing: "quote_request",
+    quote: "quote_request",
+    quotation: "quote_request",
+    trip_status: "existing_trip",
+    status: "existing_trip",
+    existing_customer: "existing_trip",
+    human: "handoff",
+    human_handoff: "handoff",
+    escalation: "handoff",
+  };
+
+  const decisionMap: Record<string, WhatsAppInboundDecisionType> = {
+    answer: "auto_answer",
+    direct_answer: "auto_answer",
+    respond: "auto_answer",
+    response: "auto_answer",
+    auto: "auto_answer",
+    autoanswer: "auto_answer",
+    "auto-answer": "auto_answer",
+    escalate: "needs_human",
+    escalation: "needs_human",
+    handoff: "needs_human",
+    human: "needs_human",
+    needs_handoff: "needs_human",
+  };
+
+  if (intentMap[intent]) candidate.intent = intentMap[intent];
+  if (decisionMap[decision]) candidate.decision = decisionMap[decision];
+
+  return candidate;
+}
+
+function parseProviderOutput(output: unknown) {
+  const parsedOutput = typeof output === "string" ? JSON.parse(extractJsonObjectString(output)) : output;
+  return providerOutputSchema.safeParse(canonicalizeProviderOutput(parsedOutput));
 }
 
 async function defaultProvider() {
