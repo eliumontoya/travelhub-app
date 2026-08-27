@@ -101,3 +101,34 @@ describe("POST /api/whatsapp/webhook", () => {
     });
   });
 });
+
+it("acknowledges status-only webhook payloads", async () => {
+  vi.resetModules();
+  processWhatsAppWebhookPayload.mockReset();
+  processWhatsAppWebhookPayload.mockResolvedValueOnce({
+    received: 0,
+    processed: 0,
+    duplicates: 0,
+    autoAnswered: 0,
+    escalated: 0,
+    sendFailures: 0,
+    events: [],
+    statusCallbacks: { received: 1, inserted: 1, duplicates: 0, matched: 1, updated: 1 },
+  });
+  const { POST } = await import("../route");
+  const payload = { entry: [{ changes: [{ value: { statuses: [{ id: "wamid.out-1", status: "read" }] } }] }] };
+
+  const response = await POST(
+    request("https://travelhub.test/api/whatsapp/webhook", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  );
+
+  expect(response.status).toBe(200);
+  await expect(response.json()).resolves.toMatchObject({
+    received: 0,
+    statusCallbacks: { received: 1, updated: 1 },
+  });
+  expect(processWhatsAppWebhookPayload).toHaveBeenCalledWith(payload);
+});
