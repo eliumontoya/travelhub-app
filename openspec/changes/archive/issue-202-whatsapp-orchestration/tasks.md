@@ -25,4 +25,4 @@
 - [x] Run `npm run build` if feasible.
 - [x] Merge delta into `openspec/specs/whatsapp-inbound-automation/spec.md` and `openspec/specs/crm-sync-staging/spec.md`.
 - [x] Archive change folder.
-- [ ] Commit, push, and open PR linked to #202/#198.
+- [x] Commit, push, and open PR linked to #202/#198.
