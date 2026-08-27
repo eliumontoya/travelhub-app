@@ -12,6 +12,26 @@ export type NormalizedWhatsAppInboundEvent = {
   rawValue: MetaObject;
 };
 
+export type WhatsAppDeliveryStatus = "sent" | "delivered" | "read" | "failed";
+
+export type NormalizedWhatsAppStatusEvent = {
+  providerMessageId: string;
+  status: WhatsAppDeliveryStatus;
+  recipientPhone?: string;
+  businessPhoneNumberId?: string;
+  occurredAt: string;
+  conversationId?: string;
+  pricing?: MetaObject;
+  errors: MetaObject[];
+  rawStatus: MetaObject;
+  rawValue: MetaObject;
+};
+
+export type NormalizedWhatsAppWebhookPayloadBundle = {
+  inboundEvents: NormalizedWhatsAppInboundEvent[];
+  statusEvents: NormalizedWhatsAppStatusEvent[];
+};
+
 function isObject(value: unknown): value is MetaObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -78,4 +98,53 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown): NormalizedWha
   }
 
   return events;
+}
+
+
+function isDeliveryStatus(status: string | undefined): status is WhatsAppDeliveryStatus {
+  return status === "sent" || status === "delivered" || status === "read" || status === "failed";
+}
+
+export function normalizeWhatsAppWebhookStatusPayload(payload: unknown): NormalizedWhatsAppStatusEvent[] {
+  if (!isObject(payload)) return [];
+
+  const events: NormalizedWhatsAppStatusEvent[] = [];
+  for (const entry of asObjectArray(payload.entry)) {
+    for (const change of asObjectArray(entry.changes)) {
+      if (!isObject(change.value)) continue;
+
+      const rawValue = change.value;
+      const metadata = isObject(rawValue.metadata) ? rawValue.metadata : {};
+      const businessPhoneNumberId = asString(metadata.phone_number_id);
+
+      for (const statusEvent of asObjectArray(rawValue.statuses)) {
+        const providerMessageId = asString(statusEvent.id);
+        const status = asString(statusEvent.status);
+        if (!providerMessageId || !isDeliveryStatus(status)) continue;
+
+        const conversation = isObject(statusEvent.conversation) ? statusEvent.conversation : undefined;
+        events.push({
+          providerMessageId,
+          status,
+          recipientPhone: asString(statusEvent.recipient_id),
+          businessPhoneNumberId,
+          occurredAt: getOccurredAt(asString(statusEvent.timestamp)),
+          conversationId: conversation ? asString(conversation.id) : undefined,
+          pricing: isObject(statusEvent.pricing) ? statusEvent.pricing : undefined,
+          errors: asObjectArray(statusEvent.errors),
+          rawStatus: statusEvent,
+          rawValue,
+        });
+      }
+    }
+  }
+
+  return events;
+}
+
+export function normalizeWhatsAppWebhookPayloadBundle(payload: unknown): NormalizedWhatsAppWebhookPayloadBundle {
+  return {
+    inboundEvents: normalizeWhatsAppWebhookPayload(payload),
+    statusEvents: normalizeWhatsAppWebhookStatusPayload(payload),
+  };
 }

@@ -6,7 +6,11 @@ import {
 } from "@/lib/ai/whatsapp-inbound-agent";
 import { buildWhatsAppEscalationWork } from "./escalation";
 import { sendWhatsAppTextMessage, type WhatsAppSendResult } from "./client";
-import { normalizeWhatsAppWebhookPayload, type NormalizedWhatsAppInboundEvent } from "./normalize";
+import {
+  normalizeWhatsAppWebhookPayloadBundle,
+  type NormalizedWhatsAppInboundEvent,
+  type NormalizedWhatsAppStatusEvent,
+} from "./normalize";
 import {
   createCrmSyncEvent,
   createWhatsAppEscalation,
@@ -14,8 +18,10 @@ import {
   loadWhatsAppConversationContext,
   markWhatsAppInboundMessageProcessed,
   persistWhatsAppInboundEvent,
+  persistWhatsAppStatusEvents,
   updateWhatsAppConversationStatus,
   type PersistedWhatsAppInboundEvent,
+  type WhatsAppStatusPersistenceResult,
   type WhatsAppStore,
 } from "./store";
 
@@ -27,6 +33,10 @@ export type WhatsAppInboundServiceResult = {
   escalated: number;
   sendFailures: number;
   events: WhatsAppInboundEventResult[];
+};
+
+export type WhatsAppWebhookProcessingResult = WhatsAppInboundServiceResult & {
+  statusCallbacks: WhatsAppStatusPersistenceResult;
 };
 
 export type WhatsAppInboundEventResult = {
@@ -58,6 +68,7 @@ const defaultStore: WhatsAppStore = {
   createCrmSyncEvent,
   updateConversationStatus: updateWhatsAppConversationStatus,
   markInboundMessageProcessed: markWhatsAppInboundMessageProcessed,
+  persistStatusEvents: persistWhatsAppStatusEvents,
 };
 
 function unsupportedDecision(event: NormalizedWhatsAppInboundEvent): WhatsAppInboundAgentDecision {
@@ -221,6 +232,28 @@ export async function processWhatsAppInboundEvents(
   };
 }
 
-export async function processWhatsAppWebhookPayload(payload: unknown, options: WhatsAppInboundServiceOptions = {}) {
-  return processWhatsAppInboundEvents(normalizeWhatsAppWebhookPayload(payload), options);
+export async function processWhatsAppStatusEvents(
+  events: NormalizedWhatsAppStatusEvent[],
+  options: WhatsAppInboundServiceOptions = {}
+) {
+  if (events.length === 0) {
+    return { received: 0, inserted: 0, duplicates: 0, matched: 0, updated: 0 };
+  }
+
+  const store = options.store ?? defaultStore;
+  return store.persistStatusEvents(events);
+}
+
+export async function processWhatsAppWebhookPayload(
+  payload: unknown,
+  options: WhatsAppInboundServiceOptions = {}
+): Promise<WhatsAppWebhookProcessingResult> {
+  const { inboundEvents, statusEvents } = normalizeWhatsAppWebhookPayloadBundle(payload);
+  const inboundResult = await processWhatsAppInboundEvents(inboundEvents, options);
+  const statusCallbacks = await processWhatsAppStatusEvents(statusEvents, options);
+
+  return {
+    ...inboundResult,
+    statusCallbacks,
+  };
 }

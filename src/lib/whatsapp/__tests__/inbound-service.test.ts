@@ -34,6 +34,7 @@ function makeStore(inserted = true) {
     createCrmSyncEvent: vi.fn(async () => ({ id: "crm-1" })),
     updateConversationStatus: vi.fn(async () => undefined),
     markInboundMessageProcessed: vi.fn(async () => undefined),
+    persistStatusEvents: vi.fn(async (events) => ({ received: events.length, inserted: events.length, duplicates: 0, matched: events.length, updated: events.length })),
   };
   return store;
 }
@@ -124,4 +125,64 @@ describe("processWhatsAppInboundEvents", () => {
     expect(sendText).not.toHaveBeenCalled();
     expect(store.createIntent).not.toHaveBeenCalled();
   });
+});
+
+
+it("processes status callbacks without inbound side effects", async () => {
+  const store = makeStore();
+  const agent = vi.fn();
+  const sendText = vi.fn();
+  const { processWhatsAppWebhookPayload } = await import("@/lib/whatsapp/inbound-service");
+  const payload = {
+    entry: [
+      {
+        changes: [
+          {
+            value: {
+              metadata: { phone_number_id: "phone-id-1" },
+              statuses: [
+                {
+                  id: "wamid.out-1",
+                  status: "delivered",
+                  timestamp: "1798224300",
+                  recipient_id: "5215551234567",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  const result = await processWhatsAppWebhookPayload(payload, { store, agent, sendText });
+
+  expect(result.received).toBe(0);
+  expect(result.statusCallbacks).toMatchObject({ received: 1, inserted: 1 });
+  expect(store.persistInboundEvent).not.toHaveBeenCalled();
+  expect(agent).not.toHaveBeenCalled();
+  expect(sendText).not.toHaveBeenCalled();
+});
+
+it("does not require status persistence for inbound-only payloads", async () => {
+  const store = makeStore();
+  const agent = vi.fn(async () => ({
+    intent: "inquiry" as const,
+    summary: "Pregunta por horario",
+    confidence: 0.92,
+    decision: "auto_answer" as const,
+    responseText: "Atendemos de lunes a viernes.",
+    citedKnowledgeIds: ["knowledge-1"],
+  }));
+  const sendText = vi.fn(async () => ({ ok: true, status: 200, providerMessageId: "wamid.out-1" }));
+  const { processWhatsAppWebhookPayload } = await import("@/lib/whatsapp/inbound-service");
+
+  const result = await processWhatsAppWebhookPayload(
+    { entry: [{ changes: [{ value: { metadata: { phone_number_id: "phone-id-1" }, contacts: [], messages: [{ id: textEvent.providerMessageId, from: textEvent.fromPhone, type: "text", text: { body: textEvent.body }, timestamp: "1798224000" }] } }] }] },
+    { store, agent, sendText }
+  );
+
+  expect(result.received).toBe(1);
+  expect(result.statusCallbacks).toEqual({ received: 0, inserted: 0, duplicates: 0, matched: 0, updated: 0 });
+  expect(store.persistStatusEvents).not.toHaveBeenCalled();
 });

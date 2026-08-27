@@ -1,10 +1,18 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { NormalizedWhatsAppInboundEvent } from "./normalize";
+import type { NormalizedWhatsAppInboundEvent, NormalizedWhatsAppStatusEvent, WhatsAppDeliveryStatus } from "./normalize";
 
 export type WhatsAppIngestionResult = {
   received: number;
   inserted: number;
   duplicates: number;
+};
+
+export type WhatsAppStatusPersistenceResult = {
+  received: number;
+  inserted: number;
+  duplicates: number;
+  matched: number;
+  updated: number;
 };
 
 export class WhatsAppStoreConfigurationError extends Error {
@@ -216,6 +224,7 @@ export type WhatsAppStore = {
     lastOutboundAt?: string;
   }): Promise<void>;
   markInboundMessageProcessed(input: { messageId: string; status: "processed" | "responded" | "escalated" | "failed" }): Promise<void>;
+  persistStatusEvents(events: NormalizedWhatsAppStatusEvent[]): Promise<WhatsAppStatusPersistenceResult>;
 };
 
 async function selectExistingMessageId(client: WhatsAppSupabaseClient, providerMessageId: string) {
@@ -293,6 +302,11 @@ export async function createWhatsAppIntent(
   return result.data;
 }
 
+function getProviderMessageIdFromSendResult(sendResult: JsonPayload) {
+  const providerMessageId = sendResult.providerMessageId;
+  return typeof providerMessageId === "string" && providerMessageId.length > 0 ? providerMessageId : undefined;
+}
+
 export async function insertWhatsAppOutboundMessage(
   input: {
     persisted: PersistedWhatsAppInboundEvent;
@@ -309,7 +323,7 @@ export async function insertWhatsAppOutboundMessage(
       {
         conversation_id: input.persisted.conversationId,
         contact_id: input.persisted.contactId,
-        whatsapp_message_id: `out:${input.purpose}:${input.persisted.messageId}`,
+        whatsapp_message_id: getProviderMessageIdFromSendResult(input.sendResult) ?? `out:${input.purpose}:${input.persisted.messageId}`,
         direction: "outbound",
         message_type: "text",
         body: input.body,
@@ -422,4 +436,161 @@ export async function markWhatsAppInboundMessageProcessed(
     .eq("id", input.messageId)) as SingleResult<unknown>;
 
   throwIfError(result.error, "Could not mark WhatsApp inbound message processed");
+}
+
+
+type WhatsAppMessageDeliveryRow = {
+  id: string;
+  conversation_id: string;
+  contact_id: string;
+  status: string;
+  payload: JsonPayload | null;
+};
+
+const deliveryStatusRank: Record<WhatsAppDeliveryStatus, number> = {
+  sent: 1,
+  delivered: 2,
+  read: 3,
+  failed: 4,
+};
+
+function statusCallbackKey(event: NormalizedWhatsAppStatusEvent) {
+  return `whatsapp:status:${event.providerMessageId}:${event.status}:${event.occurredAt}`;
+}
+
+function shouldUpdateDeliveryStatus(currentStatus: string, nextStatus: WhatsAppDeliveryStatus) {
+  const currentRank = deliveryStatusRank[currentStatus as WhatsAppDeliveryStatus] ?? 0;
+  return deliveryStatusRank[nextStatus] >= currentRank;
+}
+
+function buildStatusPayload(event: NormalizedWhatsAppStatusEvent) {
+  return {
+    normalized: {
+      providerMessageId: event.providerMessageId,
+      status: event.status,
+      recipientPhone: event.recipientPhone,
+      businessPhoneNumberId: event.businessPhoneNumberId,
+      occurredAt: event.occurredAt,
+      conversationId: event.conversationId,
+    },
+    errors: event.errors,
+    pricing: event.pricing,
+    rawStatus: event.rawStatus,
+    rawValue: event.rawValue,
+  };
+}
+
+async function selectOutboundMessageByProviderId(client: WhatsAppSupabaseClient, providerMessageId: string) {
+  const result = (await client
+    .from("whatsapp_messages")
+    .select("id, conversation_id, contact_id, status, payload")
+    .eq("whatsapp_message_id", providerMessageId)
+    .eq("direction", "outbound")
+    .maybeSingle()) as SingleResult<WhatsAppMessageDeliveryRow>;
+
+  throwIfError(result.error, "Could not read WhatsApp outbound message");
+  return result.data;
+}
+
+async function insertStatusCallback(
+  client: WhatsAppSupabaseClient,
+  event: NormalizedWhatsAppStatusEvent,
+  message: WhatsAppMessageDeliveryRow | null
+) {
+  const callbackKey = statusCallbackKey(event);
+  const result = (await client
+    .from("whatsapp_message_status_callbacks")
+    .upsert(
+      {
+        callback_key: callbackKey,
+        message_id: message?.id ?? null,
+        whatsapp_message_id: event.providerMessageId,
+        status: event.status,
+        recipient_phone: event.recipientPhone ?? null,
+        occurred_at: event.occurredAt,
+        payload: buildStatusPayload(event),
+      },
+      { onConflict: "callback_key", ignoreDuplicates: true }
+    )
+    .select("id")
+    .maybeSingle()) as SingleResult<IdRow>;
+
+  throwIfError(result.error, "Could not persist WhatsApp status callback");
+  return { inserted: Boolean(result.data), callbackKey, id: result.data?.id ?? callbackKey };
+}
+
+async function updateOutboundMessageDeliveryStatus(
+  client: WhatsAppSupabaseClient,
+  event: NormalizedWhatsAppStatusEvent,
+  message: WhatsAppMessageDeliveryRow
+) {
+  if (!shouldUpdateDeliveryStatus(message.status, event.status)) return false;
+
+  const payload = isJsonObject(message.payload) ? message.payload : {};
+  const result = (await client
+    .from("whatsapp_messages")
+    .update({
+      status: event.status,
+      payload: {
+        ...payload,
+        deliveryStatus: {
+          providerMessageId: event.providerMessageId,
+          status: event.status,
+          recipientPhone: event.recipientPhone ?? null,
+          businessPhoneNumberId: event.businessPhoneNumberId ?? null,
+          occurredAt: event.occurredAt,
+          conversationId: event.conversationId ?? null,
+          errors: event.errors,
+        },
+      },
+      processed_at: new Date().toISOString(),
+    })
+    .eq("id", message.id)) as SingleResult<unknown>;
+
+  throwIfError(result.error, "Could not update WhatsApp outbound delivery status");
+  return true;
+}
+
+function isJsonObject(value: unknown): value is JsonPayload {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export async function persistWhatsAppStatusEvents(
+  events: NormalizedWhatsAppStatusEvent[],
+  client = getServiceRoleClient()
+): Promise<WhatsAppStatusPersistenceResult> {
+  let inserted = 0;
+  let duplicates = 0;
+  let matched = 0;
+  let updated = 0;
+
+  for (const event of events) {
+    const message = await selectOutboundMessageByProviderId(client, event.providerMessageId);
+    if (message) matched += 1;
+
+    const callback = await insertStatusCallback(client, event, message);
+    if (callback.inserted) inserted += 1;
+    else duplicates += 1;
+
+    if (message && (await updateOutboundMessageDeliveryStatus(client, event, message))) {
+      updated += 1;
+    }
+
+    if (message) {
+      await createCrmSyncEvent(
+        {
+          sourceTable: "whatsapp_messages",
+          sourceId: message.id,
+          eventType: `whatsapp.delivery_${event.status}`,
+          aggregateType: "whatsapp_conversation",
+          aggregateId: message.conversation_id,
+          eventKey: callback.callbackKey,
+          payload: { status: buildStatusPayload(event), callbackId: callback.id },
+        },
+        client
+      );
+    }
+  }
+
+  return { received: events.length, inserted, duplicates, matched, updated };
 }

@@ -188,3 +188,138 @@ describe("createWhatsAppIntent", () => {
     );
   });
 });
+
+describe("persistWhatsAppStatusEvents", () => {
+  it("idempotently stores callback, updates matched outbound message, and stages CRM event", async () => {
+    const outboundMessage = createQuery({
+      data: {
+        id: "outbound-row-1",
+        conversation_id: "conversation-1",
+        contact_id: "contact-1",
+        status: "sent",
+        payload: { purpose: "auto_answer", sendResult: { providerMessageId: "wamid.out-1" } },
+      },
+      error: null,
+    });
+    const callback = createQuery({ data: { id: "callback-1" }, error: null });
+    const messageUpdate = createQuery({ data: null, error: null });
+    const crm = createQuery({ data: { id: "crm-1" }, error: null });
+    const calls: Record<string, number> = {};
+    const client = {
+      from: vi.fn((table: string) => {
+        calls[table] = (calls[table] ?? 0) + 1;
+        if (table === "whatsapp_messages" && calls[table] === 1) return outboundMessage;
+        if (table === "whatsapp_messages") return messageUpdate;
+        if (table === "whatsapp_message_status_callbacks") return callback;
+        if (table === "crm_sync_events") return crm;
+        throw new Error(`Unexpected table ${table}`);
+      }),
+    };
+    const { persistWhatsAppStatusEvents } = await import("@/lib/whatsapp/store");
+
+    const result = await persistWhatsAppStatusEvents(
+      [
+        {
+          providerMessageId: "wamid.out-1",
+          status: "delivered",
+          recipientPhone: "5215551234567",
+          businessPhoneNumberId: "phone-id-1",
+          occurredAt: "2026-12-25T00:05:00.000Z",
+          errors: [],
+          rawStatus: { id: "wamid.out-1", status: "delivered" },
+          rawValue: { messaging_product: "whatsapp" },
+        },
+      ],
+      client as never
+    );
+
+    expect(result).toEqual({ received: 1, inserted: 1, duplicates: 0, matched: 1, updated: 1 });
+    expect(callback.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        callback_key: "whatsapp:status:wamid.out-1:delivered:2026-12-25T00:05:00.000Z",
+        message_id: "outbound-row-1",
+        whatsapp_message_id: "wamid.out-1",
+        status: "delivered",
+      }),
+      { onConflict: "callback_key", ignoreDuplicates: true }
+    );
+    expect(messageUpdate.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "delivered",
+        payload: expect.objectContaining({
+          purpose: "auto_answer",
+          deliveryStatus: expect.objectContaining({ status: "delivered" }),
+        }),
+      })
+    );
+    expect(crm.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: "whatsapp.delivery_delivered", event_key: "whatsapp:status:wamid.out-1:delivered:2026-12-25T00:05:00.000Z" }),
+      { onConflict: "event_key", ignoreDuplicates: true }
+    );
+  });
+
+  it("stores failed callback errors even when no outbound message is matched", async () => {
+    const outboundMessage = createQuery({ data: null, error: null });
+    const callback = createQuery({ data: null, error: null });
+    const client = {
+      from: vi.fn((table: string) => {
+        if (table === "whatsapp_messages") return outboundMessage;
+        if (table === "whatsapp_message_status_callbacks") return callback;
+        throw new Error(`Unexpected table ${table}`);
+      }),
+    };
+    const { persistWhatsAppStatusEvents } = await import("@/lib/whatsapp/store");
+
+    const result = await persistWhatsAppStatusEvents(
+      [
+        {
+          providerMessageId: "wamid.out-missing",
+          status: "failed",
+          recipientPhone: "5215551234567",
+          occurredAt: "2026-12-25T00:06:00.000Z",
+          errors: [{ code: 131026, title: "Message undeliverable" }],
+          rawStatus: { id: "wamid.out-missing", status: "failed" },
+          rawValue: { messaging_product: "whatsapp" },
+        },
+      ],
+      client as never
+    );
+
+    expect(result).toEqual({ received: 1, inserted: 0, duplicates: 1, matched: 0, updated: 0 });
+    expect(callback.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message_id: null,
+        status: "failed",
+        payload: expect.objectContaining({ errors: [{ code: 131026, title: "Message undeliverable" }] }),
+      }),
+      { onConflict: "callback_key", ignoreDuplicates: true }
+    );
+  });
+});
+
+describe("insertWhatsAppOutboundMessage", () => {
+  it("uses Meta provider message id for outbound rows when available", async () => {
+    const message = createQuery({ data: { id: "outbound-row-1" }, error: null });
+    const client = { from: vi.fn((table: string) => {
+      if (table === "whatsapp_messages") return message;
+      throw new Error(`Unexpected table ${table}`);
+    }) };
+    const { insertWhatsAppOutboundMessage } = await import("@/lib/whatsapp/store");
+
+    await insertWhatsAppOutboundMessage(
+      {
+        persisted: { inserted: true, contactId: "contact-1", conversationId: "conversation-1", messageId: "inbound-1" },
+        purpose: "auto_answer",
+        body: "Hola",
+        status: "sent",
+        sendResult: { ok: true, providerMessageId: "wamid.out-real" },
+      },
+      client as never
+    );
+
+    expect(message.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ whatsapp_message_id: "wamid.out-real", direction: "outbound" }),
+      { onConflict: "whatsapp_message_id", ignoreDuplicates: true }
+    );
+  });
+});

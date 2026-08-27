@@ -78,3 +78,49 @@ describe("normalizeWhatsAppWebhookPayload", () => {
     expect(events[0].rawValue).toMatchObject({ metadata: { phone_number_id: "phone-number-id-1" } });
   });
 });
+
+describe("normalizeWhatsAppWebhookStatusPayload", () => {
+  it("normalizes sent, delivered, read, and failed status callbacks without inbound messages", async () => {
+    const { normalizeWhatsAppWebhookPayloadBundle, normalizeWhatsAppWebhookStatusPayload } = await import("@/lib/whatsapp/normalize");
+    const payload = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                messaging_product: "whatsapp",
+                metadata: { phone_number_id: "phone-number-id-1" },
+                statuses: [
+                  { id: "wamid.out-1", status: "sent", timestamp: "1798224100", recipient_id: "5215551234567" },
+                  { id: "wamid.out-1", status: "delivered", timestamp: "1798224200", recipient_id: "5215551234567" },
+                  { id: "wamid.out-1", status: "read", timestamp: "1798224300", recipient_id: "5215551234567" },
+                  {
+                    id: "wamid.out-2",
+                    status: "failed",
+                    timestamp: "1798224400",
+                    recipient_id: "5215557654321",
+                    errors: [{ code: 131026, title: "Message undeliverable" }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const events = normalizeWhatsAppWebhookStatusPayload(payload);
+    const bundle = normalizeWhatsAppWebhookPayloadBundle(payload);
+
+    expect(events.map((event) => event.status)).toEqual(["sent", "delivered", "read", "failed"]);
+    expect(events[1]).toMatchObject({
+      providerMessageId: "wamid.out-1",
+      recipientPhone: "5215551234567",
+      businessPhoneNumberId: "phone-number-id-1",
+      occurredAt: new Date(1798224200 * 1000).toISOString(),
+    });
+    expect(events[3].errors).toEqual([{ code: 131026, title: "Message undeliverable" }]);
+    expect(bundle.inboundEvents).toEqual([]);
+    expect(bundle.statusEvents).toHaveLength(4);
+  });
+});
