@@ -39,3 +39,6 @@ opencode.json
 # local scratch/worktree dirs (agent orchestration)
 .worktrees/
 .nodeterm/
+
+# local agent memory
+.engram/
