@@ -51,6 +51,21 @@ function makeClient(messageInsertResult: { data: { id: string } | null; error: n
   };
 }
 
+
+function makeIntentClient() {
+  const intent = createQuery({ data: { id: "intent-1" }, error: null });
+
+  return {
+    intent,
+    client: {
+      from: vi.fn((table: string) => {
+        if (table === "whatsapp_intents") return intent;
+        throw new Error(`Unexpected table ${table}`);
+      }),
+    },
+  };
+}
+
 const event: NormalizedWhatsAppInboundEvent = {
   providerMessageId: "wamid.text-1",
   fromPhone: "5215551234567",
@@ -118,5 +133,58 @@ describe("ingestWhatsAppInboundEvents", () => {
       WhatsAppStoreConfigurationError
     );
     expect(createClient).not.toHaveBeenCalled();
+  });
+});
+
+describe("createWhatsAppIntent", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    createClient.mockReset();
+  });
+
+  it("persists safe provider diagnostics in intent entities", async () => {
+    const mock = makeIntentClient();
+    const { createWhatsAppIntent } = await import("@/lib/whatsapp/store");
+    const providerDiagnostics = {
+      providerErrorType: "invalid_structured_output",
+      rawOutputPreview: '{"intent":"destination_info"}',
+      validationIssues: [{ path: "intent", message: "Invalid enum value" }],
+    };
+
+    const result = await createWhatsAppIntent(
+      {
+        persisted: {
+          inserted: true,
+          contactId: "contact-1",
+          conversationId: "conversation-1",
+          messageId: "message-1",
+        },
+        decision: {
+          intent: "unknown",
+          confidence: 0,
+          summary: "Salida estructurada inválida del proveedor.",
+          citedKnowledgeIds: [],
+          providerDiagnostics,
+        },
+      },
+      mock.client as never
+    );
+
+    expect(result).toEqual({ id: "intent-1" });
+    expect(mock.intent.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversation_id: "conversation-1",
+        message_id: "message-1",
+        contact_id: "contact-1",
+        intent_type: "unknown",
+        confidence: 0,
+        entities: {
+          citedKnowledgeIds: [],
+          providerDiagnostics,
+        },
+        summary: "Salida estructurada inválida del proveedor.",
+        status: "detected",
+      })
+    );
   });
 });

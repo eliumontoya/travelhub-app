@@ -182,6 +182,53 @@ ${JSON.stringify({
     expect(provider).not.toHaveBeenCalled();
   });
 
+  it("returns safe diagnostics when provider output fails schema validation", async () => {
+    const provider = providerReturning({
+      intent: "destination_info",
+      summary: "Pregunta por servicios y destino",
+      confidence: 0.9,
+      decision: "direct_answer",
+      responseText: approvedKnowledge[0].answer,
+      citedKnowledgeIds: ["knowledge-1"],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "Quiero información de servicios para Metepec" },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "unknown",
+      decision: "needs_human",
+      escalationReason: "La salida estructurada del proveedor no es válida.",
+      providerDiagnostics: {
+        providerErrorType: "invalid_structured_output",
+        rawOutputPreview: expect.stringContaining("destination_info"),
+        validationIssues: expect.arrayContaining([
+          expect.objectContaining({ path: "intent" }),
+        ]),
+      },
+    });
+  });
+
+  it("returns safe diagnostics when provider output is not JSON", async () => {
+    const provider = providerReturning("no soy json");
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "¿Qué servicios ofrecen?" },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      decision: "needs_human",
+      escalationReason: "La salida del proveedor no fue JSON válido.",
+      providerDiagnostics: {
+        providerErrorType: "invalid_json",
+        rawOutputPreview: "no soy json",
+      },
+    });
+  });
+
   it("validates malformed provider JSON and returns safe escalation", async () => {
     const provider = providerReturning("{not-json");
 

@@ -187,7 +187,7 @@ type JsonPayload = Record<string, unknown>;
 export type WhatsAppStore = {
   persistInboundEvent(event: NormalizedWhatsAppInboundEvent): Promise<PersistedWhatsAppInboundEvent>;
   loadConversationContext(conversationId: string): Promise<WhatsAppConversationContext>;
-  createIntent(input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[] } }): Promise<{ id: string }>;
+  createIntent(input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[]; providerDiagnostics?: JsonPayload } }): Promise<{ id: string }>;
   insertOutboundMessage(input: {
     persisted: PersistedWhatsAppInboundEvent;
     purpose: string;
@@ -267,7 +267,7 @@ export async function loadWhatsAppConversationContext(
 }
 
 export async function createWhatsAppIntent(
-  input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[] } },
+  input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[]; providerDiagnostics?: JsonPayload } },
   client = getServiceRoleClient()
 ) {
   const result = (await client
@@ -278,7 +278,10 @@ export async function createWhatsAppIntent(
       contact_id: input.persisted.contactId,
       intent_type: input.decision.intent,
       confidence: input.decision.confidence,
-      entities: { citedKnowledgeIds: input.decision.citedKnowledgeIds },
+      entities: {
+        citedKnowledgeIds: input.decision.citedKnowledgeIds,
+        ...(input.decision.providerDiagnostics ? { providerDiagnostics: input.decision.providerDiagnostics } : {}),
+      },
       summary: input.decision.summary,
       status: "detected",
     })
