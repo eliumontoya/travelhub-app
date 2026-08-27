@@ -1,0 +1,212 @@
+# Pruebas simuladas de mensajes inbound de WhatsApp
+
+Esta nota explica cómo probar el flujo de WhatsApp de TravelHub sin depender todavía de que Meta entregue mensajes reales desde WhatsApp al webhook productivo.
+
+## Objetivo
+
+Simular mensajes que un cliente enviaría al WhatsApp empresarial y validar el flujo completo:
+
+```txt
+Payload simulado -> Webhook Vercel -> Normalización -> Supabase -> Decisión -> Escalamiento/respuesta -> Evento CRM
+```
+
+## Script disponible
+
+El script vive en:
+
+```txt
+scripts/whatsapp-simulate-inbound.mjs
+```
+
+Y se ejecuta con:
+
+```bash
+npm run whatsapp:simulate -- --text "Mensaje de prueba"
+```
+
+Por default envía el payload a:
+
+```txt
+https://app.xtravelhub.com/api/whatsapp/webhook
+```
+
+## Requisitos
+
+1. Tener variables de WhatsApp configuradas en Vercel Production:
+
+```txt
+WHATSAPP_ACCESS_TOKEN
+WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_HUMAN_ALERT_PHONE
+WHATSAPP_GRAPH_VERSION
+WHATSAPP_VERIFY_TOKEN
+```
+
+2. Tener Supabase configurado en producción:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+3. Para ejecutar localmente, el script puede leer `.env.local` y usar:
+
+```txt
+WHATSAPP_HUMAN_ALERT_PHONE
+```
+
+como teléfono simulado de remitente, salvo que se pase `--from` explícitamente.
+
+## Uso básico
+
+```bash
+npm run whatsapp:simulate -- --text "¿Cuál es su horario?"
+```
+
+```bash
+npm run whatsapp:simulate -- --text "¿Qué servicios ofrecen?"
+```
+
+```bash
+npm run whatsapp:simulate -- --text "Quiero cotizar un viaje a Cancún para diciembre"
+```
+
+```bash
+npm run whatsapp:simulate -- --text "Necesito hablar con una persona"
+```
+
+## Opciones útiles
+
+### Cambiar nombre del contacto simulado
+
+```bash
+npm run whatsapp:simulate -- --text "¿Qué servicios ofrecen?" --name "Cliente Prueba"
+```
+
+### Cambiar teléfono remitente simulado
+
+Usar formato E.164 sin `+`:
+
+```bash
+npm run whatsapp:simulate -- --text "Hola" --from 521XXXXXXXXXX
+```
+
+### Probar idempotencia / duplicados
+
+Ejecuta dos veces con el mismo `--message-id`:
+
+```bash
+npm run whatsapp:simulate -- --text "Mensaje duplicado" --message-id wamid.TEST_DUPLICADO_1
+npm run whatsapp:simulate -- --text "Mensaje duplicado" --message-id wamid.TEST_DUPLICADO_1
+```
+
+Resultado esperado en la segunda ejecución:
+
+```json
+{
+  "processed": 0,
+  "duplicates": 1,
+  "sendFailures": 0
+}
+```
+
+### Ver payload sin enviarlo
+
+```bash
+npm run whatsapp:simulate -- --text "Prueba dry run" --dry-run
+```
+
+### Enviar a otro webhook
+
+Por ejemplo, para probar preview/local expuesto:
+
+```bash
+npm run whatsapp:simulate -- --url "https://mi-url/api/whatsapp/webhook" --text "Hola"
+```
+
+## Validación esperada
+
+Una ejecución exitosa debe responder algo similar a:
+
+```json
+{
+  "received": 1,
+  "processed": 1,
+  "duplicates": 0,
+  "sendFailures": 0
+}
+```
+
+En Supabase deben aparecer registros en:
+
+```txt
+whatsapp_contacts
+whatsapp_conversations
+whatsapp_messages
+whatsapp_intents
+whatsapp_escalations
+crm_sync_events
+```
+
+Para el estado actual del agente, lo normal es que los mensajes se escalen si no hay conocimiento aprobado suficiente o un proveedor LLM productivo conectado.
+
+## Consultas rápidas en Supabase
+
+```sql
+select id, phone_e164, display_name, created_at
+from whatsapp_contacts
+order by created_at desc
+limit 10;
+```
+
+```sql
+select id, whatsapp_message_id, direction, body, status, created_at
+from whatsapp_messages
+order by created_at desc
+limit 20;
+```
+
+```sql
+select id, intent_type, confidence, summary, status, created_at
+from whatsapp_intents
+order by created_at desc
+limit 20;
+```
+
+```sql
+select id, reason, priority, status, summary, created_at
+from whatsapp_escalations
+order by created_at desc
+limit 20;
+```
+
+```sql
+select id, event_type, event_key, status, created_at
+from crm_sync_events
+order by created_at desc
+limit 20;
+```
+
+## Nota sobre `phone_number_id`
+
+El script omite `metadata.phone_number_id` por default.
+
+Esto es intencional: así la app usa el `WHATSAPP_PHONE_NUMBER_ID` real configurado en Vercel al enviar respuestas outbound.
+
+Si se incluye un `phone_number_id` falso, WhatsApp puede responder con error similar a:
+
+```txt
+Object with ID '<id>' does not exist or cannot be loaded due to missing permissions
+```
+
+## Limitaciones
+
+Estas pruebas validan el flujo técnico de la app, pero no prueban que Meta entregue mensajes reales desde WhatsApp al webhook.
+
+Para validar mensajes reales entrantes desde WhatsApp personal se requiere completar la configuración productiva de Meta si la plataforma lo exige:
+
+- registro productivo del número,
+- método de pago,
+- verificación del negocio,
+- app en Live Mode,
+- webhook `messages` suscrito.
