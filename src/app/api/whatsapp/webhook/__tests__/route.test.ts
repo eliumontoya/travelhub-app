@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const ingestWhatsAppInboundEvents = vi.fn();
+const processWhatsAppWebhookPayload = vi.fn();
 class MockWhatsAppStoreConfigurationError extends Error {}
 
+vi.mock("@/lib/whatsapp/inbound-service", () => ({
+  processWhatsAppWebhookPayload,
+}));
+
 vi.mock("@/lib/whatsapp/store", () => ({
-  ingestWhatsAppInboundEvents,
   WhatsAppStoreConfigurationError: MockWhatsAppStoreConfigurationError,
 }));
 
@@ -16,7 +19,7 @@ function request(url: string, init?: ConstructorParameters<typeof NextRequest>[1
 describe("GET /api/whatsapp/webhook", () => {
   beforeEach(() => {
     vi.resetModules();
-    ingestWhatsAppInboundEvents.mockReset();
+    processWhatsAppWebhookPayload.mockReset();
     process.env.WHATSAPP_VERIFY_TOKEN = "verify-secret";
   });
 
@@ -46,51 +49,28 @@ describe("GET /api/whatsapp/webhook", () => {
 describe("POST /api/whatsapp/webhook", () => {
   beforeEach(() => {
     vi.resetModules();
-    ingestWhatsAppInboundEvents.mockReset();
+    processWhatsAppWebhookPayload.mockReset();
   });
 
-  it("normalizes and delegates inbound payload persistence", async () => {
-    ingestWhatsAppInboundEvents.mockResolvedValueOnce({ received: 1, inserted: 1, duplicates: 0 });
+  it("delegates inbound payload orchestration", async () => {
+    processWhatsAppWebhookPayload.mockResolvedValueOnce({ received: 1, processed: 1, duplicates: 0, autoAnswered: 1, escalated: 0, sendFailures: 0, events: [] });
     const { POST } = await import("../route");
+    const payload = { entry: [{ changes: [{ value: { messages: [{ id: "wamid.text-1" }] } }] }] };
 
     const response = await POST(
       request("https://travelhub.test/api/whatsapp/webhook", {
         method: "POST",
-        body: JSON.stringify({
-          entry: [
-            {
-              changes: [
-                {
-                  value: {
-                    metadata: { phone_number_id: "phone-number-id-1" },
-                    contacts: [{ wa_id: "5215551234567", profile: { name: "Jane" } }],
-                    messages: [
-                      {
-                        from: "5215551234567",
-                        id: "wamid.text-1",
-                        timestamp: "1798224000",
-                        type: "text",
-                        text: { body: "Hola" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(payload),
       })
     );
 
-    await expect(response.json()).resolves.toEqual({ received: 1, inserted: 1, duplicates: 0 });
+    await expect(response.json()).resolves.toMatchObject({ received: 1, processed: 1, autoAnswered: 1 });
     expect(response.status).toBe(200);
-    expect(ingestWhatsAppInboundEvents).toHaveBeenCalledWith([
-      expect.objectContaining({ providerMessageId: "wamid.text-1", body: "Hola" }),
-    ]);
+    expect(processWhatsAppWebhookPayload).toHaveBeenCalledWith(payload);
   });
 
   it("acknowledges duplicate webhook deliveries without failing", async () => {
-    ingestWhatsAppInboundEvents.mockResolvedValueOnce({ received: 1, inserted: 0, duplicates: 1 });
+    processWhatsAppWebhookPayload.mockResolvedValueOnce({ received: 1, processed: 0, duplicates: 1, autoAnswered: 0, escalated: 0, sendFailures: 0, events: [] });
     const { POST } = await import("../route");
 
     const response = await POST(
@@ -100,12 +80,12 @@ describe("POST /api/whatsapp/webhook", () => {
       })
     );
 
-    await expect(response.json()).resolves.toEqual({ received: 1, inserted: 0, duplicates: 1 });
+    await expect(response.json()).resolves.toMatchObject({ received: 1, duplicates: 1 });
     expect(response.status).toBe(200);
   });
 
   it("returns 503 without exposing secrets when persistence is not configured", async () => {
-    ingestWhatsAppInboundEvents.mockRejectedValueOnce(new MockWhatsAppStoreConfigurationError());
+    processWhatsAppWebhookPayload.mockRejectedValueOnce(new MockWhatsAppStoreConfigurationError());
     const { POST } = await import("../route");
 
     const response = await POST(
