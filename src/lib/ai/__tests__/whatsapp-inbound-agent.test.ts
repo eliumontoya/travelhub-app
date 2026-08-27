@@ -56,6 +56,29 @@ describe("decideWhatsAppInboundMessage", () => {
 
 
 
+  it("accepts empty optional provider fields and still auto-answers safely", async () => {
+    const provider = providerReturning({
+      intent: "inquiry",
+      summary: "Pregunta por servicios generales",
+      confidence: 0.91,
+      decision: "auto_answer",
+      responseText: approvedKnowledge[0].answer,
+      escalationReason: "   ",
+      citedKnowledgeIds: ["knowledge-1"],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "Hola, ¿qué servicios ofrecen?" },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "inquiry",
+      decision: "auto_answer",
+      responseText: approvedKnowledge[0].answer,
+    });
+  });
+
   it("accepts null optional provider fields and still auto-answers safely", async () => {
     const provider = providerReturning({
       intent: "inquiry",
