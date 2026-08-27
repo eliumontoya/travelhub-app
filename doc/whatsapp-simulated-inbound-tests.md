@@ -57,6 +57,39 @@ WHATSAPP_HUMAN_ALERT_PHONE
 
 como teléfono simulado de remitente, salvo que se pase `--from` explícitamente.
 
+## Variables para habilitar LLM
+
+Para que el agente deje de usar solo el fallback conservador y pueda auto-responder desde `whatsapp_knowledge_entries`, configurar estas variables en Vercel Production:
+
+```txt
+WHATSAPP_AGENT_LLM_API_KEY=<api key del proveedor LLM>
+WHATSAPP_AGENT_LLM_MODEL=<modelo a usar>
+WHATSAPP_AGENT_LLM_BASE_URL=<endpoint OpenAI-compatible, opcional>
+WHATSAPP_AGENT_LLM_TIMEOUT_MS=12000
+```
+
+Notas:
+
+- Si `WHATSAPP_AGENT_LLM_API_KEY` o `WHATSAPP_AGENT_LLM_MODEL` faltan, el sistema mantiene el comportamiento seguro actual y escala a humano.
+- `WHATSAPP_AGENT_LLM_BASE_URL` usa `https://api.openai.com/v1` por default.
+- Para proveedores OpenAI-compatible, configurar el `BASE_URL` correspondiente.
+- Para OpenCode Zen con modelos GPT/Grok/Muse que usan Responses API, usar:
+
+```txt
+WHATSAPP_AGENT_LLM_BASE_URL=https://opencode.ai/zen/v1/responses
+WHATSAPP_AGENT_LLM_API_STYLE=responses
+WHATSAPP_AGENT_LLM_MODEL=gpt-5.4-mini
+```
+
+- Para OpenCode Zen con modelos que usan Chat Completions, usar:
+
+```txt
+WHATSAPP_AGENT_LLM_BASE_URL=https://opencode.ai/zen/v1/chat/completions
+WHATSAPP_AGENT_LLM_API_STYLE=chat_completions
+```
+
+- El LLM recibe solo conocimiento aprobado y debe devolver JSON estructurado; si no cita knowledge IDs aprobados, el sistema escala.
+
 ## Uso básico
 
 ```bash

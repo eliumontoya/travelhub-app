@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { createWhatsAppLLMProvider } from "./whatsapp-llm-provider";
 
 export type WhatsAppInboundIntent =
   | "inquiry"
@@ -209,7 +210,7 @@ export async function decideWhatsAppInboundMessage(
     );
   }
 
-  const provider = options.provider ?? defaultProvider;
+  const provider = options.provider ?? createWhatsAppLLMProvider() ?? defaultProvider;
   let parsed;
   try {
     parsed = parseProviderOutput(
