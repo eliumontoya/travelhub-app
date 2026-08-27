@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeWhatsAppWebhookPayload } from "@/lib/whatsapp/normalize";
-import {
-  ingestWhatsAppInboundEvents,
-  WhatsAppStoreConfigurationError,
-} from "@/lib/whatsapp/store";
+import { processWhatsAppWebhookPayload } from "@/lib/whatsapp/inbound-service";
+import { WhatsAppStoreConfigurationError } from "@/lib/whatsapp/store";
 
 export async function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get("hub.mode");
@@ -33,15 +30,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
-  const events = normalizeWhatsAppWebhookPayload(payload);
-
   try {
-    const result = await ingestWhatsAppInboundEvents(events);
+    const result = await processWhatsAppWebhookPayload(payload);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof WhatsAppStoreConfigurationError) {
       return NextResponse.json({ error: "WhatsApp webhook persistence is not configured" }, { status: 503 });
     }
-    return NextResponse.json({ error: "WhatsApp webhook ingestion failed" }, { status: 500 });
+    return NextResponse.json({ error: "WhatsApp webhook processing failed" }, { status: 500 });
   }
 }
