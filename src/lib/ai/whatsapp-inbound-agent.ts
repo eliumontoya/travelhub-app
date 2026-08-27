@@ -43,6 +43,12 @@ export type WhatsAppInboundAgentProvider = (
   input: WhatsAppInboundAgentProviderInput
 ) => Promise<unknown> | unknown;
 
+export type WhatsAppInboundAgentDiagnostics = {
+  providerErrorType: "invalid_json" | "invalid_structured_output";
+  rawOutputPreview?: string;
+  validationIssues?: Array<{ path: string; message: string }>;
+};
+
 export type WhatsAppInboundAgentDecision = {
   intent: WhatsAppInboundIntent;
   summary: string;
@@ -51,6 +57,7 @@ export type WhatsAppInboundAgentDecision = {
   responseText?: string;
   escalationReason?: string;
   citedKnowledgeIds: string[];
+  providerDiagnostics?: WhatsAppInboundAgentDiagnostics;
 };
 
 type WhatsAppSupabaseClient = Pick<SupabaseClient, "from">;
@@ -75,7 +82,8 @@ function safeEscalation(
   intent: WhatsAppInboundIntent,
   summary: string,
   escalationReason: string,
-  confidence = 0
+  confidence = 0,
+  providerDiagnostics?: WhatsAppInboundAgentDiagnostics
 ): WhatsAppInboundAgentDecision {
   return {
     intent,
@@ -84,6 +92,7 @@ function safeEscalation(
     decision: "needs_human",
     escalationReason,
     citedKnowledgeIds: [],
+    ...(providerDiagnostics ? { providerDiagnostics } : {}),
   };
 }
 
@@ -242,9 +251,52 @@ function canonicalizeProviderOutput(output: unknown): unknown {
   return candidate;
 }
 
-function parseProviderOutput(output: unknown) {
-  const parsedOutput = typeof output === "string" ? JSON.parse(extractJsonObjectString(output)) : output;
-  return providerOutputSchema.safeParse(canonicalizeProviderOutput(parsedOutput));
+const RAW_OUTPUT_PREVIEW_LIMIT = 1000;
+
+function previewProviderOutput(output: unknown) {
+  try {
+    const raw = typeof output === "string" ? output : JSON.stringify(output);
+    return raw.length > RAW_OUTPUT_PREVIEW_LIMIT ? `${raw.slice(0, RAW_OUTPUT_PREVIEW_LIMIT)}…` : raw;
+  } catch {
+    return undefined;
+  }
+}
+
+function formatValidationIssues(error: z.ZodError) {
+  return error.issues.slice(0, 10).map((issue) => ({
+    path: issue.path.map(String).join(".") || "root",
+    message: issue.message,
+  }));
+}
+
+function invalidJsonDiagnostics(output: unknown): WhatsAppInboundAgentDiagnostics {
+  return {
+    providerErrorType: "invalid_json",
+    rawOutputPreview: previewProviderOutput(output),
+  };
+}
+
+function parseProviderOutput(output: unknown):
+  | { success: true; data: z.infer<typeof providerOutputSchema> }
+  | { success: false; diagnostics: WhatsAppInboundAgentDiagnostics } {
+  let parsedOutput: unknown;
+  try {
+    parsedOutput = typeof output === "string" ? JSON.parse(extractJsonObjectString(output)) : output;
+  } catch {
+    return { success: false, diagnostics: invalidJsonDiagnostics(output) };
+  }
+
+  const result = providerOutputSchema.safeParse(canonicalizeProviderOutput(parsedOutput));
+  if (result.success) return { success: true, data: result.data };
+
+  return {
+    success: false,
+    diagnostics: {
+      providerErrorType: "invalid_structured_output",
+      rawOutputPreview: previewProviderOutput(output),
+      validationIssues: formatValidationIssues(result.error),
+    },
+  };
 }
 
 async function defaultProvider() {
@@ -278,17 +330,33 @@ export async function decideWhatsAppInboundMessage(
   }
 
   const provider = options.provider ?? createWhatsAppLLMProvider() ?? defaultProvider;
-  let parsed;
+  let providerOutput: unknown;
   try {
-    parsed = parseProviderOutput(
-      await provider({ ...input, messageText: input.messageText.trim(), knowledgeEntries })
+    providerOutput = await provider({ ...input, messageText: input.messageText.trim(), knowledgeEntries });
+  } catch (error) {
+    return safeEscalation(
+      "unknown",
+      input.messageText.trim().slice(0, 180),
+      "El proveedor de decisión falló antes de devolver una salida.",
+      0,
+      {
+        providerErrorType: "invalid_json",
+        rawOutputPreview: error instanceof Error ? error.message : undefined,
+      }
     );
-  } catch {
-    return safeEscalation("unknown", input.messageText.trim().slice(0, 180), "La salida del proveedor no fue JSON válido.");
   }
 
+  const parsed = parseProviderOutput(providerOutput);
   if (!parsed.success) {
-    return safeEscalation("unknown", input.messageText.trim().slice(0, 180), "La salida estructurada del proveedor no es válida.");
+    return safeEscalation(
+      "unknown",
+      input.messageText.trim().slice(0, 180),
+      parsed.diagnostics.providerErrorType === "invalid_json"
+        ? "La salida del proveedor no fue JSON válido."
+        : "La salida estructurada del proveedor no es válida.",
+      0,
+      parsed.diagnostics
+    );
   }
 
   const output = parsed.data;
