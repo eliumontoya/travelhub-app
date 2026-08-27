@@ -55,6 +55,30 @@ describe("decideWhatsAppInboundMessage", () => {
   });
 
 
+
+  it("accepts null optional provider fields and still auto-answers safely", async () => {
+    const provider = providerReturning({
+      intent: "inquiry",
+      summary: "Pregunta por horario de atención",
+      confidence: 0.91,
+      decision: "auto_answer",
+      responseText: approvedKnowledge[0].answer,
+      escalationReason: null,
+      citedKnowledgeIds: ["knowledge-1"],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "Hola, ¿cuál es su horario de atención?" },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "inquiry",
+      decision: "auto_answer",
+      responseText: approvedKnowledge[0].answer,
+    });
+  });
+
   it("canonicalizes common provider enum synonyms before enforcing safety gates", async () => {
     const provider = providerReturning({
       intent: "schedule_inquiry",

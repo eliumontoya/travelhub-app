@@ -58,13 +58,16 @@ type WhatsAppSupabaseClient = Pick<SupabaseClient, "from">;
 const SAFE_AUTO_ANSWER_CONFIDENCE = 0.7;
 const KNOWLEDGE_LIMIT = 25;
 
+const optionalProviderString = (maxLength: number) =>
+  z.preprocess((value) => (value === null ? undefined : value), z.string().trim().min(1).max(maxLength).optional());
+
 const providerOutputSchema = z.object({
   intent: z.enum(["inquiry", "quote_request", "existing_trip", "support", "handoff", "unknown"]),
   summary: z.string().trim().min(1).max(500),
   confidence: z.number().min(0).max(1),
   decision: z.enum(["auto_answer", "needs_human"]),
-  responseText: z.string().trim().min(1).max(2000).optional(),
-  escalationReason: z.string().trim().min(1).max(1000).optional(),
+  responseText: optionalProviderString(2000),
+  escalationReason: optionalProviderString(1000),
   citedKnowledgeIds: z.array(z.string().trim().min(1)).default([]),
 });
 
