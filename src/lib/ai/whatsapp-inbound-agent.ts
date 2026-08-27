@@ -369,6 +369,7 @@ export async function decideWhatsAppInboundMessage(
       summary: output.summary,
       confidence: output.confidence,
       decision: "needs_human",
+      responseText: output.responseText,
       escalationReason: output.escalationReason ?? "El proveedor solicitó revisión humana.",
       citedKnowledgeIds: output.citedKnowledgeIds,
     };

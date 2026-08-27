@@ -68,6 +68,8 @@ describe("processWhatsAppInboundEvents", () => {
       summary: "Quiere cotización",
       confidence: 0.8,
       decision: "needs_human" as const,
+      responseText:
+        "Gracias por contarnos lo que buscas. Para cotizarlo correctamente, un asesor revisará tu solicitud y te dará seguimiento personalmente.",
       escalationReason: "Requiere cotización humana.",
       citedKnowledgeIds: [],
     }));
@@ -82,6 +84,13 @@ describe("processWhatsAppInboundEvents", () => {
 
     expect(result).toMatchObject({ escalated: 1, autoAnswered: 0 });
     expect(sendText).toHaveBeenCalledTimes(2);
+    expect(sendText).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        to: "5215551234567",
+        body: "Gracias por contarnos lo que buscas. Para cotizarlo correctamente, un asesor revisará tu solicitud y te dará seguimiento personalmente.",
+      })
+    );
     expect(sendText).toHaveBeenLastCalledWith(expect.objectContaining({ to: "5215559990000" }));
     expect(store.createEscalation).toHaveBeenCalledWith(expect.objectContaining({ intentId: "intent-1" }));
     expect(store.insertOutboundMessage).toHaveBeenCalledWith(expect.objectContaining({ purpose: "escalation_customer_follow_up" }));

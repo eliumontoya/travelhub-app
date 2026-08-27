@@ -102,6 +102,32 @@ describe("decideWhatsAppInboundMessage", () => {
     });
   });
 
+  it("preserves contextual customer replies when the provider escalates", async () => {
+    const provider = providerReturning({
+      intent: "inquiry",
+      summary: "Cliente pide confianza para planear Japón",
+      confidence: 0.9,
+      decision: "needs_human",
+      responseText:
+        "¡Gracias por escribirnos! Es completamente válido querer sentir confianza antes de planear un viaje importante; un asesor de TravelHub revisará tu caso y te dará seguimiento personalmente.",
+      escalationReason: "Requiere atención personalizada sobre confianza y alcance del servicio.",
+      citedKnowledgeIds: [],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      { messageText: "Quiero viajar a Japón pero no los conozco, necesito confiar más en ustedes." },
+      { knowledgeEntries: approvedKnowledge, provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "inquiry",
+      decision: "needs_human",
+      responseText:
+        "¡Gracias por escribirnos! Es completamente válido querer sentir confianza antes de planear un viaje importante; un asesor de TravelHub revisará tu caso y te dará seguimiento personalmente.",
+      escalationReason: "Requiere atención personalizada sobre confianza y alcance del servicio.",
+    });
+  });
+
   it("canonicalizes common provider enum synonyms before enforcing safety gates", async () => {
     const provider = providerReturning({
       intent: "schedule_inquiry",
