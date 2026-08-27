@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createWhatsAppLLMProvider } from "./whatsapp-llm-provider";
+import type { TravelHubClientToolStatus } from "./tools/travelhub-client-tools";
 
 export type WhatsAppInboundIntent =
   | "inquiry"
@@ -21,6 +22,20 @@ export type WhatsAppKnowledgeEntry = {
   source: string | null;
 };
 
+export type WhatsAppDynamicToolResult = {
+  id: string;
+  tool: string;
+  status: TravelHubClientToolStatus;
+  data?: unknown;
+  reason?: string;
+  audit?: {
+    attempted: boolean;
+    ok: boolean;
+    eventId?: string;
+    error?: string;
+  };
+};
+
 export type WhatsAppInboundAgentInput = {
   messageText: string;
   contact?: {
@@ -33,6 +48,7 @@ export type WhatsAppInboundAgentInput = {
     assignedTripId?: string | null;
     lastIntent?: string | null;
   };
+  dynamicToolResults?: WhatsAppDynamicToolResult[];
 };
 
 export type WhatsAppInboundAgentProviderInput = WhatsAppInboundAgentInput & {
@@ -57,6 +73,8 @@ export type WhatsAppInboundAgentDecision = {
   responseText?: string;
   escalationReason?: string;
   citedKnowledgeIds: string[];
+  citedToolCallIds: string[];
+  dynamicToolResults?: WhatsAppDynamicToolResult[];
   providerDiagnostics?: WhatsAppInboundAgentDiagnostics;
 };
 
@@ -79,6 +97,7 @@ const providerOutputSchema = z.object({
   responseText: optionalProviderString(2000),
   escalationReason: optionalProviderString(1000),
   citedKnowledgeIds: z.array(z.string().trim().min(1)).default([]),
+  citedToolCallIds: z.array(z.string().trim().min(1)).default([]),
 });
 
 function safeEscalation(
@@ -95,6 +114,7 @@ function safeEscalation(
     decision: "needs_human",
     escalationReason,
     citedKnowledgeIds: [],
+    citedToolCallIds: [],
     ...(providerDiagnostics ? { providerDiagnostics } : {}),
   };
 }
@@ -155,7 +175,7 @@ function hasAny(text: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function preflightEscalation(messageText: string): WhatsAppInboundAgentDecision | null {
+function preflightEscalation(messageText: string, dynamicToolResults: WhatsAppDynamicToolResult[] = []): WhatsAppInboundAgentDecision | null {
   const trimmed = messageText.trim();
   if (!trimmed) {
     return safeEscalation("unknown", "Mensaje vacío", "El mensaje está vacío o no contiene texto suficiente.");
@@ -177,7 +197,7 @@ function preflightEscalation(messageText: string): WhatsAppInboundAgentDecision 
     );
   }
 
-  if (hasAny(normalized, commercialPatterns)) {
+  if (hasAny(normalized, commercialPatterns) && dynamicToolResults.length === 0) {
     return safeEscalation(
       "quote_request",
       trimmed.slice(0, 180),
@@ -310,6 +330,7 @@ async function defaultProvider() {
     decision: "needs_human",
     escalationReason: "No hay proveedor de decisión configurado.",
     citedKnowledgeIds: [],
+    citedToolCallIds: [],
   };
 }
 
@@ -320,11 +341,12 @@ export async function decideWhatsAppInboundMessage(
     provider?: WhatsAppInboundAgentProvider;
   } = {}
 ): Promise<WhatsAppInboundAgentDecision> {
-  const preflight = preflightEscalation(input.messageText);
+  const dynamicToolResults = input.dynamicToolResults ?? [];
+  const preflight = preflightEscalation(input.messageText, dynamicToolResults);
   if (preflight) return preflight;
 
   const knowledgeEntries = options.knowledgeEntries ?? (await loadApprovedWhatsAppKnowledgeEntries());
-  if (knowledgeEntries.length === 0) {
+  if (knowledgeEntries.length === 0 && dynamicToolResults.length === 0) {
     return safeEscalation(
       "unknown",
       input.messageText.trim().slice(0, 180),
@@ -335,7 +357,7 @@ export async function decideWhatsAppInboundMessage(
   const provider = options.provider ?? createWhatsAppLLMProvider() ?? defaultProvider;
   let providerOutput: unknown;
   try {
-    providerOutput = await provider({ ...input, messageText: input.messageText.trim(), knowledgeEntries });
+    providerOutput = await provider({ ...input, messageText: input.messageText.trim(), knowledgeEntries, dynamicToolResults });
   } catch (error) {
     return safeEscalation(
       "unknown",
@@ -372,17 +394,23 @@ export async function decideWhatsAppInboundMessage(
       responseText: output.responseText,
       escalationReason: output.escalationReason ?? "El proveedor solicitó revisión humana.",
       citedKnowledgeIds: output.citedKnowledgeIds,
+      citedToolCallIds: output.citedToolCallIds,
     };
   }
 
   const approvedIds = new Set(knowledgeEntries.map((entry) => entry.id));
+  const successfulDynamicIds = new Set(
+    dynamicToolResults.filter((result) => result.status === "success").map((result) => result.id)
+  );
   const citesApprovedKnowledge =
     output.citedKnowledgeIds.length > 0 && output.citedKnowledgeIds.every((id) => approvedIds.has(id));
-  if (!output.responseText || !citesApprovedKnowledge) {
+  const citesSuccessfulDynamicTool =
+    output.citedToolCallIds.length > 0 && output.citedToolCallIds.every((id) => successfulDynamicIds.has(id));
+  if (!output.responseText || (!citesApprovedKnowledge && !citesSuccessfulDynamicTool)) {
     return safeEscalation(
       output.intent,
       output.summary,
-      "Una respuesta automática debe citar conocimiento aprobado.",
+      "Una respuesta automática debe citar conocimiento aprobado o un tool dinámico exitoso.",
       output.confidence
     );
   }
@@ -403,5 +431,6 @@ export async function decideWhatsAppInboundMessage(
     decision: "auto_answer",
     responseText: output.responseText,
     citedKnowledgeIds: output.citedKnowledgeIds,
+    citedToolCallIds: output.citedToolCallIds,
   };
 }
