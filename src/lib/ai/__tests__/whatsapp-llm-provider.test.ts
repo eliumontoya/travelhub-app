@@ -67,6 +67,8 @@ describe("createWhatsAppLLMProvider", () => {
     expect(body.model).toBe("test-model");
     expect(body.response_format).toEqual({ type: "json_object" });
     expect(JSON.stringify(body.messages)).toContain("knowledge-hours");
+    expect(JSON.stringify(body.messages)).toContain("needs_human");
+    expect(JSON.stringify(body.messages)).toContain("empática");
   });
 
   it("supports Responses API endpoints such as OpenCode Zen GPT models", async () => {

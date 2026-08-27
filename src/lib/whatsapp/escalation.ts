@@ -16,6 +16,13 @@ function priorityFor(reason: string, event: NormalizedWhatsAppInboundEvent) {
   return "normal";
 }
 
+function defaultCustomerFollowUp() {
+  return [
+    "Gracias por escribirnos y por contarnos lo que necesitas.",
+    "Entendemos que es importante recibir orientación clara antes de avanzar, así que un asesor de TravelHub revisará tu mensaje y te dará seguimiento personalmente para ayudarte con cuidado.",
+  ].join(" ");
+}
+
 export function buildWhatsAppEscalationWork(
   event: NormalizedWhatsAppInboundEvent,
   decision: WhatsAppInboundAgentDecision
@@ -29,8 +36,7 @@ export function buildWhatsAppEscalationWork(
     reason,
     priority,
     summary,
-    customerFollowUpText:
-      "Gracias por escribir a TravelHub. Ya recibimos tu mensaje y un agente humano lo revisará para responderte con seguridad.",
+    customerFollowUpText: decision.responseText || defaultCustomerFollowUp(),
     humanAlertText: [
       "TravelHub WhatsApp requiere atención humana.",
       `Cliente: ${sender}`,
