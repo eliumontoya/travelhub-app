@@ -66,7 +66,10 @@ const SAFE_AUTO_ANSWER_CONFIDENCE = 0.7;
 const KNOWLEDGE_LIMIT = 25;
 
 const optionalProviderString = (maxLength: number) =>
-  z.preprocess((value) => (value === null ? undefined : value), z.string().trim().min(1).max(maxLength).optional());
+  z.preprocess(
+    (value) => (value === null || (typeof value === "string" && value.trim() === "") ? undefined : value),
+    z.string().trim().min(1).max(maxLength).optional()
+  );
 
 const providerOutputSchema = z.object({
   intent: z.enum(["inquiry", "quote_request", "existing_trip", "support", "handoff", "unknown"]),
