@@ -97,8 +97,42 @@ describe("processWhatsAppInboundEvents", () => {
     expect(sendText).toHaveBeenLastCalledWith(expect.objectContaining({ to: "5215559990000" }));
     expect(store.createEscalation).toHaveBeenCalledWith(expect.objectContaining({ intentId: "intent-1" }));
     expect(store.insertOutboundMessage).toHaveBeenCalledWith(expect.objectContaining({ purpose: "escalation_customer_follow_up" }));
+    expect(store.insertOutboundMessage).toHaveBeenCalledWith(expect.objectContaining({ purpose: "escalation_human_alert" }));
     expect(store.createCrmSyncEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: "whatsapp.escalated" }));
     expect(store.updateConversationStatus).toHaveBeenCalledWith(expect.objectContaining({ status: "escalated" }));
+  });
+
+
+  it("preflights commercial quote requests before tools or LLM", async () => {
+    const store = makeStore();
+    const agent = vi.fn();
+    const travelHubToolRunner = vi.fn();
+    const sendText = vi.fn(async () => ({ ok: true, status: 200, providerMessageId: "wamid.out-quote" }));
+
+    const result = await processWhatsAppInboundEvents(
+      [{ ...textEvent, body: "cotizame un viaje a japon para dos personas y dime cuanto costaría?" }],
+      { store, agent, travelHubToolRunner, sendText, humanAlertPhone: "5215559990000" }
+    );
+
+    expect(result).toMatchObject({ autoAnswered: 0, escalated: 1 });
+    expect(agent).not.toHaveBeenCalled();
+    expect(travelHubToolRunner).not.toHaveBeenCalled();
+    expect(sendText).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        to: "5215551234567",
+        body: expect.stringMatching(/cotizaci[oó]n responsable|asesor/i),
+      })
+    );
+    expect(store.createIntent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        decision: expect.objectContaining({
+          intent: "quote_request",
+          escalationReason: "El mensaje solicita una acción comercial específica que debe revisar un agente humano.",
+          responseText: expect.stringMatching(/viajar con TravelHub/i),
+        }),
+      })
+    );
   });
 
   it("escalates unsupported non-text messages without crashing", async () => {
@@ -345,23 +379,10 @@ describe("processWhatsAppInboundEvents dynamic TravelHub tools", () => {
     );
   });
 
-  it("runs payment tool but keeps payment status on the human path", async () => {
+  it("preflights payment requests before tools or LLM", async () => {
     const store = makeStore();
-    const travelHubToolRunner = vi
-      .fn()
-      .mockResolvedValueOnce({ tool: "getClientByWhatsappPhone", status: "success", data: { found: true, clientId: "client-1", matchConfidence: "exact" } })
-      .mockResolvedValueOnce({ tool: "getClientActiveTrips", status: "success", data: { trips: [{ tripId: "trip-1", title: "Cancún" }] } })
-      .mockResolvedValueOnce({ tool: "getTripPaymentStatus", status: "needs_human", reason: "Payment status requires policy." });
-    const agent = vi.fn(async () => ({
-      intent: "existing_trip" as const,
-      summary: "Consulta pago",
-      confidence: 0.85,
-      decision: "needs_human" as const,
-      responseText: "Gracias por tu paciencia. Un asesor revisará el estatus de pago y te dará seguimiento personal.",
-      escalationReason: "Los pagos requieren revisión humana.",
-      citedKnowledgeIds: [],
-      citedToolCallIds: [],
-    }));
+    const travelHubToolRunner = vi.fn();
+    const agent = vi.fn();
     const sendText = vi.fn(async () => ({ ok: true, status: 200, providerMessageId: "wamid.out-1" }));
 
     const result = await processWhatsAppInboundEvents(
@@ -370,7 +391,9 @@ describe("processWhatsAppInboundEvents dynamic TravelHub tools", () => {
     );
 
     expect(result.escalated).toBe(1);
-    expect(travelHubToolRunner).toHaveBeenLastCalledWith({ tool: "getTripPaymentStatus", arguments: { clientId: "client-1", tripId: "trip-1" } });
+    expect(travelHubToolRunner).not.toHaveBeenCalled();
+    expect(agent).not.toHaveBeenCalled();
+    expect(sendText).toHaveBeenNthCalledWith(1, expect.objectContaining({ body: expect.stringMatching(/asesor de TravelHub/i) }));
     expect(JSON.stringify(result)).not.toMatch(/saldo|monto|service-role|Supabase/i);
   });
 

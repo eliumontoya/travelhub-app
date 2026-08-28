@@ -1,4 +1,5 @@
 import {
+  buildWhatsAppCommercialEscalationDecision,
   decideWhatsAppInboundMessage,
   type WhatsAppDynamicToolResult,
   type WhatsAppInboundAgentDecision,
@@ -171,6 +172,9 @@ async function runAgent(
 ) {
   if (event.messageType !== "text" || !event.body) return unsupportedDecision(event);
 
+  const commercialPreflight = buildWhatsAppCommercialEscalationDecision(event.body);
+  if (commercialPreflight) return commercialPreflight;
+
   const context = await (options.store ?? defaultStore).loadConversationContext(persisted.conversationId);
   const conversation = {
     id: persisted.conversationId,
@@ -278,6 +282,13 @@ export async function processWhatsAppInboundEvents(
       body: escalation.customerFollowUpText,
       status: customerSend.ok ? "sent" : "failed",
       sendResult: customerSend,
+    });
+    await store.insertOutboundMessage({
+      persisted,
+      purpose: "escalation_human_alert",
+      body: escalation.humanAlertText,
+      status: humanAlertSend.ok ? "sent" : "failed",
+      sendResult: humanAlertSend,
     });
     const escalationRecord = await store.createEscalation({ persisted, intentId: intent.id, escalation });
     await store.updateConversationStatus({
