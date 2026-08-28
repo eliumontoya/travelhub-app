@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Client } from "@/types";
 import { ClientMultiCombobox } from "@/components/ClientMultiCombobox";
@@ -20,6 +21,7 @@ export function TripClientsManager({
   onSubmit: (formData: FormData) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>(initialClients);
@@ -83,8 +85,13 @@ export function TripClientsManager({
     const fd = new FormData();
     selectedIds.forEach((id) => fd.append("clientIds", id));
     startTransition(async () => {
-      await onSubmit(fd);
-      close();
+      try {
+        await onSubmit(fd);
+        router.refresh();
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron guardar los cambios.");
+      }
     });
   }
 

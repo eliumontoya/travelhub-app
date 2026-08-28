@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Trip } from "@/types";
 
@@ -18,7 +19,9 @@ export function TripCommissionDialog({
   onSubmit: (formData: FormData) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [salePrice, setSalePrice] = useState(trip.salePrice?.toString() ?? "");
   const [commissionRate, setCommissionRate] = useState(trip.commissionRate?.toString() ?? "");
 
@@ -30,6 +33,7 @@ export function TripCommissionDialog({
   })();
 
   function open() {
+    setError(null);
     setSalePrice(trip.salePrice?.toString() ?? "");
     setCommissionRate(trip.commissionRate?.toString() ?? "");
     dialogRef.current?.showModal();
@@ -43,8 +47,13 @@ export function TripCommissionDialog({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      await onSubmit(formData);
-      close();
+      try {
+        await onSubmit(formData);
+        router.refresh();
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron guardar los cambios.");
+      }
     });
   }
 
@@ -97,6 +106,8 @@ export function TripCommissionDialog({
               {commissionAmount !== null ? currencyFormatter.format(commissionAmount) : "—"}
             </span>
           </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <button

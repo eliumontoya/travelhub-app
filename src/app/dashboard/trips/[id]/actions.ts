@@ -171,6 +171,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
+    supplierId: String(formData.get("supplierId") ?? "").trim() || undefined,
     metadata,
   });
   revalidateTrip(tripId);
@@ -191,6 +192,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
+    supplierId: String(formData.get("supplierId") ?? "").trim() || undefined,
     metadata,
   });
   revalidateTrip(tripId);
