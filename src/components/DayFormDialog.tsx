@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { TripDay } from "@/types";
 import { showUndoToast } from "@/components/UndoToast";
@@ -19,6 +20,7 @@ export function DayFormDialog({
   onUndoDelete?: () => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -39,8 +41,13 @@ export function DayFormDialog({
       return;
     }
     startTransition(async () => {
-      await onSubmit(formData);
-      close();
+      try {
+        await onSubmit(formData);
+        router.refresh();
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron guardar los cambios.");
+      }
     });
   }
 
