@@ -30,10 +30,13 @@ export async function createTripAction(formData: FormData) {
 
   const newClientName = String(formData.get("newClientName") ?? "").trim();
   if (newClientName) {
+    const newClientPhone = String(formData.get("newClientPhone") ?? "").trim() || undefined;
+    const newClientWhatsapp = String(formData.get("newClientWhatsapp") ?? "").trim() || newClientPhone;
     const client = await createClientRecord({
       name: newClientName,
       email: String(formData.get("newClientEmail") ?? "").trim() || undefined,
-      phone: String(formData.get("newClientPhone") ?? "").trim() || undefined,
+      phone: newClientPhone,
+      whatsapp: newClientWhatsapp,
     });
     clientIds.push(client.id);
   }

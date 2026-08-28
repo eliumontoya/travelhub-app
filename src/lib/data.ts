@@ -50,6 +50,10 @@ function uid() {
   return crypto.randomUUID();
 }
 
+function effectiveWhatsapp(whatsapp?: string, phone?: string) {
+  return whatsapp?.trim() || phone?.trim() || "";
+}
+
 // ---------- Pagination ----------
 
 export const DEFAULT_PAGE_SIZE = 20;
@@ -142,7 +146,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       slug: generateClientSlug(input.name),
       email: input.email ?? "",
       phone: input.phone ?? "",
-      whatsapp: input.whatsapp ?? input.phone ?? "",
+      whatsapp: effectiveWhatsapp(input.whatsapp, input.phone),
       notes: sanitizeNote(input.notes),
       referralSource: input.referralSource ?? null,
       birthDate: input.birthDate,
@@ -178,7 +182,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.name !== undefined) client.name = input.name;
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
-    if (input.whatsapp !== undefined) client.whatsapp = input.whatsapp;
+    if (input.whatsapp !== undefined) client.whatsapp = effectiveWhatsapp(input.whatsapp, input.phone ?? client.phone);
     if (input.notes !== undefined) client.notes = sanitizeNote(input.notes);
     if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
     if (input.birthDate !== undefined) client.birthDate = input.birthDate;

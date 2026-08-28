@@ -15,10 +15,13 @@ import {
 export async function updateClientAction(clientId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
+  const phone = String(formData.get("phone") ?? "").trim() || undefined;
+  const whatsapp = String(formData.get("whatsapp") ?? "").trim() || phone;
   await updateClient(clientId, {
     name,
     email: String(formData.get("email") ?? "").trim() || undefined,
-    phone: String(formData.get("phone") ?? "").trim() || undefined,
+    phone,
+    whatsapp,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     referralSource: String(formData.get("referralSource") ?? "").trim() || undefined,
     birthDate: String(formData.get("birthDate") ?? "").trim() || undefined,

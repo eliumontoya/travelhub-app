@@ -71,6 +71,9 @@ export default async function ClientDetailPage({
           <p className="mt-1 text-sm text-gray-500">
             {client.email} · {client.phone}
           </p>
+          {client.whatsapp && client.whatsapp !== client.phone ? (
+            <p className="mt-1 text-sm text-gray-500">WhatsApp: {client.whatsapp}</p>
+          ) : null}
           {client.notes && (
             <NoteHtml html={client.notes} className="mt-1 text-sm text-gray-500" />
           )}
@@ -146,6 +149,17 @@ export default async function ClientDetailPage({
                 defaultValue={client.phone}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">WhatsApp</label>
+              <input
+                name="whatsapp"
+                defaultValue={client.whatsapp ?? ""}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Si lo dejas vacío, se guardará el teléfono como WhatsApp.
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Fecha de nacimiento</label>
