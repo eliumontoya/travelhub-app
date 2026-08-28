@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState, useTransition } from "react";
 import { Trip } from "@/types";
 
 export function TripBudgetDialog({
@@ -13,9 +14,12 @@ export function TripBudgetDialog({
   onSubmit: (formData: FormData) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function open() {
+    setError(null);
     dialogRef.current?.showModal();
   }
 
@@ -27,8 +31,13 @@ export function TripBudgetDialog({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      await onSubmit(formData);
-      close();
+      try {
+        await onSubmit(formData);
+        router.refresh();
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron guardar los cambios.");
+      }
     });
   }
 
@@ -54,6 +63,8 @@ export function TripBudgetDialog({
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <button

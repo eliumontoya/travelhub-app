@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Tag } from "@/types";
 import { TagMultiCombobox } from "@/components/TagMultiCombobox";
@@ -18,6 +19,7 @@ export function TripTagsManager({
   onSubmit: (formData: FormData) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +37,13 @@ export function TripTagsManager({
     const formData = new FormData(e.currentTarget);
     setError(null);
     startTransition(async () => {
-      await onSubmit(formData);
-      close();
+      try {
+        await onSubmit(formData);
+        router.refresh();
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron guardar los cambios.");
+      }
     });
   }
 

@@ -77,6 +77,39 @@ describe("item server action metadata validation", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/trips/trip-1");
   });
 
+
+  it("passes supplierId when creating an item", async () => {
+    const formData = new FormData();
+    formData.set("type", "hotel");
+    formData.set("title", "Hotel Centro");
+    formData.set("supplierId", "supplier-1");
+    formData.set("metadata", "null");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
+    mocks.createItem.mockResolvedValueOnce({ id: "item-1" });
+
+    await addItemAction("trip-1", "day-1", formData);
+
+    expect(mocks.createItem).toHaveBeenCalledWith(expect.objectContaining({
+      supplierId: "supplier-1",
+    }));
+  });
+
+  it("passes supplierId when editing an item", async () => {
+    const formData = new FormData();
+    formData.set("type", "hotel");
+    formData.set("title", "Hotel Centro");
+    formData.set("supplierId", "supplier-2");
+    formData.set("metadata", "null");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
+    mocks.updateItem.mockResolvedValueOnce({ id: "item-1" });
+
+    await editItemAction("trip-1", "item-1", formData);
+
+    expect(mocks.updateItem).toHaveBeenCalledWith("item-1", expect.objectContaining({
+      supplierId: "supplier-2",
+    }));
+  });
+
   it("blocks edits when the trip is published", async () => {
     const formData = new FormData();
     formData.set("type", "note");

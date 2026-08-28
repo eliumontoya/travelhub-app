@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Item, ItemDocument, ItemType, Supplier } from "@/types";
 import { itemTypeMeta } from "@/lib/item-meta";
@@ -188,6 +189,7 @@ export function ItemFormDialog({
   documentsEnabled?: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -245,6 +247,7 @@ export function ItemFormDialog({
     startTransition(async () => {
       try {
         await onSubmit(formData);
+        router.refresh();
         close();
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo guardar el item.");

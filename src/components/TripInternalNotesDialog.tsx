@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 
@@ -13,6 +14,7 @@ export function TripInternalNotesDialog({
   onSubmit: (formData: FormData) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -29,8 +31,13 @@ export function TripInternalNotesDialog({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      await onSubmit(formData);
-      close();
+      try {
+        await onSubmit(formData);
+        router.refresh();
+        close();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudieron guardar los cambios.");
+      }
     });
   }
 
