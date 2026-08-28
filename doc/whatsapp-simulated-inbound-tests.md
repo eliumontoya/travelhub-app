@@ -57,6 +57,14 @@ WHATSAPP_HUMAN_ALERT_PHONE
 
 como teléfono simulado de remitente, salvo que se pase `--from` explícitamente.
 
+## Resolución CRM de cliente por WhatsApp
+
+Antes de probar preguntas dinámicas sobre viajes (por ejemplo, “¿cómo va mi viaje?”), verifica que el cliente tenga `clients.whatsapp` con el número de WhatsApp del remitente. El webhook entrega `event.fromPhone` en formato E.164 sin `+`; la búsqueda compara solo dígitos, así que formatos como `+52 ...` y `52...` son compatibles.
+
+La migración `*_clients_whatsapp_lookup.sql` rellena `clients.whatsapp` desde `phone` cuando está vacío y crea un trigger para inserts/updates futuros. `whatsapp_contacts.linked_client_id` sigue funcionando como vínculo manual de compatibilidad si no hay match por `clients.whatsapp`.
+
+No pegues teléfonos completos en issues, PRs ni logs compartidos; usa prefijos/sufijos enmascarados como `521…4567`.
+
 ## Variables para habilitar LLM
 
 Para que el agente deje de usar solo el fallback conservador y pueda auto-responder desde `whatsapp_knowledge_entries`, configurar estas variables en Vercel Production:

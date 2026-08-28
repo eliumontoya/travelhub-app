@@ -80,6 +80,7 @@ export type CreateClientInput = {
   name: string;
   email?: string;
   phone?: string;
+  whatsapp?: string;
   notes?: string;
   referralSource?: string;
   birthDate?: string;
@@ -141,6 +142,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       slug: generateClientSlug(input.name),
       email: input.email ?? "",
       phone: input.phone ?? "",
+      whatsapp: input.whatsapp ?? input.phone ?? "",
       notes: sanitizeNote(input.notes),
       referralSource: input.referralSource ?? null,
       birthDate: input.birthDate,
@@ -158,6 +160,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       slug: generateClientSlug(input.name),
       email: input.email,
       phone: input.phone,
+      whatsapp: input.whatsapp,
       notes: sanitizeNote(input.notes),
       referral_source: input.referralSource,
       birth_date: input.birthDate || null,
@@ -175,6 +178,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
     if (input.name !== undefined) client.name = input.name;
     if (input.email !== undefined) client.email = input.email;
     if (input.phone !== undefined) client.phone = input.phone;
+    if (input.whatsapp !== undefined) client.whatsapp = input.whatsapp;
     if (input.notes !== undefined) client.notes = sanitizeNote(input.notes);
     if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
     if (input.birthDate !== undefined) client.birthDate = input.birthDate;
@@ -187,6 +191,7 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
   if (input.name !== undefined) patch.name = input.name;
   if (input.email !== undefined) patch.email = input.email;
   if (input.phone !== undefined) patch.phone = input.phone;
+  if (input.whatsapp !== undefined) patch.whatsapp = input.whatsapp;
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.referralSource !== undefined) patch.referral_source = input.referralSource || null;
   if (input.birthDate !== undefined) patch.birth_date = input.birthDate || null;
@@ -229,6 +234,7 @@ function rowToClient(row: Record<string, unknown>): Client {
     slug: (row.slug as string) ?? undefined,
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
+    whatsapp: (row.whatsapp as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
     referralSource: (row.referral_source as string) ?? null,
     birthDate: (row.birth_date as string) ?? undefined,
