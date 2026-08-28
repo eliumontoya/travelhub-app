@@ -140,6 +140,11 @@ export function NewTripForm({
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
+          <input
+            name="newClientWhatsapp"
+            placeholder="WhatsApp (opcional; usa teléfono si queda vacío)"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
         </div>
       </fieldset>
 

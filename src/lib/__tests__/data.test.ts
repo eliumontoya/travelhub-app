@@ -97,6 +97,36 @@ describe("data layer (mock mode)", () => {
       const found = await getClientById(created.id);
       expect(found!.name).toBe("Updated Name");
     });
+
+    it("copies phone into whatsapp when create receives blank whatsapp", async () => {
+      const created = await createClient({
+        name: "Blank WhatsApp",
+        phone: "+52 55 1111 2222",
+        whatsapp: "",
+      });
+
+      expect(created.whatsapp).toBe("+52 55 1111 2222");
+    });
+
+    it("copies phone into whatsapp on update only when whatsapp is blank", async () => {
+      const created = await createClient({
+        name: "Update WhatsApp",
+        phone: "+52 55 3333 4444",
+        whatsapp: "+52 1 55 9999 0000",
+      });
+
+      const explicit = await updateClient(created.id, {
+        phone: "+52 55 3333 4444",
+        whatsapp: "+52 1 55 9999 0000",
+      });
+      expect(explicit.whatsapp).toBe("+52 1 55 9999 0000");
+
+      const fallback = await updateClient(created.id, {
+        phone: "+52 55 7777 8888",
+        whatsapp: "",
+      });
+      expect(fallback.whatsapp).toBe("+52 55 7777 8888");
+    });
   });
 
 

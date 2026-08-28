@@ -14,7 +14,14 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Tool caches and generated files:
     ".claude/**",
+    ".codex/**",
     ".config/**",
+    ".engram/**",
+    ".nodeterm/**",
+    ".obsidian/**",
+    ".opencode/**",
+    ".vercel/**",
+    ".worktrees/**",
     "node_modules/**",
   ]),
 ]);

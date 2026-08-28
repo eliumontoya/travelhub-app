@@ -21,10 +21,13 @@ export async function createClientAction(
   }
 
   try {
+    const phone = (formData.get("phone") as string)?.trim() || undefined;
+    const whatsapp = (formData.get("whatsapp") as string)?.trim() || phone;
     const client = await createClient({
       name,
       email: email || undefined,
-      phone: (formData.get("phone") as string)?.trim() || undefined,
+      phone,
+      whatsapp,
       referralSource: (formData.get("referralSource") as string)?.trim() || undefined,
       birthDate: (formData.get("birthDate") as string)?.trim() || undefined,
     });
