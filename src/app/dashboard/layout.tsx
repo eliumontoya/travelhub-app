@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { signOutAction } from "@/app/dashboard/settings/actions";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { ALL_CLIENTS_PAGE_SIZE, ALL_TRIPS_PAGE_SIZE, getClients, getTripsWithClients } from "@/lib/data";
+import { getChangelog } from "@/lib/changelog";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,8 @@ export default async function DashboardLayout({
     } = await supabase.auth.getUser();
     email = user?.email ?? null;
   }
+
+  const changelog = getChangelog();
 
   const [{ items: clients }, { items: trips }] = await Promise.all([
     getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
@@ -68,7 +71,7 @@ export default async function DashboardLayout({
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <ChangelogDialog />
+            <ChangelogDialog entries={changelog} />
             <ThemeToggle />
             <ProfileMenu email={email} signOutAction={signOutAction} />
           </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { changelog } from "@/lib/changelog";
+import type { ChangelogEntry } from "@/lib/changelog";
 
-export function ChangelogDialog() {
+export function ChangelogDialog({ entries }: { entries: ChangelogEntry[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   function open() {
@@ -41,7 +41,7 @@ export function ChangelogDialog() {
           </div>
 
           <ul className="max-h-96 space-y-4 overflow-y-auto">
-            {changelog.map((entry) => (
+            {entries.map((entry) => (
               <li
                 key={entry.date + entry.title}
                 className="border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-gray-800"
