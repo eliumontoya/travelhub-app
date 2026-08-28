@@ -241,25 +241,25 @@ describe("structured item render summaries", () => {
 });
 
 describe("flight status flight number resolution", () => {
-  it("uses explicit metadata flight number before title parsing", async () => {
+  it("uses the explicit metadata flight number field", async () => {
     const previousApiKey = process.env.FLIGHT_API_KEY;
     delete process.env.FLIGHT_API_KEY;
 
-    await expect(getFlightStatus("Flight to NY", "1234")).resolves.toEqual({
+    await expect(getFlightStatus("AM 123")).resolves.toEqual({
       status: null,
-      flightNumber: "1234",
+      flightNumber: "AM123",
     });
 
     process.env.FLIGHT_API_KEY = previousApiKey;
   });
 
-  it("falls back to parsing the flight number from the title", async () => {
+  it("does not infer a flight number from the item title", async () => {
     const previousApiKey = process.env.FLIGHT_API_KEY;
     delete process.env.FLIGHT_API_KEY;
 
-    await expect(getFlightStatus("AA 1234")).resolves.toEqual({
+    await expect(getFlightStatus()).resolves.toEqual({
       status: null,
-      flightNumber: "AA1234",
+      flightNumber: null,
     });
 
     process.env.FLIGHT_API_KEY = previousApiKey;

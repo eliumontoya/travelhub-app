@@ -17,20 +17,9 @@ const FLIGHT_STATUS_LABELS: Record<string, string> = {
   diverted: "Desviado",
 };
 
-// El modelo de datos no tiene un campo dedicado a número de vuelo: se
-// extrae del título del item buscando un patrón "código de aerolínea +
-// número" (ej. "AM123" en "Vuelo AM 123 a Cancún").
-function extractFlightNumber(title: string): string | null {
-  const tokens = title.toUpperCase().match(/[A-Z0-9]+/g) ?? [];
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    if (/^[A-Z]{2,3}\d{1,4}$/.test(token)) return token;
-    const next = tokens[i + 1];
-    if (/^[A-Z]{2,3}$/.test(token) && next && /^\d{1,4}$/.test(next)) {
-      return token + next;
-    }
-  }
-  return null;
+function normalizeFlightNumber(flightNumber: string | null | undefined): string | null {
+  const normalized = flightNumber?.trim().toUpperCase().replace(/\s+/g, "") ?? "";
+  return normalized || null;
 }
 
 interface FlightStatusResult {
@@ -38,15 +27,15 @@ interface FlightStatusResult {
   flightNumber: string | null;
 }
 
-export async function getFlightStatus(title: string, explicitFlightNumber?: string | null): Promise<FlightStatusResult> {
-  const apiKey = process.env.FLIGHT_API_KEY;
-  const flightNumber = explicitFlightNumber || extractFlightNumber(title);
-  if (!apiKey) return { status: null, flightNumber };
-
+export async function getFlightStatus(flightNumberInput?: string | null): Promise<FlightStatusResult> {
+  const flightNumber = normalizeFlightNumber(flightNumberInput);
   if (!flightNumber) return { status: null, flightNumber: null };
 
+  const apiKey = process.env.FLIGHT_API_KEY;
+  if (!apiKey) return { status: null, flightNumber };
+
   try {
-    const url = `${AVIATIONSTACK_URL}?access_key=${apiKey}&flight_iata=${flightNumber}`;
+    const url = `${AVIATIONSTACK_URL}?access_key=${apiKey}&flight_iata=${encodeURIComponent(flightNumber)}`;
     const res = await fetch(url);
     if (!res.ok) return { status: null, flightNumber };
 
