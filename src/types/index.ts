@@ -27,6 +27,7 @@ export interface Client {
   slug?: string;
   email: string;
   phone: string;
+  whatsapp?: string;
   notes?: string;
   referralSource?: string | null;
   birthDate?: string;

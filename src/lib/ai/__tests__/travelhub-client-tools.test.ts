@@ -47,8 +47,49 @@ function makeClient(handlers: Record<string, TableHandler | TableHandler[]>) {
 }
 
 describe("controlled TravelHub client tools", () => {
-  it("resolves a linked WhatsApp contact to an exact client match", async () => {
+  it("resolves clients.whatsapp before consulting manual WhatsApp contact links", async () => {
     const mock = makeClient({
+      clients: (query) => {
+        query.result = { data: [{ id: "client-crm-1", name: "Jane CRM", whatsapp: "+52 1 555 123 4567" }], error: null };
+      },
+      crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
+    });
+
+    const result = await getClientByWhatsappPhone({ phone: "5215551234567" }, mock.client);
+
+    expect(result.status).toBe("success");
+    expect(result.data).toMatchObject({ found: true, clientId: "client-crm-1", displayName: "Jane CRM", matchConfidence: "exact" });
+    expect(mock.queries.clients[0].operations).toContainEqual({ name: "eq", args: ["whatsapp_normalized", "5215551234567"] });
+    expect(mock.queries.clients[0].operations).toContainEqual({ name: "limit", args: [2] });
+    expect(mock.from).not.toHaveBeenCalledWith("whatsapp_contacts");
+  });
+
+  it("marks duplicate clients.whatsapp matches as ambiguous before fallback lookup", async () => {
+    const mock = makeClient({
+      clients: (query) => {
+        query.result = {
+          data: [
+            { id: "client-1", name: "Jane One", whatsapp: "5215551234567" },
+            { id: "client-2", name: "Jane Two", whatsapp: "+52 1 555 123 4567" },
+          ],
+          error: null,
+        };
+      },
+      crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
+    });
+
+    const result = await getClientByWhatsappPhone({ phone: "+52 1 555 123 4567" }, mock.client);
+
+    expect(result.status).toBe("ambiguous");
+    expect(result.data).toMatchObject({ found: false, matchConfidence: "possible" });
+    expect(mock.from).not.toHaveBeenCalledWith("whatsapp_contacts");
+  });
+
+  it("falls back to a linked WhatsApp contact when clients.whatsapp has no match", async () => {
+    const mock = makeClient({
+      clients: (query) => {
+        query.result = { data: [], error: null };
+      },
       whatsapp_contacts: (query) => {
         query.result = { data: { linked_client_id: "client-1", display_name: "Jane", clients: { name: "Jane Traveler" } }, error: null };
       },
@@ -60,7 +101,6 @@ describe("controlled TravelHub client tools", () => {
     expect(result.status).toBe("success");
     expect(result.data).toMatchObject({ found: true, clientId: "client-1", displayName: "Jane Traveler", matchConfidence: "exact" });
     expect(mock.queries.whatsapp_contacts[0].operations).toContainEqual({ name: "eq", args: ["phone_e164", "5215551234567"] });
-    expect(mock.from).not.toHaveBeenCalledWith("clients");
   });
 
   it("marks active trip lookup as ambiguous when a client has multiple active trips", async () => {

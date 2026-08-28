@@ -135,6 +135,32 @@ async function withAudit<TData>(
   return { ...result, audit: await auditToolCall(client, result.tool, result.status, identifiers) };
 }
 
+
+async function lookupClientRowsByWhatsapp(client: TravelHubToolSupabaseClient, phone: string) {
+  const result = await client
+    .from("clients")
+    .select("id, name, whatsapp")
+    .eq("whatsapp_normalized", phone)
+    .limit(2);
+  if (result.error) throw result.error;
+  return Array.isArray(result.data) ? result.data as Record<string, unknown>[] : [];
+}
+
+function clientLookupResultFromMatches(matches: Record<string, unknown>[], ambiguousReason: string): TravelHubClientToolResult<TravelHubClientMatch | undefined> | null {
+  if (matches.length === 1 && typeof matches[0].id === "string") {
+    return safeResult("getClientByWhatsappPhone", "success", {
+      found: true,
+      clientId: matches[0].id,
+      displayName: typeof matches[0].name === "string" ? matches[0].name : undefined,
+      matchConfidence: "exact" as const,
+    });
+  }
+  if (matches.length > 1) {
+    return safeResult("getClientByWhatsappPhone", "ambiguous", { found: false, matchConfidence: "possible" as const }, ambiguousReason);
+  }
+  return null;
+}
+
 function getClientName(row: Record<string, unknown>) {
   const nested = row.clients;
   if (nested && typeof nested === "object" && !Array.isArray(nested) && typeof (nested as { name?: unknown }).name === "string") {
@@ -153,6 +179,13 @@ export async function getClientByWhatsappPhone(
 
   const phone = normalizePhone(parsed.data.phone);
   try {
+    const whatsappMatches = await lookupClientRowsByWhatsapp(client, phone);
+    const whatsappResult = clientLookupResultFromMatches(whatsappMatches, "Multiple TravelHub clients match this WhatsApp phone.");
+    if (whatsappResult) {
+      const clientId = whatsappResult.data?.found === true ? whatsappResult.data.clientId : undefined;
+      return withAudit(client, whatsappResult, { phone, clientId });
+    }
+
     const contact = await client
       .from("whatsapp_contacts")
       .select("linked_client_id, display_name, phone_e164, clients(id, name)")
@@ -181,24 +214,10 @@ export async function getClientByWhatsappPhone(
       .limit(2);
     if (fallback.error) throw fallback.error;
     const matches = Array.isArray(fallback.data) ? fallback.data as Record<string, unknown>[] : [];
-    if (matches.length === 1 && typeof matches[0].id === "string") {
-      return withAudit(
-        client,
-        safeResult("getClientByWhatsappPhone", "success", {
-          found: true,
-          clientId: matches[0].id,
-          displayName: typeof matches[0].name === "string" ? matches[0].name : undefined,
-          matchConfidence: "exact",
-        }),
-        { phone, clientId: matches[0].id }
-      );
-    }
-    if (matches.length > 1) {
-      return withAudit(
-        client,
-        safeResult("getClientByWhatsappPhone", "ambiguous", { found: false, matchConfidence: "possible" }, "Multiple possible clients match this phone."),
-        { phone }
-      );
+    const fallbackResult = clientLookupResultFromMatches(matches, "Multiple possible clients match this phone.");
+    if (fallbackResult) {
+      const clientId = fallbackResult.data?.found === true ? fallbackResult.data.clientId : undefined;
+      return withAudit(client, fallbackResult, { phone, clientId });
     }
 
     return withAudit(
@@ -210,6 +229,7 @@ export async function getClientByWhatsappPhone(
     return withAudit(client, safeResult("getClientByWhatsappPhone", "error", undefined, sanitizeError(error) ?? "Client lookup failed."), { phone });
   }
 }
+
 
 function normalizeTrip(row: Record<string, unknown>): TravelHubTripChoice | null {
   const source = row.trips && typeof row.trips === "object" && !Array.isArray(row.trips) ? row.trips as Record<string, unknown> : row;
