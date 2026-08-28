@@ -16,7 +16,14 @@ function priorityFor(reason: string, event: NormalizedWhatsAppInboundEvent) {
   return "normal";
 }
 
-function defaultCustomerFollowUp() {
+function defaultCustomerFollowUp(event: NormalizedWhatsAppInboundEvent, decision: WhatsAppInboundAgentDecision) {
+  const text = `${event.body || ""} ${decision.summary || ""} ${decision.escalationReason || ""}`.toLowerCase();
+  if (/cotiz|precio|cu[aá]nto cuesta|costo/.test(text)) {
+    return "Gracias por tu interés en viajar con TravelHub. Para darte una cotización responsable necesitamos revisar fechas, número de viajeros, tipo de hospedaje, vuelos y preferencias; un asesor te dará seguimiento personalmente para ayudarte con una propuesta adecuada.";
+  }
+  if (/pago|pagado|saldo|anticipo|comprobante|factura/.test(text)) {
+    return "Gracias por escribirnos. Para cuidar que la información de pagos sea correcta, un asesor de TravelHub revisará tu caso y te dará seguimiento personalmente.";
+  }
   return [
     "Gracias por escribirnos y por contarnos lo que necesitas.",
     "Entendemos que es importante recibir orientación clara antes de avanzar, así que un asesor de TravelHub revisará tu mensaje y te dará seguimiento personalmente para ayudarte con cuidado.",
@@ -36,7 +43,7 @@ export function buildWhatsAppEscalationWork(
     reason,
     priority,
     summary,
-    customerFollowUpText: decision.responseText || defaultCustomerFollowUp(),
+    customerFollowUpText: decision.responseText || defaultCustomerFollowUp(event, decision),
     humanAlertText: [
       "TravelHub WhatsApp requiere atención humana.",
       `Cliente: ${sender}`,

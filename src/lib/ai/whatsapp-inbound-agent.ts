@@ -105,7 +105,8 @@ function safeEscalation(
   summary: string,
   escalationReason: string,
   confidence = 0,
-  providerDiagnostics?: WhatsAppInboundAgentDiagnostics
+  providerDiagnostics?: WhatsAppInboundAgentDiagnostics,
+  responseText?: string
 ): WhatsAppInboundAgentDecision {
   return {
     intent,
@@ -115,6 +116,7 @@ function safeEscalation(
     escalationReason,
     citedKnowledgeIds: [],
     citedToolCallIds: [],
+    ...(responseText ? { responseText } : {}),
     ...(providerDiagnostics ? { providerDiagnostics } : {}),
   };
 }
@@ -175,6 +177,29 @@ function hasAny(text: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(text));
 }
 
+const commercialEscalationPatterns = [
+  /cotiz|precio|cu[aá]nto cuesta|costo|reserv|pagar|pago|anticipo|cancel|reembolso|factura|cambiar.*vuelo|confirmar.*compra/i,
+];
+
+export function buildWhatsAppCommercialEscalationDecision(messageText: string): WhatsAppInboundAgentDecision | null {
+  const trimmed = messageText.trim();
+  if (!trimmed || !hasAny(trimmed.toLowerCase(), commercialEscalationPatterns)) return null;
+
+  const isQuote = /cotiz|precio|cu[aá]nto cuesta|costo/i.test(trimmed);
+  const responseText = isQuote
+    ? "Gracias por tu interés en viajar con TravelHub. Para darte una cotización responsable necesitamos revisar fechas, número de viajeros, tipo de hospedaje, vuelos y preferencias; un asesor te dará seguimiento personalmente para ayudarte con una propuesta adecuada."
+    : "Gracias por escribirnos. Tu solicitud requiere revisión personalizada para cuidar que la información sea correcta; un asesor de TravelHub la revisará y te dará seguimiento personalmente.";
+
+  return safeEscalation(
+    "quote_request",
+    trimmed.slice(0, 180),
+    "El mensaje solicita una acción comercial específica que debe revisar un agente humano.",
+    0.9,
+    undefined,
+    responseText
+  );
+}
+
 function preflightEscalation(messageText: string, dynamicToolResults: WhatsAppDynamicToolResult[] = []): WhatsAppInboundAgentDecision | null {
   const trimmed = messageText.trim();
   if (!trimmed) {
@@ -185,10 +210,6 @@ function preflightEscalation(messageText: string, dynamicToolResults: WhatsAppDy
   const sensitivePatterns = [
     /emergencia|urgente|m[eé]dic|hospital|accidente|legal|abogado|demanda|pasaporte perdido|perd[ií].*(documento|pasaporte)/i,
   ];
-  const commercialPatterns = [
-    /cotiz|precio|cu[aá]nto cuesta|costo|reserv|pagar|pago|anticipo|cancel|reembolso|factura|cambiar.*vuelo|confirmar.*compra/i,
-  ];
-
   if (hasAny(normalized, sensitivePatterns)) {
     return safeEscalation(
       "support",
@@ -197,12 +218,9 @@ function preflightEscalation(messageText: string, dynamicToolResults: WhatsAppDy
     );
   }
 
-  if (hasAny(normalized, commercialPatterns) && dynamicToolResults.length === 0) {
-    return safeEscalation(
-      "quote_request",
-      trimmed.slice(0, 180),
-      "El mensaje solicita una acción comercial específica que debe revisar un agente humano."
-    );
+  if (dynamicToolResults.length === 0) {
+    const commercial = buildWhatsAppCommercialEscalationDecision(trimmed);
+    if (commercial) return commercial;
   }
 
   return null;
