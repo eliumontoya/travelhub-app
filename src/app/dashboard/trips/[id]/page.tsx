@@ -43,6 +43,7 @@ import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
+import { TripPublishSubmitButton } from "@/components/TripPublishSubmitButton";
 import { DuplicateTripButton } from "@/components/DuplicateTripButton";
 import { DeleteTripDialog } from "@/components/DeleteTripDialog";
 import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
@@ -191,12 +192,7 @@ export default async function TripEditorPage({
 
             <div className="flex flex-wrap gap-2 print:hidden lg:justify-end">
               <form action={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
-                >
-                  {trip.status === "published" ? "Pasar a borrador" : "Publicar"}
-                </button>
+                <TripPublishSubmitButton isPublished={trip.status === "published"} />
               </form>
               <Link
                 href={travelerHref}
