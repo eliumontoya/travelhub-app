@@ -16,10 +16,11 @@ TravelHub suma capacidades sin fricción. Cada integración es opt-in y **degrad
 
 ## Estado de vuelos en vivo
 
-Los ítems tipo vuelo muestran un badge con el estado real del vuelo: Scheduled, Active, Landed, Cancelled, Incident, Diverted.
+Los ítems tipo vuelo muestran un badge con el estado real del vuelo: Programado, En vuelo, Aterrizó, Cancelado, Incidente o Desviado.
 
-- Se actualiza automáticamente con caché de 5 minutos
-- Detecta el número de vuelo desde el título del ítem
+- Se consulta manualmente desde el badge para evitar gastar requests innecesarios
+- Usa únicamente el campo estructurado **Número de vuelo** del ítem, no lo infiere desde el título
+- Guarda el último resultado en `localStorage` con TTL configurable (`NEXT_PUBLIC_FLIGHT_STATUS_CACHE_HOURS`, default 24h)
 - API: Aviationstack (se necesita `FLIGHT_API_KEY`)
 
 ---

@@ -379,10 +379,7 @@ export default async function TripEditorPage({
                                 </span>
                               )}
                               {item.type === "flight" && (
-                                <FlightStatusBadge
-                                  title={item.title}
-                                  flightNumber={getItemFlightNumber(item)}
-                                />
+                                <FlightStatusBadge flightNumber={getItemFlightNumber(item)} />
                               )}
                             </div>
                             {resolvedLocation && (
