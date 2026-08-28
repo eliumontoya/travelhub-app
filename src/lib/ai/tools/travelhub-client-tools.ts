@@ -55,6 +55,7 @@ const allowedTools: TravelHubClientToolName[] = [
   "getTripPaymentStatus",
   "getTripDocumentsStatus",
 ];
+const unpublishedTripPlanningMessage = "Tu viaje todavía está siendo planeado por un agente. En cuanto esté publicado, podrás tener más información.";
 
 function createDefaultToolClient(): TravelHubToolSupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -82,6 +83,13 @@ function safeResult<TData = unknown>(tool: TravelHubClientToolName | string, sta
     status,
     ...(data === undefined ? {} : { data }),
     ...(reason ? { reason } : {}),
+  };
+}
+
+function unpublishedTripPlanningData() {
+  return {
+    publicItineraryAvailable: false,
+    safeMessage: unpublishedTripPlanningMessage,
   };
 }
 
@@ -234,13 +242,24 @@ export async function getClientByWhatsappPhone(
 function normalizeTrip(row: Record<string, unknown>): TravelHubTripChoice | null {
   const source = row.trips && typeof row.trips === "object" && !Array.isArray(row.trips) ? row.trips as Record<string, unknown> : row;
   if (typeof source.id !== "string" || typeof source.title !== "string") return null;
+  const status = typeof source.status === "string" ? source.status : "draft";
+  if (status !== "published") {
+    return {
+      tripId: source.id,
+      title: "Viaje en planeación",
+      slug: null,
+      startDate: null,
+      endDate: null,
+      status,
+    };
+  }
   return {
     tripId: source.id,
     title: source.title,
     slug: typeof source.slug === "string" ? source.slug : null,
     startDate: typeof source.start_date === "string" ? source.start_date : null,
     endDate: typeof source.end_date === "string" ? source.end_date : null,
-    status: typeof source.status === "string" ? source.status : "draft",
+    status,
   };
 }
 
@@ -317,6 +336,29 @@ async function guardTripTool(tool: TravelHubClientToolName, input: { clientId: s
         result: await withAudit(
           client,
           safeResult(tool, "blocked", undefined, "Requested trip does not belong to the resolved WhatsApp client."),
+          parsed.data
+        ),
+      };
+    }
+    const tripStatus = await client
+      .from("trips")
+      .select("id, status")
+      .eq("id", parsed.data.tripId)
+      .maybeSingle();
+    if (tripStatus.error) throw tripStatus.error;
+    const tripRow = tripStatus.data as Record<string, unknown> | null;
+    if (!tripRow || typeof tripRow.id !== "string") {
+      return {
+        parsed: parsed.data,
+        result: await withAudit(client, safeResult(tool, "not_found", undefined, "Trip not found."), parsed.data),
+      };
+    }
+    if (tripRow.status !== "published") {
+      return {
+        parsed: parsed.data,
+        result: await withAudit(
+          client,
+          safeResult(tool, "success", unpublishedTripPlanningData(), "Trip is not published yet."),
           parsed.data
         ),
       };

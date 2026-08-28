@@ -3,6 +3,7 @@ import {
   getClientActiveTrips,
   getClientByWhatsappPhone,
   getTripDocumentsStatus,
+  getTripItineraryStatus,
   getTripPaymentStatus,
   getTripSummary,
   runTravelHubClientTool,
@@ -122,10 +123,35 @@ describe("controlled TravelHub client tools", () => {
     expect(result.data?.trips[0]).toEqual(expect.not.objectContaining({ clientId: expect.anything() }));
   });
 
+  it("minimizes unpublished active trip choices before passing them to WhatsApp", async () => {
+    const mock = makeClient({
+      trip_clients: (query) => {
+        query.result = { data: [
+          { trip_id: "trip-1", trips: { id: "trip-1", title: "Secret Draft", slug: "secret-draft", start_date: "2026-09-01", end_date: "2026-09-05", status: "draft" } },
+        ], error: null };
+      },
+      trips: (query) => { query.result = { data: [], error: null }; },
+      crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
+    });
+
+    const result = await getClientActiveTrips({ clientId: "client-1" }, mock.client);
+
+    expect(result.status).toBe("success");
+    expect(result.data?.trips).toEqual([
+      { tripId: "trip-1", title: "Viaje en planeación", slug: null, startDate: null, endDate: null, status: "draft" },
+    ]);
+    expect(JSON.stringify(result)).not.toContain("Secret Draft");
+    expect(JSON.stringify(result)).not.toContain("secret-draft");
+    expect(JSON.stringify(result)).not.toContain("2026-09-01");
+  });
+
   it("returns a safe summary for an owned trip", async () => {
     const mock = makeClient({
       trip_clients: (query) => { query.result = { data: { trip_id: "trip-1" }, error: null }; },
-      trips: (query) => { query.result = { data: { id: "trip-1", title: "Cancún familiar", slug: "cancun", start_date: "2026-09-01", end_date: "2026-09-05", status: "published", traveler_count: 4, currency: "MXN", show_costs_to_client: false }, error: null }; },
+      trips: [
+        (query) => { query.result = { data: { id: "trip-1", status: "published" }, error: null }; },
+        (query) => { query.result = { data: { id: "trip-1", title: "Cancún familiar", slug: "cancun", start_date: "2026-09-01", end_date: "2026-09-05", status: "published", traveler_count: 4, currency: "MXN", show_costs_to_client: false }, error: null }; },
+      ],
       crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
     });
 
@@ -134,6 +160,24 @@ describe("controlled TravelHub client tools", () => {
     expect(result.status).toBe("success");
     expect(result.data).toMatchObject({ tripId: "trip-1", title: "Cancún familiar", status: "published", travelerCount: 4 });
     expect(result.data).toEqual(expect.not.objectContaining({ salePrice: expect.anything(), commissionRate: expect.anything() }));
+  });
+
+  it("returns only a planning-safe message for an owned unpublished trip summary", async () => {
+    const mock = makeClient({
+      trip_clients: (query) => { query.result = { data: { trip_id: "trip-1" }, error: null }; },
+      trips: (query) => { query.result = { data: { id: "trip-1", status: "draft" }, error: null }; },
+      crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
+    });
+
+    const result = await getTripSummary({ clientId: "client-1", tripId: "trip-1" }, mock.client);
+
+    expect(result.status).toBe("success");
+    expect(result.data).toEqual({
+      publicItineraryAvailable: false,
+      safeMessage: "Tu viaje todavía está siendo planeado por un agente. En cuanto esté publicado, podrás tener más información.",
+    });
+    expect(JSON.stringify(result)).not.toContain("Cancún");
+    expect(mock.queries.trips).toHaveLength(1);
   });
 
   it("blocks trip summary when the trip does not belong to the resolved client", async () => {
@@ -153,6 +197,7 @@ describe("controlled TravelHub client tools", () => {
   it("requires a human for payment status until payment policy and schema exist", async () => {
     const mock = makeClient({
       trip_clients: (query) => { query.result = { data: { trip_id: "trip-1" }, error: null }; },
+      trips: (query) => { query.result = { data: { id: "trip-1", status: "published" }, error: null }; },
       crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
     });
 
@@ -166,6 +211,7 @@ describe("controlled TravelHub client tools", () => {
   it("summarizes document availability without returning private paths or URLs", async () => {
     const mock = makeClient({
       trip_clients: (query) => { query.result = { data: { trip_id: "trip-1" }, error: null }; },
+      trips: (query) => { query.result = { data: { id: "trip-1", status: "published" }, error: null }; },
       trip_documents: (query) => { query.result = { data: [{ id: "doc-1", file_path: "secret/path.pdf", filename: "Voucher.pdf" }], error: null }; },
       trip_days: (query) => { query.result = { data: [{ items: [{ documents: [{ id: "item-doc-1", file_url: "secret/item.pdf" }] }] }], error: null }; },
       crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
@@ -177,6 +223,41 @@ describe("controlled TravelHub client tools", () => {
     expect(result.data).toMatchObject({ tripDocumentCount: 1, itemDocumentCount: 1, hasDocuments: true });
     expect(JSON.stringify(result)).not.toContain("secret/path.pdf");
     expect(JSON.stringify(result)).not.toContain("secret/item.pdf");
+  });
+
+  it("does not read itinerary rows for an owned unpublished trip", async () => {
+    const mock = makeClient({
+      trip_clients: (query) => { query.result = { data: { trip_id: "trip-1" }, error: null }; },
+      trips: (query) => { query.result = { data: { id: "trip-1", status: "draft" }, error: null }; },
+      trip_days: (query) => { query.result = { data: [{ items: [{ title: "Private dinner", confirmation_code: "ABC123" }] }], error: null }; },
+      crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
+    });
+
+    const result = await getTripItineraryStatus({ clientId: "client-1", tripId: "trip-1" }, mock.client);
+
+    expect(result.status).toBe("success");
+    expect(result.data).toMatchObject({ publicItineraryAvailable: false });
+    expect(result.data).toEqual(expect.not.objectContaining({ dayCount: expect.anything(), nextItems: expect.anything() }));
+    expect(mock.from).not.toHaveBeenCalledWith("trip_days");
+    expect(JSON.stringify(result)).not.toContain("Private dinner");
+    expect(JSON.stringify(result)).not.toContain("ABC123");
+  });
+
+  it("does not read document rows for an owned unpublished trip", async () => {
+    const mock = makeClient({
+      trip_clients: (query) => { query.result = { data: { trip_id: "trip-1" }, error: null }; },
+      trips: (query) => { query.result = { data: { id: "trip-1", status: "planning" }, error: null }; },
+      trip_documents: (query) => { query.result = { data: [{ id: "doc-1", file_path: "secret/path.pdf" }], error: null }; },
+      crm_sync_events: (query) => { query.result = { data: { id: "audit-1" }, error: null }; },
+    });
+
+    const result = await getTripDocumentsStatus({ clientId: "client-1", tripId: "trip-1" }, mock.client);
+
+    expect(result.status).toBe("success");
+    expect(result.data).toMatchObject({ publicItineraryAvailable: false });
+    expect(result.data).toEqual(expect.not.objectContaining({ tripDocumentCount: expect.anything(), itemDocumentCount: expect.anything() }));
+    expect(mock.from).not.toHaveBeenCalledWith("trip_documents");
+    expect(JSON.stringify(result)).not.toContain("secret/path.pdf");
   });
 
   it("blocks unsupported router tool names before domain table reads", async () => {
