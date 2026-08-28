@@ -195,7 +195,7 @@ type JsonPayload = Record<string, unknown>;
 export type WhatsAppStore = {
   persistInboundEvent(event: NormalizedWhatsAppInboundEvent): Promise<PersistedWhatsAppInboundEvent>;
   loadConversationContext(conversationId: string): Promise<WhatsAppConversationContext>;
-  createIntent(input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[]; providerDiagnostics?: JsonPayload } }): Promise<{ id: string }>;
+  createIntent(input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[]; citedToolCallIds?: string[]; dynamicToolResults?: unknown[]; providerDiagnostics?: JsonPayload } }): Promise<{ id: string }>;
   insertOutboundMessage(input: {
     persisted: PersistedWhatsAppInboundEvent;
     purpose: string;
@@ -276,7 +276,7 @@ export async function loadWhatsAppConversationContext(
 }
 
 export async function createWhatsAppIntent(
-  input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[]; providerDiagnostics?: JsonPayload } },
+  input: { persisted: PersistedWhatsAppInboundEvent; decision: { intent: string; confidence: number; summary: string; citedKnowledgeIds: string[]; citedToolCallIds?: string[]; dynamicToolResults?: unknown[]; providerDiagnostics?: JsonPayload } },
   client = getServiceRoleClient()
 ) {
   const result = (await client
@@ -289,6 +289,8 @@ export async function createWhatsAppIntent(
       confidence: input.decision.confidence,
       entities: {
         citedKnowledgeIds: input.decision.citedKnowledgeIds,
+        citedToolCallIds: input.decision.citedToolCallIds ?? [],
+        ...(input.decision.dynamicToolResults ? { dynamicToolResults: input.decision.dynamicToolResults } : {}),
         ...(input.decision.providerDiagnostics ? { providerDiagnostics: input.decision.providerDiagnostics } : {}),
       },
       summary: input.decision.summary,

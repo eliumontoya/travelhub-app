@@ -31,6 +31,7 @@ describe("decideWhatsAppInboundMessage", () => {
       decision: "auto_answer",
       responseText: approvedKnowledge[0].answer,
       citedKnowledgeIds: ["knowledge-1"],
+      citedToolCallIds: [],
     });
 
     const result = await decideWhatsAppInboundMessage(
@@ -45,6 +46,7 @@ describe("decideWhatsAppInboundMessage", () => {
       decision: "auto_answer",
       responseText: approvedKnowledge[0].answer,
       citedKnowledgeIds: ["knowledge-1"],
+      citedToolCallIds: [],
     });
     expect(provider).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -362,5 +364,66 @@ describe("loadApprovedWhatsAppKnowledgeEntries", () => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
 
     await expect(loadApprovedWhatsAppKnowledgeEntries()).resolves.toEqual([]);
+  });
+});
+
+describe("decideWhatsAppInboundMessage with dynamic TravelHub tool context", () => {
+  it("auto-answers from a successful dynamic tool citation without approved knowledge", async () => {
+    const provider = providerReturning({
+      intent: "existing_trip",
+      summary: "Pregunta por estado de viaje",
+      confidence: 0.9,
+      decision: "auto_answer",
+      responseText: "Tu viaje a Cancún está publicado y el itinerario ya está disponible. Gracias por tu confianza.",
+      citedKnowledgeIds: [],
+      citedToolCallIds: ["getTripSummary:3"],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      {
+        messageText: "¿Cómo va mi viaje?",
+        dynamicToolResults: [
+          { id: "getClientByWhatsappPhone:1", tool: "getClientByWhatsappPhone", status: "success", data: { clientId: "client-1" } },
+          { id: "getClientActiveTrips:2", tool: "getClientActiveTrips", status: "success", data: { trips: [{ tripId: "trip-1" }] } },
+          { id: "getTripSummary:3", tool: "getTripSummary", status: "success", data: { title: "Cancún", publicItineraryAvailable: true } },
+        ],
+      },
+      { knowledgeEntries: [], provider }
+    );
+
+    expect(result).toMatchObject({
+      intent: "existing_trip",
+      decision: "auto_answer",
+      citedToolCallIds: ["getTripSummary:3"],
+    });
+    expect(provider).toHaveBeenCalledWith(expect.objectContaining({ dynamicToolResults: expect.any(Array) }));
+  });
+
+  it("does not auto-answer from non-success dynamic tool statuses", async () => {
+    const provider = providerReturning({
+      intent: "existing_trip",
+      summary: "Pregunta por estado de viaje",
+      confidence: 0.9,
+      decision: "auto_answer",
+      responseText: "Tu viaje está listo.",
+      citedKnowledgeIds: [],
+      citedToolCallIds: ["getClientActiveTrips:2"],
+    });
+
+    const result = await decideWhatsAppInboundMessage(
+      {
+        messageText: "¿Cómo va mi viaje?",
+        dynamicToolResults: [
+          { id: "getClientByWhatsappPhone:1", tool: "getClientByWhatsappPhone", status: "success", data: { clientId: "client-1" } },
+          { id: "getClientActiveTrips:2", tool: "getClientActiveTrips", status: "ambiguous", reason: "Multiple trips." },
+        ],
+      },
+      { knowledgeEntries: [], provider }
+    );
+
+    expect(result).toMatchObject({
+      decision: "needs_human",
+      escalationReason: "Una respuesta automática debe citar conocimiento aprobado o un tool dinámico exitoso.",
+    });
   });
 });

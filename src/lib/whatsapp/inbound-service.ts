@@ -1,9 +1,11 @@
 import {
   decideWhatsAppInboundMessage,
+  type WhatsAppDynamicToolResult,
   type WhatsAppInboundAgentDecision,
   type WhatsAppInboundAgentProvider,
   type WhatsAppKnowledgeEntry,
 } from "@/lib/ai/whatsapp-inbound-agent";
+import { runTravelHubClientTool, type TravelHubClientToolResult } from "@/lib/ai/tools/travelhub-client-tools";
 import { buildWhatsAppEscalationWork } from "./escalation";
 import { sendWhatsAppTextMessage, type WhatsAppSendResult } from "./client";
 import {
@@ -52,6 +54,7 @@ export type WhatsAppInboundServiceOptions = {
   agent?: typeof decideWhatsAppInboundMessage;
   agentProvider?: WhatsAppInboundAgentProvider;
   knowledgeEntries?: WhatsAppKnowledgeEntry[];
+  travelHubToolRunner?: typeof runTravelHubClientTool;
   sendText?: typeof sendWhatsAppTextMessage;
   humanAlertPhone?: string;
 };
@@ -71,6 +74,84 @@ const defaultStore: WhatsAppStore = {
   persistStatusEvents: persistWhatsAppStatusEvents,
 };
 
+type DynamicTravelHubToolKind = "summary" | "itinerary" | "documents" | "payment";
+
+function shouldUseDynamicTravelHubTools(text: string) {
+  return /viaje|itinerario|agenda|actividad|hotel|vuelo|transport|document|voucher|boleto|boarding|estatus|status|c[oó]mo va|confirmad|pago|pagado|saldo|anticipo|comprobante/i.test(text);
+}
+
+function dynamicToolKindForMessage(text: string): DynamicTravelHubToolKind {
+  if (/pago|pagado|saldo|anticipo|comprobante|factura/i.test(text)) return "payment";
+  if (/document|voucher|boleto|boarding|pasaporte|visa/i.test(text)) return "documents";
+  if (/itinerario|agenda|actividad|hotel|vuelo|transport|reserva|confirmad/i.test(text)) return "itinerary";
+  return "summary";
+}
+
+function tripScopedToolForKind(kind: DynamicTravelHubToolKind) {
+  if (kind === "payment") return "getTripPaymentStatus";
+  if (kind === "documents") return "getTripDocumentsStatus";
+  if (kind === "itinerary") return "getTripItineraryStatus";
+  return "getTripSummary";
+}
+
+function toDynamicToolResult(result: TravelHubClientToolResult, index: number): WhatsAppDynamicToolResult {
+  return {
+    id: `${result.tool}:${index + 1}`,
+    tool: result.tool,
+    status: result.status,
+    ...(result.data === undefined ? {} : { data: result.data }),
+    ...(result.reason ? { reason: result.reason } : {}),
+    ...(result.audit ? { audit: result.audit } : {}),
+  };
+}
+
+function getResolvedClientId(result: TravelHubClientToolResult) {
+  if (result.status !== "success" || !result.data || typeof result.data !== "object") return null;
+  const clientId = (result.data as { clientId?: unknown }).clientId;
+  return typeof clientId === "string" && clientId.length > 0 ? clientId : null;
+}
+
+function getSingleTripId(result: TravelHubClientToolResult) {
+  if (result.status !== "success" || !result.data || typeof result.data !== "object") return null;
+  const trips = (result.data as { trips?: unknown }).trips;
+  if (!Array.isArray(trips) || trips.length !== 1) return null;
+  const tripId = trips[0] && typeof trips[0] === "object" ? (trips[0] as { tripId?: unknown }).tripId : undefined;
+  return typeof tripId === "string" && tripId.length > 0 ? tripId : null;
+}
+
+async function buildDynamicTravelHubContext(
+  event: NormalizedWhatsAppInboundEvent,
+  conversation: { assignedTripId?: string | null },
+  options: WhatsAppInboundServiceOptions
+): Promise<WhatsAppDynamicToolResult[]> {
+  if (event.messageType !== "text" || !event.body || !shouldUseDynamicTravelHubTools(event.body)) return [];
+
+  const runTool = options.travelHubToolRunner ?? runTravelHubClientTool;
+  const rawResults: TravelHubClientToolResult[] = [];
+  const kind = dynamicToolKindForMessage(event.body);
+
+  const clientResult = await runTool({ tool: "getClientByWhatsappPhone", arguments: { phone: event.fromPhone } });
+  rawResults.push(clientResult);
+  const clientId = getResolvedClientId(clientResult);
+  if (!clientId) return rawResults.map(toDynamicToolResult);
+
+  const assignedTripId = conversation.assignedTripId ?? null;
+  if (assignedTripId) {
+    rawResults.push(
+      await runTool({ tool: tripScopedToolForKind(kind), arguments: { clientId, tripId: assignedTripId } })
+    );
+    return rawResults.map(toDynamicToolResult);
+  }
+
+  const tripsResult = await runTool({ tool: "getClientActiveTrips", arguments: { clientId } });
+  rawResults.push(tripsResult);
+  const tripId = getSingleTripId(tripsResult);
+  if (!tripId) return rawResults.map(toDynamicToolResult);
+
+  rawResults.push(await runTool({ tool: tripScopedToolForKind(kind), arguments: { clientId, tripId } }));
+  return rawResults.map(toDynamicToolResult);
+}
+
 function unsupportedDecision(event: NormalizedWhatsAppInboundEvent): WhatsAppInboundAgentDecision {
   return {
     intent: "handoff",
@@ -79,6 +160,7 @@ function unsupportedDecision(event: NormalizedWhatsAppInboundEvent): WhatsAppInb
     decision: "needs_human",
     escalationReason: `El tipo de mensaje ${event.messageType} no es respondible automáticamente en v1.`,
     citedKnowledgeIds: [],
+    citedToolCallIds: [],
   };
 }
 
@@ -90,7 +172,13 @@ async function runAgent(
   if (event.messageType !== "text" || !event.body) return unsupportedDecision(event);
 
   const context = await (options.store ?? defaultStore).loadConversationContext(persisted.conversationId);
-  return (options.agent ?? decideWhatsAppInboundMessage)(
+  const conversation = {
+    id: persisted.conversationId,
+    assignedTripId: context.assignedTripId,
+    lastIntent: context.lastIntent,
+  };
+  const dynamicToolResults = await buildDynamicTravelHubContext(event, conversation, options);
+  const decision = await (options.agent ?? decideWhatsAppInboundMessage)(
     {
       messageText: event.body,
       contact: {
@@ -98,17 +186,15 @@ async function runAgent(
         phone: event.fromPhone,
         profileName: event.profileName,
       },
-      conversation: {
-        id: persisted.conversationId,
-        assignedTripId: context.assignedTripId,
-        lastIntent: context.lastIntent,
-      },
+      conversation,
+      dynamicToolResults,
     },
     {
       knowledgeEntries: options.knowledgeEntries,
       provider: options.agentProvider,
     }
   );
+  return dynamicToolResults.length > 0 ? { ...decision, dynamicToolResults } : decision;
 }
 
 function countSendFailure(send?: WhatsAppSendResult) {

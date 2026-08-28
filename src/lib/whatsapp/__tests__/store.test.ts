@@ -180,6 +180,7 @@ describe("createWhatsAppIntent", () => {
         confidence: 0,
         entities: {
           citedKnowledgeIds: [],
+          citedToolCallIds: [],
           providerDiagnostics,
         },
         summary: "Salida estructurada inválida del proveedor.",
