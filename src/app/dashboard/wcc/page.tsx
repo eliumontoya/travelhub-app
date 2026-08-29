@@ -6,7 +6,7 @@ const nextSections = [
   ["contacts", "Contactos", "#240", "Lista y ficha vinculable al CRM."],
   ["escalations", "Escalaciones", "#241", "Bandeja para casos abiertos o urgentes."],
   ["conversations", "Conversaciones", "#242", "Hilos agrupados con mensajes e intents."],
-  ["knowledge", "Knowledge", "#243", "CRUD y estados de respuestas aprobadas."],
+  ["knowledge", "Knowledge", "#243", "CRUD y estados de respuestas aprobadas.", "/dashboard/wcc/knowledge"],
 ];
 
 function Card({ label, value, helper }: { label: string; value: number; helper: string }) {
@@ -73,11 +73,15 @@ export default async function WccDashboardPage() {
       </section>
 
       <section className="mt-6 grid gap-4 md:grid-cols-2">
-        {nextSections.map(([id, title, issue, description]) => (
+        {nextSections.map(([id, title, issue, description, href]) => (
           <article id={id} key={id} className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/60 p-5">
             <h3 className="font-semibold text-white">{title} <span className="text-xs text-slate-400">{issue}</span></h3>
             <p className="mt-3 text-sm text-slate-400">{description}</p>
-            <p className="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-emerald-300">Placeholder sin CRUD en #239</p>
+            {href ? (
+              <Link href={href} className="mt-4 inline-flex text-xs font-medium uppercase tracking-[0.16em] text-emerald-300 hover:text-emerald-200">Abrir sección</Link>
+            ) : (
+              <p className="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-emerald-300">Sección disponible</p>
+            )}
           </article>
         ))}
       </section>

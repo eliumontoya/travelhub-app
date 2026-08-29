@@ -1,0 +1,5 @@
+change: issue-243-wcc-knowledge
+issue: 243
+branch: feat/wcc-243-knowledge
+base: origin/feat/wcc-242-conversations
+phase: tasks
