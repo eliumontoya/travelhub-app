@@ -6,6 +6,7 @@ import {
   type WccEscalationRow,
 } from "@/lib/wcc-escalations";
 import { formatDateTime, formatRelativeTime } from "@/lib/item-meta";
+import { WccEmptyState, WccNotice } from "../components";
 
 const priorityStyles: Record<string, string> = {
   urgent: "border-red-400/60 bg-red-500/15 text-red-100",
@@ -78,9 +79,9 @@ export default async function WccEscalationsPage({
       </div>
 
       {(!queue.isSupabaseConfigured || queue.isConfiguredButUnavailable) && (
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm text-slate-300">
+        <WccNotice tone={queue.isConfiguredButUnavailable ? "warning" : "safe"}>
           {queue.isConfiguredButUnavailable ? "WCC no pudo leer escalaciones WhatsApp. Se muestra estado seguro sin romper la operación." : "Modo local/mock: configura Supabase para ver escalaciones reales de WhatsApp."}
-        </div>
+        </WccNotice>
       )}
 
       <section className="mt-6 grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 lg:grid-cols-[1fr_1fr_auto]">
@@ -92,7 +93,7 @@ export default async function WccEscalationsPage({
       </section>
 
       <section className="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-        <div className="grid grid-cols-6 gap-4 border-b border-slate-800 px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <div className="hidden grid-cols-6 gap-4 border-b border-slate-800 px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 sm:grid">
           <span className="col-span-2">Caso</span>
           <span>Contacto</span>
           <span>Prioridad</span>
@@ -109,6 +110,7 @@ export default async function WccEscalationsPage({
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
                     <span>Conversación: {escalation.conversation?.status ?? "sin contexto"}</span>
                     {escalation.conversation?.lastIntent ? <span>Intent: {escalation.conversation.lastIntent}</span> : null}
+                    {escalation.conversation ? <Link href={`/dashboard/wcc/conversations/${escalation.conversation.id}`} className="text-emerald-300 hover:underline">Ver conversación</Link> : null}
                   </div>
                 </div>
                 <div>
@@ -126,11 +128,11 @@ export default async function WccEscalationsPage({
             ))}
           </ul>
         ) : (
-          <div className="p-8 text-sm text-slate-400">No hay escalaciones WhatsApp para mostrar con estos filtros.</div>
+          <div className="p-5"><WccEmptyState title="Sin escalaciones para mostrar" description="No hay casos con estos filtros. Cambia filtros o vuelve al dashboard para revisar otras señales WCC." actionHref="/dashboard/wcc" actionLabel="Ver dashboard WCC" /></div>
         )}
       </section>
 
-      <div className="mt-5 flex items-center justify-between text-sm text-slate-400">
+      <div className="mt-5 flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <span>{queue.totalCount ? `Página ${queue.page} de ${queue.totalPages} · ${queue.totalCount} escalaciones` : "Sin escalaciones"}</span>
         <div className="flex gap-2">
           {hasPrevious ? <Link className="rounded-lg border border-slate-700 px-3 py-2 hover:border-slate-500" href={filterHref({ status: queue.status, priority: queue.priority, page: queue.page - 1 })}>Anterior</Link> : <span className="rounded-lg border border-slate-800 px-3 py-2 text-slate-600">Anterior</span>}

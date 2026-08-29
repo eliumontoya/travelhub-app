@@ -1,0 +1,7 @@
+change: issue-244-wcc-polish-qa
+status: applied_pending_verify
+artifact_store: hybrid
+base: origin/feat/wcc-243-knowledge
+branch: chore/wcc-244-polish-qa
+issue: 244
+chain: 6/6

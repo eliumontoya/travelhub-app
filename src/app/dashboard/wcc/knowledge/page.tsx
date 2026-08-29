@@ -4,6 +4,7 @@ import { KnowledgeForm } from "./knowledge-form";
 import { KnowledgeStatusForm } from "./status-form";
 import { getWccKnowledgeList, wccKnowledgeStatuses } from "@/lib/wcc-knowledge";
 import { formatRelativeTime } from "@/lib/item-meta";
+import { WccEmptyState, WccNotice } from "../components";
 import type { WhatsAppKnowledgeStatus } from "@/types";
 
 function statusClasses(status: WhatsAppKnowledgeStatus) {
@@ -37,9 +38,9 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
       </section>
 
       {(mockMode || unavailable) && (
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm text-slate-300">
+        <WccNotice tone={unavailable ? "warning" : "safe"}>
           {unavailable ? "Supabase está configurado, pero WCC no pudo leer knowledge. Las mutaciones mostrarán error seguro." : "Modo local/mock: configura Supabase para crear o editar knowledge real."}
-        </div>
+        </WccNotice>
       )}
 
       <section className="mt-6">
@@ -88,12 +89,12 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
               </div>
             </article>
           )) : (
-            <p className="rounded-2xl border border-dashed border-slate-700 p-6 text-sm text-slate-400">No hay knowledge para este filtro.</p>
+            <WccEmptyState title="Sin knowledge para este filtro" description="Crea una entrada nueva o cambia el filtro. Solo las entradas approved alimentan al agente inbound." actionHref="/dashboard/wcc/knowledge" actionLabel="Ver todas" />
           )}
         </div>
 
         {list.totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between text-sm text-slate-300">
+          <div className="mt-6 flex flex-col gap-3 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
             <Link aria-disabled={list.page <= 1} href={pageHref(Math.max(1, list.page - 1), list.status)} className="rounded-xl border border-slate-700 px-3 py-2 aria-disabled:pointer-events-none aria-disabled:opacity-40">Anterior</Link>
             <span>Página {list.page} de {list.totalPages}</span>
             <Link aria-disabled={list.page >= list.totalPages} href={pageHref(Math.min(list.totalPages, list.page + 1), list.status)} className="rounded-xl border border-slate-700 px-3 py-2 aria-disabled:pointer-events-none aria-disabled:opacity-40">Siguiente</Link>

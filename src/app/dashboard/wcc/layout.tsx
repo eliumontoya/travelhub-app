@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { WccNavLink } from "./nav-link";
 
 const wccNav = [
-  { href: "/dashboard/wcc", label: "Dashboard", active: true },
-  { href: "/dashboard/wcc/contacts", label: "Contactos", active: false },
-  { href: "/dashboard/wcc/conversations", label: "Conversaciones", active: true },
-  { href: "/dashboard/wcc/escalations", label: "Escalaciones", active: false },
-  { href: "/dashboard/wcc/knowledge", label: "Knowledge", active: true },
+  { href: "/dashboard/wcc", label: "Dashboard" },
+  { href: "/dashboard/wcc/contacts", label: "Contactos" },
+  { href: "/dashboard/wcc/conversations", label: "Conversaciones" },
+  { href: "/dashboard/wcc/escalations", label: "Escalaciones" },
+  { href: "/dashboard/wcc/knowledge", label: "Knowledge" },
 ];
 
 export default function WccLayout({ children }: { children: React.ReactNode }) {
@@ -27,18 +28,7 @@ export default function WccLayout({ children }: { children: React.ReactNode }) {
           </div>
           <nav className="flex flex-wrap gap-2 text-sm" aria-label="WhatsApp Command Control">
             {wccNav.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                aria-disabled={!item.active}
-                className={
-                  item.active
-                    ? "rounded-full bg-emerald-400 px-3 py-1.5 font-semibold text-slate-950"
-                    : "rounded-full border border-slate-700 px-3 py-1.5 text-slate-300 hover:border-slate-500 hover:text-white"
-                }
-              >
-                {item.label}
-              </Link>
+              <WccNavLink key={item.href} href={item.href} label={item.label} />
             ))}
           </nav>
         </div>
