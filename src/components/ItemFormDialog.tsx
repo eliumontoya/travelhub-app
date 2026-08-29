@@ -94,15 +94,15 @@ const metadataFieldsByType: Record<ItemType, MetadataFieldDef[]> = {
 
 export function appendSerializedMetadata(formData: FormData, selectedType: ItemType) {
   const mFields = metadataFieldsByType[selectedType];
-  const rawValues = mFields.map((field) => [field, String(formData.get(`metadata_${field.name}`) ?? "").trim()] as const);
-  const requiredValues = rawValues.filter(([field]) => field.required);
-  const hasAllRequiredValues = requiredValues.length > 0 && requiredValues.every(([, val]) => val);
   const metadataValues: Record<string, string> = {};
-  for (const [field, val] of rawValues) {
-    if (val && (field.required || hasAllRequiredValues)) metadataValues[field.name] = val;
+
+  for (const field of mFields) {
+    const val = String(formData.get(`metadata_${field.name}`) ?? "").trim();
+    if (val) metadataValues[field.name] = val;
     formData.delete(`metadata_${field.name}`);
   }
-  formData.set("metadata", JSON.stringify(hasAllRequiredValues ? metadataValues : null));
+
+  formData.set("metadata", JSON.stringify(Object.keys(metadataValues).length ? metadataValues : null));
 }
 
 function metadataDefaultValue(item: Item | undefined, fieldName: string): string | undefined {
