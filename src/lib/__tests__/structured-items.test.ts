@@ -1,6 +1,4 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import { z } from "zod";
-
 vi.mock("@/lib/supabase/server", () => ({
   isSupabaseConfigured: () => false,
   createClient: vi.fn(),
@@ -25,16 +23,11 @@ describe("structured item metadata validation", () => {
     expect(metadata).toMatchObject({ airline: "AA", flightNumber: "1234" });
   });
 
-  it("rejects flight metadata missing required fields", () => {
-    expect(() =>
-      validateItemMetadata("flight", {
-        airline: "AA",
-        departureAirport: "MEX",
-        arrivalAirport: "JFK",
-        departureTime: "09:30",
-        arrivalTime: "15:10",
-      })
-    ).toThrow(z.ZodError);
+  it("accepts partial flight metadata", () => {
+    expect(validateItemMetadata("flight", {
+      airline: "AA",
+      flightNumber: "1234",
+    })).toMatchObject({ airline: "AA", flightNumber: "1234" });
   });
 
   it("accepts null metadata for any item type", () => {
@@ -84,7 +77,7 @@ describe("structured item metadata form serialization", () => {
     expect(formData.has("metadata_flightNumber")).toBe(false);
   });
 
-  it("serializes partial type-specific fields as null metadata", () => {
+  it("serializes partial type-specific fields into metadata JSON", () => {
     const formData = new FormData();
     formData.set("metadata_provider", "Local Guide");
     formData.set("metadata_duration", "2h");
@@ -92,7 +85,11 @@ describe("structured item metadata form serialization", () => {
 
     appendSerializedMetadata(formData, "activity");
 
-    expect(formData.get("metadata")).toBe("null");
+    expect(JSON.parse(String(formData.get("metadata")))).toMatchObject({
+      provider: "Local Guide",
+      duration: "2h",
+      bookingReference: "ACT-123",
+    });
     expect(formData.has("metadata_provider")).toBe(false);
     expect(formData.has("metadata_duration")).toBe(false);
     expect(formData.has("metadata_bookingReference")).toBe(false);
@@ -143,13 +140,15 @@ function itemWith(overrides: Partial<Item> & Pick<Item, "type" | "metadata">): I
 }
 
 describe("structured item metadata type switching", () => {
-  it("does not leak shared optional bookingReference when switching hotel to blank flight metadata", () => {
+  it("keeps provided shared bookingReference when switching item type", () => {
     const formData = new FormData();
     formData.set("metadata_bookingReference", "HOTEL-STALE");
 
     appendSerializedMetadata(formData, "flight");
 
-    expect(formData.get("metadata")).toBe("null");
+    expect(JSON.parse(String(formData.get("metadata")))).toMatchObject({
+      bookingReference: "HOTEL-STALE",
+    });
   });
 
   it("keeps shared optional bookingReference when the current flight schema is filled", () => {

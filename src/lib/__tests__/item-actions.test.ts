@@ -50,7 +50,7 @@ describe("item server action metadata validation", () => {
     const formData = new FormData();
     formData.set("type", "flight");
     formData.set("title", "AA 1234");
-    formData.set("metadata", JSON.stringify({ airline: "AA" }));
+    formData.set("metadata", JSON.stringify({ airline: 123 }));
 
     await expect(editItemAction("trip-1", "item-1", formData)).rejects.toThrow("Datos del item inválidos");
 
