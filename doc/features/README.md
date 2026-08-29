@@ -18,6 +18,7 @@ TravelHub es tu herramienta todo-en-uno como agente de viajes independiente: CRM
 | [Automatizaciones](./automations.md) | Recordatorios automáticos por email, plantillas reutilizables, duplicado de viajes |
 | [Integraciones](./integrations.md) | Mapas embebidos, estado de vuelos en vivo, clima, y almacenamiento de documentos |
 | [Herramientas Extra](./extras.md) | Galería de fotos, packing lists, vista cotización, encuestas post-viaje |
+| [WhatsApp Command Control](./whatsapp-command-control.md) | Monitorea contactos, conversaciones, escalaciones y knowledge del agente inbound de WhatsApp |
 
 ---
 

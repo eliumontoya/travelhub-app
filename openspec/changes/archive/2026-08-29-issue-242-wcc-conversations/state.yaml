@@ -1,0 +1,6 @@
+change: issue-242-wcc-conversations
+issue: 242
+branch: feat/wcc-242-conversations
+base: origin/feat/wcc-241-escalations
+pr_chain: 4/6
+status: archived

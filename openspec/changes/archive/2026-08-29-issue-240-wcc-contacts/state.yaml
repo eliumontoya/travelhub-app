@@ -1,0 +1,5 @@
+change: issue-240-wcc-contacts
+issue: 240
+status: in_progress
+base: feat/wcc-239-shell-dashboard
+mode: hybrid

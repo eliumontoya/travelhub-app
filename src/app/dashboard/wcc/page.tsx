@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { getWccDashboardSummary, wccKnowledgeStatuses } from "@/lib/wcc-dashboard";
 import { formatRelativeTime } from "@/lib/item-meta";
+import { WccEmptyState, WccNotice } from "./components";
 
-const nextSections = [
-  ["contacts", "Contactos", "#240", "Lista y ficha vinculable al CRM."],
-  ["escalations", "Escalaciones", "#241", "Bandeja para casos abiertos o urgentes."],
-  ["conversations", "Conversaciones", "#242", "Hilos agrupados con mensajes e intents."],
-  ["knowledge", "Knowledge", "#243", "CRUD y estados de respuestas aprobadas."],
+const wccSections = [
+  ["contacts", "Contactos", "#240", "Lista y ficha vinculable al CRM.", "/dashboard/wcc/contacts"],
+  ["escalations", "Escalaciones", "#241", "Bandeja para casos abiertos o urgentes.", "/dashboard/wcc/escalations"],
+  ["conversations", "Conversaciones", "#242", "Hilos agrupados con mensajes e intents.", "/dashboard/wcc/conversations"],
+  ["knowledge", "Knowledge", "#243", "CRUD y estados de respuestas aprobadas.", "/dashboard/wcc/knowledge"],
 ];
 
 function Card({ label, value, helper }: { label: string; value: number; helper: string }) {
@@ -29,17 +30,17 @@ export default async function WccDashboardPage() {
       <section className="rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/15 via-slate-900 to-slate-950 p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Operación WhatsApp</p>
         <h2 className="mt-3 max-w-3xl text-3xl font-bold text-white">Centro de mando para mensajes, escalaciones y conocimiento</h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">Shell operativo y señales de salud. Las bandejas detalladas llegan en los siguientes PRs de la cadena.</p>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">Shell operativo y señales de salud para el MVP WCC: contactos, escalaciones, conversaciones y knowledge quedan navegables desde un solo lugar.</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/dashboard" className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-50">Volver a TravelHub</Link>
-          <span className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300">PR 1/6 · Shell y dashboard</span>
+          <span className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300">PR 6/6 · Polish y QA</span>
         </div>
       </section>
 
       {(mockMode || unavailable) && (
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm text-slate-300">
+        <WccNotice tone={unavailable ? "warning" : "safe"}>
           {unavailable ? "Supabase está configurado, pero WCC no pudo leer las tablas WhatsApp. Se muestra estado seguro." : "Modo local/mock: configura Supabase para ver métricas reales de WhatsApp."}
-        </div>
+        </WccNotice>
       )}
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -54,14 +55,18 @@ export default async function WccDashboardPage() {
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h3 className="text-lg font-semibold text-white">Conversaciones recientes</h3>
           {summary.recentConversations.length ? summary.recentConversations.map((item) => (
-            <p key={item.id} className="mt-3 rounded-xl bg-slate-950 p-4 text-sm text-slate-300">{item.status} · {item.lastIntent ?? "sin intent"} · {item.lastMessageAt ? formatRelativeTime(item.lastMessageAt) : "sin fecha"}</p>
-          )) : <p className="mt-4 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">Todavía no hay conversaciones.</p>}
+            <Link key={item.id} href={`/dashboard/wcc/conversations/${item.id}`} className="mt-3 block rounded-xl bg-slate-950 p-4 text-sm text-slate-300 transition hover:bg-slate-800">
+              {item.status} · {item.lastIntent ?? "sin intent"} · {item.lastMessageAt ? formatRelativeTime(item.lastMessageAt) : "sin fecha"}
+            </Link>
+          )) : <div className="mt-4"><WccEmptyState title="Sin conversaciones recientes" description="Cuando entre actividad por WhatsApp, los hilos recientes aparecerán aquí con acceso directo a su timeline." actionHref="/dashboard/wcc/conversations" actionLabel="Abrir conversaciones" /></div>}
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h3 className="text-lg font-semibold text-white">Contactos recientes</h3>
           {summary.recentContacts.length ? summary.recentContacts.map((item) => (
-            <p key={item.id} className="mt-3 rounded-xl bg-slate-950 p-4 text-sm text-slate-300">{item.displayName ?? item.phoneE164} · {item.lastMessageAt ? formatRelativeTime(item.lastMessageAt) : "sin fecha"}</p>
-          )) : <p className="mt-4 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">Los contactos aparecerán cuando entren mensajes.</p>}
+            <Link key={item.id} href={`/dashboard/wcc/contacts/${item.id}`} className="mt-3 block rounded-xl bg-slate-950 p-4 text-sm text-slate-300 transition hover:bg-slate-800">
+              {item.displayName ?? item.phoneE164} · {item.lastMessageAt ? formatRelativeTime(item.lastMessageAt) : "sin fecha"}
+            </Link>
+          )) : <div className="mt-4"><WccEmptyState title="Sin contactos recientes" description="Los contactos aparecerán cuando entren mensajes nuevos al número de WhatsApp conectado." actionHref="/dashboard/wcc/contacts" actionLabel="Abrir contactos" /></div>}
         </div>
       </section>
 
@@ -73,11 +78,11 @@ export default async function WccDashboardPage() {
       </section>
 
       <section className="mt-6 grid gap-4 md:grid-cols-2">
-        {nextSections.map(([id, title, issue, description]) => (
+        {wccSections.map(([id, title, issue, description, href]) => (
           <article id={id} key={id} className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/60 p-5">
             <h3 className="font-semibold text-white">{title} <span className="text-xs text-slate-400">{issue}</span></h3>
             <p className="mt-3 text-sm text-slate-400">{description}</p>
-            <p className="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-emerald-300">Placeholder sin CRUD en #239</p>
+            <Link href={href} className="mt-4 inline-flex text-xs font-medium uppercase tracking-[0.16em] text-emerald-300 hover:text-emerald-200">Abrir sección</Link>
           </article>
         ))}
       </section>
