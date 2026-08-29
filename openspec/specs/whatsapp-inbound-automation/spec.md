@@ -433,3 +433,31 @@ The system MUST store an optional WhatsApp phone field on `clients`, backfill it
 - GIVEN a client row has an explicit non-blank `whatsapp`
 - WHEN `phone` changes
 - THEN the database MUST NOT overwrite the explicit WhatsApp value.
+
+### Requirement: Deterministic WhatsApp contact client linking
+The system MUST maintain `whatsapp_contacts.linked_client_id` automatically when a contact phone has exactly one normalized match in `clients.whatsapp_normalized`. The system MUST NOT auto-link when no client matches or when multiple clients match. Existing manual links MUST NOT be overwritten by automatic matching.
+
+#### Scenario: Unique client match links contact
+- GIVEN one TravelHub client has `clients.whatsapp_normalized` matching a WhatsApp contact phone after digits-only normalization
+- WHEN the contact is inserted, updated, or backfilled
+- THEN `whatsapp_contacts.linked_client_id` MUST equal that client id.
+
+#### Scenario: No client match remains unlinked
+- GIVEN no TravelHub client matches a WhatsApp contact phone
+- WHEN automatic linking runs
+- THEN the contact MUST remain without a linked client.
+
+#### Scenario: Ambiguous client match remains unlinked
+- GIVEN multiple TravelHub clients match the same normalized WhatsApp phone
+- WHEN automatic linking runs
+- THEN the contact MUST remain without an automatic linked client.
+
+#### Scenario: Manual link is preserved
+- GIVEN a WhatsApp contact has a manual linked client
+- WHEN automatic linking runs for its phone
+- THEN the manual `linked_client_id` MUST remain unchanged.
+
+#### Scenario: Client WhatsApp change recalculates links
+- GIVEN a TravelHub client's WhatsApp normalized value changes
+- WHEN matching WhatsApp contacts exist
+- THEN eligible unlinked or auto-linked contacts MUST be recalculated using the same unique-match rules.

@@ -1,0 +1,7 @@
+change: issue-253-wcc-contact-client-linking
+issue: 253
+branch: feat/wcc-contact-client-linking
+base: origin/main
+mode: hybrid
+status: archived
+archived_at: 2026-08-29

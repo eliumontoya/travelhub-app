@@ -30,6 +30,8 @@ const contactRow = {
   whatsapp_profile_name: "Jane WA",
   display_name: "Jane",
   linked_client_id: "cl1",
+  linked_client_source: "auto_phone",
+  linked_client_matched_at: "2026-08-28T10:00:00.000Z",
   opt_in_status: "opted_in",
   first_seen_at: "2026-08-20T10:00:00.000Z",
   last_seen_at: "2026-08-28T10:00:00.000Z",
@@ -79,7 +81,7 @@ describe("getWccContactsList", () => {
       totalCount: 21,
       totalPages: 2,
       page: 2,
-      contacts: [{ id: "ct1", displayName: "Jane", linkedClient: { name: "Jane Traveler" } }],
+      contacts: [{ id: "ct1", displayName: "Jane", linkedClientId: "cl1", linkedClient: { name: "Jane Traveler" } }],
     });
   });
 
@@ -114,7 +116,7 @@ describe("getWccContactDetail", () => {
 
     const { getWccContactDetail } = await import("@/lib/wcc-contacts");
     await expect(getWccContactDetail("ct1")).resolves.toMatchObject({
-      contact: { id: "ct1", linkedClient: { id: "cl1" } },
+      contact: { id: "ct1", linkedClientId: "cl1", linkedClient: { id: "cl1" } },
       conversations: [{ id: "cv1", status: "open" }],
       escalations: [{ id: "es1", priority: "high" }],
       intents: [{ id: "in1", intentType: "support", confidence: 0.82 }],
