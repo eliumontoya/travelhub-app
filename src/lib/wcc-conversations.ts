@@ -1,4 +1,5 @@
-import { createClient, isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { createWccClient } from "@/lib/wcc-client";
 import type {
   WhatsAppConversationStatus,
   WhatsAppIntentStatus,
@@ -263,7 +264,7 @@ export async function getWccConversationsList(filters: WccConversationsFilters =
   if (!hasSupabaseConfig()) return emptyList({ page });
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const from = (page - 1) * WCC_CONVERSATIONS_PAGE_SIZE;
     const to = from + WCC_CONVERSATIONS_PAGE_SIZE - 1;
     const result = await runRows<RecordRow>(
@@ -303,7 +304,7 @@ export async function getWccConversationDetail(conversationId: string): Promise<
   if (!hasSupabaseConfig()) return emptyDetail();
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const conversationResult = (await db
       .from("whatsapp_conversations")
       .select("id, contact_id, assigned_trip_id, status, last_intent, last_message_at, last_inbound_at, last_outbound_at, closed_at, created_at, updated_at")

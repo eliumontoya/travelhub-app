@@ -1,4 +1,5 @@
-import { createClient, isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { createWccClient } from "@/lib/wcc-client";
 import type {
   WhatsAppConversationStatus,
   WhatsAppEscalationPriority,
@@ -191,7 +192,7 @@ export async function getWccEscalationsQueue(filters: WccEscalationsFilters = {}
   if (!hasSupabaseConfig()) return emptyQueue({ page, status, priority });
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const from = (page - 1) * WCC_ESCALATIONS_PAGE_SIZE;
     const to = from + WCC_ESCALATIONS_PAGE_SIZE - 1;
     let query = db

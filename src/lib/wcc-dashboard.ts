@@ -1,4 +1,5 @@
-import { createClient, isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { createWccClient } from "@/lib/wcc-client";
 import type { WhatsAppConversationStatus, WhatsAppKnowledgeStatus } from "@/types";
 
 export type WccRecentConversation = {
@@ -55,8 +56,9 @@ function emptySummary(overrides: Partial<WccDashboardSummary> = {}): WccDashboar
   };
 }
 
-async function count(query: Query) {
-  const result = (await query.select("id", { count: "exact", head: true })) as Result;
+async function count(db: Client, table: string, applyFilter?: (query: Query) => Query) {
+  const baseQuery = db.from(table).select("id", { count: "exact", head: true });
+  const result = (await (applyFilter ? applyFilter(baseQuery) : baseQuery)) as Result;
   if (result.error) throw new Error(result.error.message ?? "WCC count failed");
   return result.count ?? 0;
 }
@@ -79,16 +81,16 @@ export async function getWccDashboardSummary(): Promise<WccDashboardSummary> {
   if (!hasSupabaseConfig()) return emptySummary();
 
   try {
-    const db = (await createClient()) as unknown as Client;
+    const db = (await createWccClient()) as unknown as Client;
     const [openEscalations, recentConversationCount, recentContactCount, pendingMessageCount, failedMessageCount, draft, approved, archived, conversations, contacts] = await Promise.all([
-      safeRead(() => count(db.from("whatsapp_escalations").eq("status", "open")), 0),
-      safeRead(() => count(db.from("whatsapp_conversations")), 0),
-      safeRead(() => count(db.from("whatsapp_contacts")), 0),
-      safeRead(() => count(db.from("whatsapp_messages").in("status", ["received", "processed"])), 0),
-      safeRead(() => count(db.from("whatsapp_messages").eq("status", "failed")), 0),
-      safeRead(() => count(db.from("whatsapp_knowledge_entries").eq("status", "draft")), 0),
-      safeRead(() => count(db.from("whatsapp_knowledge_entries").eq("status", "approved")), 0),
-      safeRead(() => count(db.from("whatsapp_knowledge_entries").eq("status", "archived")), 0),
+      safeRead(() => count(db, "whatsapp_escalations", (query) => query.eq("status", "open")), 0),
+      safeRead(() => count(db, "whatsapp_conversations"), 0),
+      safeRead(() => count(db, "whatsapp_contacts"), 0),
+      safeRead(() => count(db, "whatsapp_messages", (query) => query.in("status", ["received", "processed"])), 0),
+      safeRead(() => count(db, "whatsapp_messages", (query) => query.eq("status", "failed")), 0),
+      safeRead(() => count(db, "whatsapp_knowledge_entries", (query) => query.eq("status", "draft")), 0),
+      safeRead(() => count(db, "whatsapp_knowledge_entries", (query) => query.eq("status", "approved")), 0),
+      safeRead(() => count(db, "whatsapp_knowledge_entries", (query) => query.eq("status", "archived")), 0),
       safeRead(() => recent<Record<string, unknown>>(db.from("whatsapp_conversations"), "id, status, last_intent, last_message_at"), []),
       safeRead(() => recent<Record<string, unknown>>(db.from("whatsapp_contacts"), "id, display_name, whatsapp_profile_name, phone_e164, last_message_at"), []),
     ]);
