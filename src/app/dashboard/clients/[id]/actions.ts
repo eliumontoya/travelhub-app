@@ -27,6 +27,8 @@ export async function updateClientAction(clientId: string, formData: FormData) {
     birthDate: String(formData.get("birthDate") ?? "").trim() || undefined,
   });
   revalidatePath(`/dashboard/clients/${clientId}`);
+  revalidatePath("/dashboard/wcc");
+  revalidatePath("/dashboard/wcc/contacts");
 }
 
 export async function uploadClientDocumentAction(clientId: string, formData: FormData) {
