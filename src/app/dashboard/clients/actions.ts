@@ -31,6 +31,8 @@ export async function createClientAction(
       referralSource: (formData.get("referralSource") as string)?.trim() || undefined,
       birthDate: (formData.get("birthDate") as string)?.trim() || undefined,
     });
+    revalidatePath("/dashboard/wcc");
+    revalidatePath("/dashboard/wcc/contacts");
     return { client };
   } catch {
     return { error: "Error al crear el cliente." };
