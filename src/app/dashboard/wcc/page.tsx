@@ -3,6 +3,8 @@ import { getWccDashboardSummary, wccKnowledgeStatuses } from "@/lib/wcc-dashboar
 import { formatRelativeTime } from "@/lib/item-meta";
 import { WccEmptyState, WccNotice } from "./components";
 
+export const dynamic = "force-dynamic";
+
 const wccSections = [
   ["contacts", "Contactos", "#240", "Lista y ficha vinculable al CRM.", "/dashboard/wcc/contacts"],
   ["escalations", "Escalaciones", "#241", "Bandeja para casos abiertos o urgentes.", "/dashboard/wcc/escalations"],
