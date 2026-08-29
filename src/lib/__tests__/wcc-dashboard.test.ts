@@ -78,4 +78,26 @@ describe("getWccDashboardSummary", () => {
       recentConversations: [],
     });
   });
+
+  it("keeps successful metrics when one WhatsApp read fails", async () => {
+    isSupabaseConfigured.mockReturnValue(true);
+    mockDb({
+      whatsapp_escalations: [query({ count: 2, error: null })],
+      whatsapp_conversations: [
+        query({ count: 8, error: null }),
+        query({ data: [{ id: "cv1", status: "open", last_intent: "support", last_message_at: null }], error: null }),
+      ],
+      whatsapp_messages: [query({ count: 3, error: null }), query({ count: 1, error: null })],
+      whatsapp_knowledge_entries: [query({ count: 4, error: null }), query({ count: 5, error: null }), query({ count: 0, error: null })],
+    });
+    const { getWccDashboardSummary } = await import("@/lib/wcc-dashboard");
+    await expect(getWccDashboardSummary()).resolves.toMatchObject({
+      isConfiguredButUnavailable: true,
+      openEscalations: 2,
+      recentConversationCount: 8,
+      recentContactCount: 0,
+      pendingMessageCount: 3,
+      recentConversations: [{ id: "cv1", lastIntent: "support" }],
+    });
+  });
 });

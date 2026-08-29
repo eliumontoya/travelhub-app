@@ -67,40 +67,50 @@ async function recent<T>(query: Query, columns: string) {
   return result.data ?? [];
 }
 
+async function safeRead<T>(read: () => Promise<T>, fallback: T) {
+  try {
+    return { value: await read(), failed: false };
+  } catch {
+    return { value: fallback, failed: true };
+  }
+}
+
 export async function getWccDashboardSummary(): Promise<WccDashboardSummary> {
   if (!hasSupabaseConfig()) return emptySummary();
 
   try {
     const db = (await createClient()) as unknown as Client;
     const [openEscalations, recentConversationCount, recentContactCount, pendingMessageCount, failedMessageCount, draft, approved, archived, conversations, contacts] = await Promise.all([
-      count(db.from("whatsapp_escalations").eq("status", "open")),
-      count(db.from("whatsapp_conversations")),
-      count(db.from("whatsapp_contacts")),
-      count(db.from("whatsapp_messages").in("status", ["received", "processed"])),
-      count(db.from("whatsapp_messages").eq("status", "failed")),
-      count(db.from("whatsapp_knowledge_entries").eq("status", "draft")),
-      count(db.from("whatsapp_knowledge_entries").eq("status", "approved")),
-      count(db.from("whatsapp_knowledge_entries").eq("status", "archived")),
-      recent<Record<string, unknown>>(db.from("whatsapp_conversations"), "id, status, last_intent, last_message_at"),
-      recent<Record<string, unknown>>(db.from("whatsapp_contacts"), "id, display_name, whatsapp_profile_name, phone_e164, last_message_at"),
+      safeRead(() => count(db.from("whatsapp_escalations").eq("status", "open")), 0),
+      safeRead(() => count(db.from("whatsapp_conversations")), 0),
+      safeRead(() => count(db.from("whatsapp_contacts")), 0),
+      safeRead(() => count(db.from("whatsapp_messages").in("status", ["received", "processed"])), 0),
+      safeRead(() => count(db.from("whatsapp_messages").eq("status", "failed")), 0),
+      safeRead(() => count(db.from("whatsapp_knowledge_entries").eq("status", "draft")), 0),
+      safeRead(() => count(db.from("whatsapp_knowledge_entries").eq("status", "approved")), 0),
+      safeRead(() => count(db.from("whatsapp_knowledge_entries").eq("status", "archived")), 0),
+      safeRead(() => recent<Record<string, unknown>>(db.from("whatsapp_conversations"), "id, status, last_intent, last_message_at"), []),
+      safeRead(() => recent<Record<string, unknown>>(db.from("whatsapp_contacts"), "id, display_name, whatsapp_profile_name, phone_e164, last_message_at"), []),
     ]);
+
+    const readsFailed = [openEscalations, recentConversationCount, recentContactCount, pendingMessageCount, failedMessageCount, draft, approved, archived, conversations, contacts].some((read) => read.failed);
 
     return {
       isSupabaseConfigured: true,
-      isConfiguredButUnavailable: false,
-      openEscalations,
-      recentConversationCount,
-      recentContactCount,
-      pendingMessageCount,
-      failedMessageCount,
-      knowledgeByStatus: { draft, approved, archived },
-      recentConversations: conversations.map((row) => ({
+      isConfiguredButUnavailable: readsFailed,
+      openEscalations: openEscalations.value,
+      recentConversationCount: recentConversationCount.value,
+      recentContactCount: recentContactCount.value,
+      pendingMessageCount: pendingMessageCount.value,
+      failedMessageCount: failedMessageCount.value,
+      knowledgeByStatus: { draft: draft.value, approved: approved.value, archived: archived.value },
+      recentConversations: conversations.value.map((row) => ({
         id: row.id as string,
         status: row.status as WhatsAppConversationStatus,
         lastIntent: (row.last_intent as string | null) ?? undefined,
         lastMessageAt: (row.last_message_at as string | null) ?? undefined,
       })),
-      recentContacts: contacts.map((row) => ({
+      recentContacts: contacts.value.map((row) => ({
         id: row.id as string,
         displayName: ((row.display_name as string | null) ?? (row.whatsapp_profile_name as string | null)) ?? undefined,
         phoneE164: row.phone_e164 as string,
