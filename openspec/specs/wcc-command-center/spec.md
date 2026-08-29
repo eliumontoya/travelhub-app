@@ -42,12 +42,17 @@ The WCC shell MUST NOT implement contact, conversation, message, intent, or esca
 
 
 ### Requirement: WCC contacts list
-The system MUST render `/dashboard/wcc/contacts` as a read-only, paginated list of WhatsApp contacts ordered by recent activity using `last_message_at` with a safe fallback to creation time.
+The system MUST render `/dashboard/wcc/contacts` as a read-only, paginated list of WhatsApp contacts ordered by recent activity using `last_message_at` with a safe fallback to creation time. When a WhatsApp contact is persistently linked to a TravelHub client, the list MUST show that linked client.
 
 #### Scenario: Agent identifies recent sender
 - GIVEN WhatsApp contacts exist
 - WHEN the agent opens `/dashboard/wcc/contacts`
 - THEN the system MUST show each contact phone, display/profile name, linked TravelHub client when available, opt-in status, and last activity.
+
+#### Scenario: Agent sees auto-linked client
+- GIVEN a WhatsApp contact phone uniquely matches a TravelHub client WhatsApp after normalization
+- WHEN the agent opens `/dashboard/wcc/contacts`
+- THEN the contact MUST show the linked TravelHub client from persisted contact data.
 
 #### Scenario: Agent opens contact detail
 - GIVEN a contact appears in the WCC contacts list
@@ -60,12 +65,17 @@ The system MUST render `/dashboard/wcc/contacts` as a read-only, paginated list 
 - THEN the page MUST render a safe empty or unavailable state without throwing.
 
 ### Requirement: WCC contact detail
-The system MUST render `/dashboard/wcc/contacts/[id]` as a read-only contact profile with the contact identity, optional linked TravelHub client, and related conversations, escalations, and intents as operational context.
+The system MUST render `/dashboard/wcc/contacts/[id]` as a read-only contact profile with the contact identity, optional linked TravelHub client, and related conversations, escalations, and intents as operational context. When deterministic phone linking succeeds, the linked client MUST be loaded through `whatsapp_contacts.linked_client_id`.
 
 #### Scenario: Contact has related context
 - GIVEN a WhatsApp contact has conversations, escalations, or intents
 - WHEN the agent opens the contact detail
 - THEN the system MUST show limited related context for those records without enabling mutations.
+
+#### Scenario: Contact has auto-linked client
+- GIVEN a WhatsApp contact has a unique normalized phone match to a TravelHub client
+- WHEN the agent opens the contact detail
+- THEN the “Cliente TravelHub vinculado” section MUST show that client and link to its dashboard profile.
 
 #### Scenario: Contact is missing
 - GIVEN a contact id does not exist or cannot be read
