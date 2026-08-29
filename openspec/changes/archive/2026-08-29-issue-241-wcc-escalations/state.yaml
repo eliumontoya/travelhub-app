@@ -1,0 +1,6 @@
+change: issue-241-wcc-escalations
+issue: 241
+branch: feat/wcc-241-escalations
+base: origin/feat/wcc-240-contacts
+pr_chain: 3/6
+status: archived
