@@ -1,0 +1,6 @@
+change: issue-239-wcc-shell-dashboard
+issue: 239
+status: archived
+artifact_store: hybrid
+branch: feat/wcc-239-shell-dashboard
+phases: {explore: complete, propose: complete, spec: complete, design: complete, tasks: complete, apply: complete, verify: complete, archive: complete}
