@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { getWccConversationDetail, type WccConversationIntent } from "@/lib/wcc-conversations";
 import { formatDateTime, formatRelativeTime } from "@/lib/item-meta";
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">{children}</p>;
-}
+import { WccBackLink, WccEmptyState, WccNotice } from "../../components";
 
 function intentForMessage(intents: WccConversationIntent[], messageId: string) {
   return intents.filter((intent) => intent.messageId === messageId);
@@ -21,8 +18,8 @@ export default async function WccConversationDetailPage({
   if (detail.isConfiguredButUnavailable) {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link href="/dashboard/wcc/conversations" className="text-sm text-emerald-300 hover:underline">← Conversaciones</Link>
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-sm text-slate-300">WCC no pudo leer esta conversación. Se muestra estado seguro.</div>
+        <WccBackLink href="/dashboard/wcc/conversations">Conversaciones</WccBackLink>
+        <WccNotice tone="warning">WCC no pudo leer esta conversación. Se muestra estado seguro.</WccNotice>
       </main>
     );
   }
@@ -30,8 +27,8 @@ export default async function WccConversationDetailPage({
   if (!detail.conversation) {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link href="/dashboard/wcc/conversations" className="text-sm text-emerald-300 hover:underline">← Conversaciones</Link>
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-sm text-slate-300">Conversación no encontrada o Supabase no está configurado.</div>
+        <WccBackLink href="/dashboard/wcc/conversations">Conversaciones</WccBackLink>
+        <WccNotice>Conversación no encontrada o Supabase no está configurado.</WccNotice>
       </main>
     );
   }
@@ -41,7 +38,7 @@ export default async function WccConversationDetailPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <Link href="/dashboard/wcc/conversations" className="text-sm text-emerald-300 hover:underline">← Conversaciones</Link>
+      <WccBackLink href="/dashboard/wcc/conversations">Conversaciones</WccBackLink>
 
       <section className="mt-4 rounded-3xl border border-emerald-400/20 bg-slate-900 p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Detalle de conversación</p>
@@ -51,7 +48,10 @@ export default async function WccConversationDetailPage({
             <p className="mt-2 text-slate-300">Estado: {conversation.status} · Intent: {conversation.lastIntent ?? "sin intent"}</p>
             {contact ? <p className="mt-1 text-sm text-slate-400">{contact.phoneE164}</p> : null}
           </div>
-          {contact ? <Link href={`/dashboard/wcc/contacts/${contact.id}`} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-400 hover:text-emerald-200">Ver contacto</Link> : null}
+          <div className="flex flex-wrap gap-2">
+            {contact ? <Link href={`/dashboard/wcc/contacts/${contact.id}`} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-400 hover:text-emerald-200">Ver contacto</Link> : null}
+            {contact?.linkedClientId ? <Link href={`/dashboard/clients/${contact.linkedClientId}`} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-400 hover:text-emerald-200">Ver cliente</Link> : null}
+          </div>
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
           <div className="rounded-xl bg-slate-950 p-4"><p className="text-xs text-slate-500">Creada</p><p className="mt-1 text-sm text-white">{formatDateTime(conversation.createdAt)}</p></div>
@@ -87,7 +87,7 @@ export default async function WccConversationDetailPage({
               );
             })}
           </ol>
-        ) : <Empty>No hay mensajes relacionados con esta conversación.</Empty>}
+        ) : <WccEmptyState title="Sin mensajes" description="No hay mensajes relacionados con esta conversación todavía." />}
       </section>
 
       <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -102,7 +102,7 @@ export default async function WccConversationDetailPage({
               </div>
             ))}
           </div>
-        ) : <Empty>No hay intents relacionados.</Empty>}
+        ) : <WccEmptyState title="Sin intents" description="Los intents detectados se mostrarán aquí como apoyo de diagnóstico, sin habilitar acciones manuales." />}
       </section>
     </main>
   );

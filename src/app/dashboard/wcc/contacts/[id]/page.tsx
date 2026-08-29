@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { getWccContactDetail } from "@/lib/wcc-contacts";
 import { formatDateTime, formatRelativeTime } from "@/lib/item-meta";
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">{children}</p>;
-}
+import { WccBackLink, WccEmptyState, WccInlineLink, WccNotice } from "../../components";
 
 export default async function WccContactDetailPage({
   params,
@@ -17,8 +14,8 @@ export default async function WccContactDetailPage({
   if (detail.isConfiguredButUnavailable) {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link href="/dashboard/wcc/contacts" className="text-sm text-emerald-300 hover:underline">← Contactos</Link>
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-sm text-slate-300">WCC no pudo leer esta ficha de contacto. Se muestra estado seguro.</div>
+        <WccBackLink href="/dashboard/wcc/contacts">Contactos</WccBackLink>
+        <WccNotice tone="warning">WCC no pudo leer esta ficha de contacto. Se muestra estado seguro.</WccNotice>
       </main>
     );
   }
@@ -26,8 +23,8 @@ export default async function WccContactDetailPage({
   if (!detail.contact) {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link href="/dashboard/wcc/contacts" className="text-sm text-emerald-300 hover:underline">← Contactos</Link>
-        <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-sm text-slate-300">Contacto no encontrado o Supabase no está configurado.</div>
+        <WccBackLink href="/dashboard/wcc/contacts">Contactos</WccBackLink>
+        <WccNotice>Contacto no encontrado o Supabase no está configurado.</WccNotice>
       </main>
     );
   }
@@ -36,7 +33,7 @@ export default async function WccContactDetailPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <Link href="/dashboard/wcc/contacts" className="text-sm text-emerald-300 hover:underline">← Contactos</Link>
+      <WccBackLink href="/dashboard/wcc/contacts">Contactos</WccBackLink>
 
       <section className="mt-4 rounded-3xl border border-emerald-400/20 bg-slate-900 p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Ficha WhatsApp</p>
@@ -59,22 +56,22 @@ export default async function WccContactDetailPage({
         <h3 className="text-lg font-semibold text-white">Cliente TravelHub vinculado</h3>
         {contact.linkedClient ? (
           <div className="mt-4 rounded-xl bg-slate-950 p-4 text-sm text-slate-300">
-            <Link href={`/dashboard/clients/${contact.linkedClient.id}`} className="font-semibold text-emerald-300 hover:underline">{contact.linkedClient.name}</Link>
+            <WccInlineLink href={`/dashboard/clients/${contact.linkedClient.id}`}>{contact.linkedClient.name}</WccInlineLink>
             <p className="mt-1">{contact.linkedClient.email || "sin email"} · {contact.linkedClient.whatsapp || contact.linkedClient.phone || "sin teléfono"}</p>
           </div>
-        ) : <Empty>Este contacto aún no está vinculado a un cliente TravelHub.</Empty>}
+        ) : <WccEmptyState title="Sin cliente vinculado" description="Este contacto aún no está vinculado a un cliente TravelHub. La vista se mantiene en solo lectura para preservar el alcance WCC v1." />}
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h3 className="text-lg font-semibold text-white">Conversaciones</h3>
           {detail.conversations.length ? detail.conversations.map((item) => (
-            <div key={item.id} className="mt-3 rounded-xl bg-slate-950 p-4 text-sm text-slate-300">
+            <Link key={item.id} href={`/dashboard/wcc/conversations/${item.id}`} className="mt-3 block rounded-xl bg-slate-950 p-4 text-sm text-slate-300 transition hover:bg-slate-800">
               <p className="font-semibold text-white">{item.status}</p>
               <p className="mt-1">Intent: {item.lastIntent ?? "sin intent"}</p>
               <p className="mt-1 text-slate-500">{item.lastMessageAt ? formatRelativeTime(item.lastMessageAt) : "sin fecha"}</p>
-            </div>
-          )) : <Empty>No hay conversaciones relacionadas.</Empty>}
+            </Link>
+          )) : <WccEmptyState title="Sin conversaciones" description="No hay conversaciones relacionadas con este contacto todavía." actionHref="/dashboard/wcc/conversations" actionLabel="Abrir conversaciones" />}
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h3 className="text-lg font-semibold text-white">Escalaciones</h3>
@@ -84,7 +81,7 @@ export default async function WccContactDetailPage({
               <p className="mt-1">{item.summary ?? item.reason}</p>
               <p className="mt-1 text-slate-500">Abierta: {formatDateTime(item.openedAt)}</p>
             </div>
-          )) : <Empty>No hay escalaciones relacionadas.</Empty>}
+          )) : <WccEmptyState title="Sin escalaciones" description="No hay escalaciones relacionadas. Si aparece una atención humana pendiente, se listará aquí y en la cola." actionHref="/dashboard/wcc/escalations" actionLabel="Abrir escalaciones" />}
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h3 className="text-lg font-semibold text-white">Intents</h3>
@@ -94,7 +91,7 @@ export default async function WccContactDetailPage({
               <p className="mt-1">{item.summary ?? "Sin resumen"}</p>
               <p className="mt-1 text-slate-500">Confianza: {item.confidence ?? "n/a"} · {formatDateTime(item.detectedAt)}</p>
             </div>
-          )) : <Empty>No hay intents relacionados.</Empty>}
+          )) : <WccEmptyState title="Sin intents" description="No hay intents relacionados con este contacto todavía." />}
         </div>
       </section>
     </main>
