@@ -63,6 +63,12 @@ export default async function DashboardLayout({
                 Proveedores
               </Link>
               <Link
+                href="/dashboard/wcc"
+                className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
+              >
+                WhatsApp C.C.
+              </Link>
+              <Link
                 href="/dashboard/settings"
                 className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >
