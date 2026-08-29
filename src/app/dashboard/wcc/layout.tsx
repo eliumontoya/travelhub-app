@@ -3,7 +3,7 @@ import Link from "next/link";
 const wccNav = [
   { href: "/dashboard/wcc", label: "Dashboard", active: true },
   { href: "/dashboard/wcc/contacts", label: "Contactos", active: false },
-  { href: "/dashboard/wcc#conversations", label: "Conversaciones", active: false },
+  { href: "/dashboard/wcc/conversations", label: "Conversaciones", active: true },
   { href: "/dashboard/wcc/escalations", label: "Escalaciones", active: false },
   { href: "/dashboard/wcc#knowledge", label: "Knowledge", active: false },
 ];
