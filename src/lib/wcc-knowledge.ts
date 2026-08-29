@@ -1,4 +1,5 @@
-import { createClient, isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
+import { createWccClient } from "@/lib/wcc-client";
 import type { WhatsAppKnowledgeEntry, WhatsAppKnowledgeStatus } from "@/types";
 
 export const WCC_KNOWLEDGE_PAGE_SIZE = 20;
@@ -183,7 +184,7 @@ export async function getWccKnowledgeList(filters: WccKnowledgeListFilters = {})
   if (!hasSupabaseConfig()) return emptyList({ ...filters, page });
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const from = (page - 1) * WCC_KNOWLEDGE_PAGE_SIZE;
     const to = from + WCC_KNOWLEDGE_PAGE_SIZE - 1;
     let query = db
@@ -217,7 +218,7 @@ export async function getWccKnowledgeEntry(entryId: string): Promise<WccKnowledg
   if (!entryId.trim()) return emptyDetail({ isSupabaseConfigured: true });
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const result = (await db
       .from("whatsapp_knowledge_entries")
       .select("id, topic, question, answer, tags, source, status, approved_at, created_at, updated_at")
@@ -251,7 +252,7 @@ export async function createWccKnowledgeEntry(input: WccKnowledgeInput): Promise
   }
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const result = (await db.from("whatsapp_knowledge_entries").insert(payload).select("id").single()) as SingleResult<{ id: string }>;
     if (result.error || !result.data?.id) return { ok: false, message: result.error?.message ?? "No se pudo crear la entrada." };
     return { ok: true, message: "Knowledge creado.", entryId: result.data.id };
@@ -273,7 +274,7 @@ export async function updateWccKnowledgeEntry(entryId: string, input: WccKnowled
   }
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const result = (await db.from("whatsapp_knowledge_entries").update(payload).eq("id", entryId).select("id").single()) as SingleResult<{ id: string }>;
     if (result.error || !result.data?.id) return { ok: false, message: result.error?.message ?? "No se pudo actualizar la entrada." };
     return { ok: true, message: "Knowledge actualizado.", entryId: result.data.id };
@@ -289,7 +290,7 @@ export async function updateWccKnowledgeStatus(entryId: string, statusInput: unk
   if (!status) return { ok: false, message: "El estado no es válido.", errors: { status: "El estado no es válido." } };
 
   try {
-    const db = (await createClient()) as unknown as DbClient;
+    const db = (await createWccClient()) as unknown as DbClient;
     const result = (await db
       .from("whatsapp_knowledge_entries")
       .update({ status, approved_at: status === "approved" ? new Date().toISOString() : null })
