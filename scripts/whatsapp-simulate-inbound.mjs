@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync, existsSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 
 const DEFAULT_WEBHOOK_URL = "https://app.xtravelhub.com/api/whatsapp/webhook";
+
+function signBody(rawBody, appSecret) {
+  return `sha256=${createHmac("sha256", appSecret).update(rawBody, "utf8").digest("hex")}`;
+}
 
 function loadDotEnv(path = ".env.local") {
   if (!existsSync(path)) return {};
@@ -36,11 +40,12 @@ Opciones:
   --timestamp <unix_seconds>        Timestamp del evento. Default: now.
   --business-phone-number-id <id>   Incluye metadata.phone_number_id. Omitido por default para que la app use WHATSAPP_PHONE_NUMBER_ID de Vercel al responder.
   --display-phone-number <numero>   metadata.display_phone_number. Default: 15556766474.
-  --dry-run                         Solo imprime payload; no envía.
+  --dry-run                         Solo imprime payload y headers simulados; no envía.
   --help                            Muestra esta ayuda.
 
 Notas:
-  - No usa ni imprime tokens de WhatsApp.
+  - Si WHATSAPP_APP_SECRET está configurado, firma el body exacto enviado con X-Hub-Signature-256.
+  - No usa ni imprime tokens ni secrets de WhatsApp.
   - Para probar idempotencia, ejecuta dos veces con el mismo --message-id.
   - Si incluyes --business-phone-number-id fake, el outbound puede fallar igual que los payloads de prueba de Meta.
 `);
@@ -126,12 +131,26 @@ async function main() {
     displayPhoneNumber: args.displayPhoneNumber || "15556766474",
   });
 
+  const rawBody = JSON.stringify(payload);
+  const appSecret = mergedEnv.WHATSAPP_APP_SECRET;
+  const signature = appSecret ? signBody(rawBody, appSecret) : null;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(signature ? { "X-Hub-Signature-256": signature } : {}),
+  };
+
   console.log(`Webhook: ${url}`);
   console.log(`Message ID: ${messageId}`);
   console.log(`From: ${from}`);
   console.log(`Text: ${text}`);
+  console.log(`Signed: ${signature ? "yes" : "no"}`);
+  if (!signature) {
+    console.warn("Warning: WHATSAPP_APP_SECRET is not configured; hardened webhooks will reject this POST with 401.");
+  }
 
   if (args.dryRun) {
+    console.log("\nHeaders:");
+    console.log(JSON.stringify(headers, null, 2));
     console.log("\nPayload:");
     console.log(JSON.stringify(payload, null, 2));
     return;
@@ -139,8 +158,8 @@ async function main() {
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    headers,
+    body: rawBody,
   });
   const contentType = response.headers.get("content-type") || "";
   const body = contentType.includes("application/json") ? await response.json() : await response.text();
