@@ -106,7 +106,7 @@ El webhook productivo valida la firma Meta `X-Hub-Signature-256` antes de parsea
 
 Si el secret falta, el `POST` falla cerrado con error de configuración. Si la firma falta, está mal formada o no coincide byte por byte con el cuerpo enviado, el webhook responde `401` y no registra contactos, conversaciones, mensajes ni callbacks.
 
-El modo `--dry-run` sigue siendo útil para revisar el payload sin enviar nada. Para validar tráfico productivo completo, prefiere una entrega real desde Meta o una simulación que firme el cuerpo exacto con el mismo App Secret configurado en el destino.
+El script firma automáticamente el body exacto enviado cuando `WHATSAPP_APP_SECRET` está disponible en `.env.local` o en el entorno. El modo `--dry-run` sigue siendo útil para revisar payload y headers sin enviar nada; si el secret está configurado, mostrará el header firmado sin imprimir el secret. Para validar tráfico productivo completo, usa el mismo App Secret configurado en el destino.
 
 ## Uso básico
 
