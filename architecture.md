@@ -99,7 +99,7 @@ relevantes (`.env.local` en dev, configuradas en Vercel para producción):
 - `RESEND_API_KEY` — opcional, activa el recordatorio automático por email antes del viaje (ver `src/lib/email.ts` y `src/app/api/cron/trip-reminders/route.ts`)
 - `EMAIL_FROM` — opcional, remitente del recordatorio (default `TravelHub <onboarding@resend.dev>`)
 - `TRIP_REMINDER_DAYS_BEFORE` — opcional, días de anticipación del recordatorio (default 3)
-- `CRON_SECRET` — opcional, si está configurado exige `Authorization: Bearer <valor>` en el endpoint de cron
+- `CRON_SECRET` — requerido y no vacío en producción para el endpoint de recordatorios; el cron debe enviar `Authorization: Bearer <valor>`. También se recomienda configurarlo en deploys compartidos o de preview.
 - `NEXT_PUBLIC_SITE_URL` — opcional, base de la URL pública usada en el email de recordatorio (fallback: `VERCEL_URL` o `localhost:3000`)
 - `FLIGHT_API_KEY` — opcional, server-side, activa la consulta manual de estado de vuelos (Aviationstack) en items tipo `flight`; usa solo el campo estructurado `Número de vuelo`
 - `NEXT_PUBLIC_FLIGHT_STATUS_CACHE_HOURS` — opcional, client-side, duración del cache local del estado de vuelo en horas (default 24)

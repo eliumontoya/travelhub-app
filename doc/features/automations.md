@@ -18,7 +18,11 @@ Cuando publicás un viaje, TravelHub puede enviarle un recordatorio a tu cliente
 ### Requisitos
 
 - Una API key de [Resend](https://resend.com) para el envío de emails
-- Opcional: `CRON_SECRET` para proteger el endpoint contra accesos no autorizados
+- En producción, un `CRON_SECRET` no vacío configurado en el deploy
+- El cron externo debe invocar `/api/cron/trip-reminders` con el header `Authorization: Bearer <CRON_SECRET>`
+- En ambientes compartidos, de preview o accesibles por otras personas, también se recomienda configurar `CRON_SECRET` aunque no sean producción
+
+Si producción no tiene `CRON_SECRET`, el endpoint responde `503` antes de revisar emails o viajes. Si el secreto existe pero el header falta o no coincide exactamente, responde `401` genérico y no ejecuta recordatorios. En local/desarrollo sin secreto, el endpoint puede seguir abierto para facilitar pruebas.
 
 ---
 

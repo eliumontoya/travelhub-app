@@ -51,6 +51,8 @@ Los documentos adjuntos (boarding passes, vouchers, confirmaciones, pasaportes) 
 - Envío automático de recordatorios vía Resend API
 - HTML template con datos del viaje y link directo
 - Control de frecuencia: solo un recordatorio por viaje, nunca spam
+- La ejecución programada usa `/api/cron/trip-reminders`; en producción requiere un `CRON_SECRET` no vacío y el header `Authorization: Bearer <CRON_SECRET>`
+- Configurar `CRON_SECRET` también es recomendado en previews o deploys compartidos para evitar ejecuciones no autorizadas
 
 ---
 
