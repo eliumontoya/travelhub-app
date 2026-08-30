@@ -40,6 +40,7 @@ WHATSAPP_PHONE_NUMBER_ID
 WHATSAPP_HUMAN_ALERT_PHONE
 WHATSAPP_GRAPH_VERSION
 WHATSAPP_VERIFY_TOKEN
+WHATSAPP_APP_SECRET
 ```
 
 2. Tener Supabase configurado en producción:
@@ -97,6 +98,15 @@ WHATSAPP_AGENT_LLM_API_STYLE=chat_completions
 ```
 
 - El LLM recibe solo conocimiento aprobado y debe devolver JSON estructurado; si no cita knowledge IDs aprobados, el sistema escala.
+
+
+## Firma requerida del webhook
+
+El webhook productivo valida la firma Meta `X-Hub-Signature-256` antes de parsear JSON o ejecutar cualquier side effect. Para pruebas reales contra `/api/whatsapp/webhook`, configura `WHATSAPP_APP_SECRET` en Vercel Production con el App Secret de Meta.
+
+Si el secret falta, el `POST` falla cerrado con error de configuración. Si la firma falta, está mal formada o no coincide byte por byte con el cuerpo enviado, el webhook responde `401` y no registra contactos, conversaciones, mensajes ni callbacks.
+
+El modo `--dry-run` sigue siendo útil para revisar el payload sin enviar nada. Para validar tráfico productivo completo, prefiere una entrega real desde Meta o una simulación que firme el cuerpo exacto con el mismo App Secret configurado en el destino.
 
 ## Uso básico
 
