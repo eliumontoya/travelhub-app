@@ -4,20 +4,26 @@ import { getTripsPendingReminder, markTripReminderSent } from "@/lib/data";
 
 const DEFAULT_DAYS_AHEAD = 3;
 
-// Pensado para ser invocado por un cron externo (ej. Vercel Cron, ver
-// vercel.json) que golpea este endpoint una vez al día. Si CRON_SECRET está
-// configurado, exige el header Authorization; si no, queda abierto (misma
-// degradación opcional que el resto de integraciones externas).
-function isAuthorized(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+function denyCronAccess(request: NextRequest) {
+  const secret = process.env.CRON_SECRET?.trim();
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Cron secret is not configured" }, { status: 503 });
+    }
+    return null;
+  }
+
+  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return null;
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const deniedResponse = denyCronAccess(request);
+  if (deniedResponse) return deniedResponse;
 
   if (!isEmailConfigured()) {
     return NextResponse.json({ skipped: true, reason: "RESEND_API_KEY no configurada" });
