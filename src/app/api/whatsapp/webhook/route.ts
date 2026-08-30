@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processWhatsAppWebhookPayload } from "@/lib/whatsapp/inbound-service";
+import { verifyWhatsAppWebhookSignature } from "@/lib/whatsapp/signature";
 import { WhatsAppStoreConfigurationError } from "@/lib/whatsapp/store";
 
 export async function GET(request: NextRequest) {
@@ -23,9 +24,22 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rawBody = await request.text();
+  const signature = verifyWhatsAppWebhookSignature({
+    rawBody,
+    signatureHeader: request.headers.get("x-hub-signature-256"),
+  });
+
+  if (!signature.ok) {
+    if (signature.reason === "missing_secret") {
+      return NextResponse.json({ error: "WhatsApp webhook signing secret is not configured" }, { status: 503 });
+    }
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let payload: unknown;
   try {
-    payload = await request.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }

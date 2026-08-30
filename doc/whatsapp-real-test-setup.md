@@ -209,6 +209,7 @@ Agregar:
 
 ```txt
 WHATSAPP_VERIFY_TOKEN=
+WHATSAPP_APP_SECRET=
 WHATSAPP_ACCESS_TOKEN=
 WHATSAPP_PHONE_NUMBER_ID=
 WHATSAPP_HUMAN_ALERT_PHONE=
@@ -218,6 +219,7 @@ WHATSAPP_GRAPH_VERSION=v20.0
 Notas:
 
 - `WHATSAPP_VERIFY_TOKEN`: lo inventamos nosotros. Debe coincidir exactamente con el token usado al configurar el webhook en Meta.
+- `WHATSAPP_APP_SECRET`: App Secret de Meta. Es obligatorio para validar la firma `X-Hub-Signature-256` de cada `POST` antes de procesar mensajes o callbacks.
 - `WHATSAPP_ACCESS_TOKEN`: token generado en Meta.
 - `WHATSAPP_PHONE_NUMBER_ID`: id del número de WhatsApp en Meta.
 - `WHATSAPP_HUMAN_ALERT_PHONE`: número personal/humano que recibirá alertas de escalación.
@@ -227,6 +229,7 @@ Importante:
 
 - Todas estas variables son server-side.
 - Ninguna debe llevar prefijo `NEXT_PUBLIC_`.
+- Si `WHATSAPP_APP_SECRET` falta o está vacío, el webhook `POST` falla cerrado con error de configuración y no procesa payloads.
 - El código actual usa `WHATSAPP_HUMAN_ALERT_PHONE`, no `WHATSAPP_HUMAN_ESCALATION_PHONE`.
 
 ## Paso 1 — Crear app en Meta Developers
