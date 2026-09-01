@@ -41,8 +41,27 @@ describe("getWccDashboardSummary", () => {
       knowledgeByStatus: { draft: 0, approved: 0, archived: 0 },
       recentConversations: [],
       recentContacts: [],
+      observability: expect.objectContaining({ metrics: expect.objectContaining({ totalEvents: 0 }) }),
     });
     expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("includes process-local WhatsApp AI observability safely", async () => {
+    const observability = await import("@/lib/observability/whatsapp-ai");
+    observability.resetWhatsAppAiObservabilityForTests();
+    observability.recordWhatsAppAiEvent({
+      type: "send.finished",
+      outcome: "failure",
+      diagnostics: { error: "Bearer token failed for +5215551234567" },
+    });
+
+    const { getWccDashboardSummary } = await import("@/lib/wcc-dashboard");
+    const summary = await getWccDashboardSummary();
+
+    expect(summary.observability.metrics.sendFailures).toBe(1);
+    expect(summary.observability.recentFailures).toHaveLength(1);
+    expect(JSON.stringify(summary.observability)).not.toContain("5215551234567");
+    expect(JSON.stringify(summary.observability)).not.toContain("Bearer token");
   });
 
   it("maps Supabase counts and recent rows", async () => {

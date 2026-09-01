@@ -86,7 +86,10 @@ describe("POST /api/whatsapp/webhook", () => {
 
     await expect(response.json()).resolves.toMatchObject({ received: 1, processed: 1, autoAnswered: 1 });
     expect(response.status).toBe(200);
-    expect(processWhatsAppWebhookPayload).toHaveBeenCalledWith(payload);
+    expect(processWhatsAppWebhookPayload).toHaveBeenCalledWith(
+      payload,
+      expect.objectContaining({ observabilityContext: expect.objectContaining({ correlationId: expect.any(String) }) })
+    );
   });
 
   it("acknowledges duplicate webhook deliveries without failing", async () => {
@@ -197,5 +200,8 @@ it("acknowledges status-only webhook payloads", async () => {
     received: 0,
     statusCallbacks: { received: 1, updated: 1 },
   });
-  expect(processWhatsAppWebhookPayload).toHaveBeenCalledWith(payload);
+  expect(processWhatsAppWebhookPayload).toHaveBeenCalledWith(
+    payload,
+    expect.objectContaining({ observabilityContext: expect.objectContaining({ correlationId: expect.any(String) }) })
+  );
 });

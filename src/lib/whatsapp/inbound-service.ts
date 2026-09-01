@@ -7,6 +7,12 @@ import {
   type WhatsAppKnowledgeEntry,
 } from "@/lib/ai/whatsapp-inbound-agent";
 import { runTravelHubClientTool, type TravelHubClientToolResult } from "@/lib/ai/tools/travelhub-client-tools";
+import {
+  createWhatsAppAiCorrelationContext,
+  recordWhatsAppAiEvent,
+  type WhatsAppAiCorrelationContext,
+  type WhatsAppAiEventOutcome,
+} from "@/lib/observability/whatsapp-ai";
 import { buildWhatsAppEscalationWork } from "./escalation";
 import { sendWhatsAppTextMessage, type WhatsAppSendResult } from "./client";
 import {
@@ -58,6 +64,7 @@ export type WhatsAppInboundServiceOptions = {
   travelHubToolRunner?: typeof runTravelHubClientTool;
   sendText?: typeof sendWhatsAppTextMessage;
   humanAlertPhone?: string;
+  observabilityContext?: WhatsAppAiCorrelationContext;
 };
 
 const defaultStore: WhatsAppStore = {
@@ -123,7 +130,8 @@ function getSingleTripId(result: TravelHubClientToolResult) {
 async function buildDynamicTravelHubContext(
   event: NormalizedWhatsAppInboundEvent,
   conversation: { assignedTripId?: string | null },
-  options: WhatsAppInboundServiceOptions
+  options: WhatsAppInboundServiceOptions,
+  observabilityContext: WhatsAppAiCorrelationContext
 ): Promise<WhatsAppDynamicToolResult[]> {
   if (event.messageType !== "text" || !event.body || !shouldUseDynamicTravelHubTools(event.body)) return [];
 
@@ -131,7 +139,11 @@ async function buildDynamicTravelHubContext(
   const rawResults: TravelHubClientToolResult[] = [];
   const kind = dynamicToolKindForMessage(event.body);
 
-  const clientResult = await runTool({ tool: "getClientByWhatsappPhone", arguments: { phone: event.fromPhone } });
+  const clientResult = await runObservedTravelHubTool(
+    runTool,
+    { tool: "getClientByWhatsappPhone", arguments: { phone: event.fromPhone } },
+    observabilityContext
+  );
   rawResults.push(clientResult);
   const clientId = getResolvedClientId(clientResult);
   if (!clientId) return rawResults.map(toDynamicToolResult);
@@ -139,18 +151,65 @@ async function buildDynamicTravelHubContext(
   const assignedTripId = conversation.assignedTripId ?? null;
   if (assignedTripId) {
     rawResults.push(
-      await runTool({ tool: tripScopedToolForKind(kind), arguments: { clientId, tripId: assignedTripId } })
+      await runObservedTravelHubTool(
+        runTool,
+        { tool: tripScopedToolForKind(kind), arguments: { clientId, tripId: assignedTripId } },
+        observabilityContext
+      )
     );
     return rawResults.map(toDynamicToolResult);
   }
 
-  const tripsResult = await runTool({ tool: "getClientActiveTrips", arguments: { clientId } });
+  const tripsResult = await runObservedTravelHubTool(
+    runTool,
+    { tool: "getClientActiveTrips", arguments: { clientId } },
+    observabilityContext
+  );
   rawResults.push(tripsResult);
   const tripId = getSingleTripId(tripsResult);
   if (!tripId) return rawResults.map(toDynamicToolResult);
 
-  rawResults.push(await runTool({ tool: tripScopedToolForKind(kind), arguments: { clientId, tripId } }));
+  rawResults.push(
+    await runObservedTravelHubTool(
+      runTool,
+      { tool: tripScopedToolForKind(kind), arguments: { clientId, tripId } },
+      observabilityContext
+    )
+  );
   return rawResults.map(toDynamicToolResult);
+}
+
+async function runObservedTravelHubTool(
+  runTool: typeof runTravelHubClientTool,
+  input: Parameters<typeof runTravelHubClientTool>[0],
+  context: WhatsAppAiCorrelationContext
+) {
+  const startedAt = Date.now();
+  try {
+    const result = await runTool(input);
+    recordWhatsAppAiEvent({
+      context,
+      type: "tool.finished",
+      outcome: result.status === "error" ? "failure" : result.status === "blocked" ? "skipped" : "success",
+      durationMs: Date.now() - startedAt,
+      diagnostics: {
+        tool: result.tool,
+        status: result.status,
+        reason: result.reason,
+        auditOk: result.audit?.ok,
+      },
+    });
+    return result;
+  } catch (error) {
+    recordWhatsAppAiEvent({
+      context,
+      type: "tool.finished",
+      outcome: "failure",
+      durationMs: Date.now() - startedAt,
+      diagnostics: { tool: input.tool, error },
+    });
+    throw error;
+  }
 }
 
 function unsupportedDecision(event: NormalizedWhatsAppInboundEvent): WhatsAppInboundAgentDecision {
@@ -168,7 +227,8 @@ function unsupportedDecision(event: NormalizedWhatsAppInboundEvent): WhatsAppInb
 async function runAgent(
   event: NormalizedWhatsAppInboundEvent,
   persisted: PersistedWhatsAppInboundEvent,
-  options: WhatsAppInboundServiceOptions
+  options: WhatsAppInboundServiceOptions,
+  observabilityContext: WhatsAppAiCorrelationContext
 ) {
   if (event.messageType !== "text" || !event.body) return unsupportedDecision(event);
 
@@ -181,7 +241,7 @@ async function runAgent(
     assignedTripId: context.assignedTripId,
     lastIntent: context.lastIntent,
   };
-  const dynamicToolResults = await buildDynamicTravelHubContext(event, conversation, options);
+  const dynamicToolResults = await buildDynamicTravelHubContext(event, conversation, options, observabilityContext);
   const decision = await (options.agent ?? decideWhatsAppInboundMessage)(
     {
       messageText: event.body,
@@ -196,6 +256,7 @@ async function runAgent(
     {
       knowledgeEntries: options.knowledgeEntries,
       provider: options.agentProvider,
+      observabilityContext,
     }
   );
   return dynamicToolResults.length > 0 ? { ...decision, dynamicToolResults } : decision;
@@ -203,6 +264,30 @@ async function runAgent(
 
 function countSendFailure(send?: WhatsAppSendResult) {
   return send && !send.ok ? 1 : 0;
+}
+
+function sendOutcome(send: WhatsAppSendResult): WhatsAppAiEventOutcome {
+  if (send.ok) return "success";
+  return send.skipped ? "skipped" : "failure";
+}
+
+function recordSendResult(
+  context: WhatsAppAiCorrelationContext,
+  purpose: "auto_answer" | "escalation_customer_follow_up" | "escalation_human_alert",
+  send: WhatsAppSendResult
+) {
+  recordWhatsAppAiEvent({
+    context,
+    type: "send.finished",
+    outcome: sendOutcome(send),
+    diagnostics: {
+      purpose,
+      status: send.status,
+      skipped: send.skipped,
+      providerMessageId: send.providerMessageId,
+      error: send.error,
+    },
+  });
 }
 
 export async function processWhatsAppInboundEvents(
@@ -220,14 +305,45 @@ export async function processWhatsAppInboundEvents(
   let sendFailures = 0;
 
   for (const event of events) {
+    const observabilityContext = createWhatsAppAiCorrelationContext({
+      correlationId: options.observabilityContext?.correlationId ?? event.providerMessageId,
+      requestId: options.observabilityContext?.requestId,
+      providerMessageId: event.providerMessageId,
+    });
     const persisted = await store.persistInboundEvent(event);
+    recordWhatsAppAiEvent({
+      context: observabilityContext,
+      type: "persistence.finished",
+      outcome: persisted.inserted ? "success" : "skipped",
+      diagnostics: { inserted: persisted.inserted },
+    });
     if (!persisted.inserted) {
       duplicates += 1;
+      recordWhatsAppAiEvent({
+        context: observabilityContext,
+        type: "duplicate.skipped",
+        outcome: "skipped",
+        identifiers: { providerMessageId: event.providerMessageId },
+      });
       results.push({ providerMessageId: event.providerMessageId, action: "duplicate_skipped" });
       continue;
     }
 
-    const decision = await runAgent(event, persisted, options);
+    const decision = await runAgent(event, persisted, options, observabilityContext);
+    recordWhatsAppAiEvent({
+      context: observabilityContext,
+      type: "ai.decision",
+      outcome: decision.providerDiagnostics ? "failure" : "success",
+      diagnostics: {
+        intent: decision.intent,
+        decision: decision.decision,
+        confidence: decision.confidence,
+        hasProviderDiagnostics: Boolean(decision.providerDiagnostics),
+        citedKnowledgeCount: decision.citedKnowledgeIds.length,
+        citedToolCallCount: decision.citedToolCallIds.length,
+        providerDiagnostics: decision.providerDiagnostics,
+      },
+    });
     const intent = await store.createIntent({ persisted, decision });
 
     if (decision.decision === "auto_answer" && decision.responseText) {
@@ -236,6 +352,7 @@ export async function processWhatsAppInboundEvents(
         body: decision.responseText,
         phoneNumberId: event.businessPhoneNumberId,
       });
+      recordSendResult(observabilityContext, "auto_answer", customerSend);
       sendFailures += countSendFailure(customerSend);
       await store.insertOutboundMessage({
         persisted,
@@ -271,9 +388,11 @@ export async function processWhatsAppInboundEvents(
       body: escalation.customerFollowUpText,
       phoneNumberId: event.businessPhoneNumberId,
     });
+    recordSendResult(observabilityContext, "escalation_customer_follow_up", customerSend);
     const humanAlertSend = humanAlertPhone
       ? await sendText({ to: humanAlertPhone, body: escalation.humanAlertText })
       : ({ ok: false, skipped: true, status: null, error: "Human WhatsApp alert phone is not configured." } satisfies WhatsAppSendResult);
+    recordSendResult(observabilityContext, "escalation_human_alert", humanAlertSend);
     sendFailures += countSendFailure(customerSend) + countSendFailure(humanAlertSend);
 
     await store.insertOutboundMessage({
@@ -291,6 +410,13 @@ export async function processWhatsAppInboundEvents(
       sendResult: humanAlertSend,
     });
     const escalationRecord = await store.createEscalation({ persisted, intentId: intent.id, escalation });
+    recordWhatsAppAiEvent({
+      context: observabilityContext,
+      type: "escalation.created",
+      outcome: "success",
+      identifiers: { escalationId: escalationRecord.id },
+      diagnostics: { intent: decision.intent },
+    });
     await store.updateConversationStatus({
       conversationId: persisted.conversationId,
       status: "escalated",
@@ -338,7 +464,20 @@ export async function processWhatsAppStatusEvents(
   }
 
   const store = options.store ?? defaultStore;
-  return store.persistStatusEvents(events);
+  const result = await store.persistStatusEvents(events);
+  for (const event of events) {
+    recordWhatsAppAiEvent({
+      context: createWhatsAppAiCorrelationContext({
+        correlationId: options.observabilityContext?.correlationId ?? event.providerMessageId,
+        requestId: options.observabilityContext?.requestId,
+        providerMessageId: event.providerMessageId,
+      }),
+      type: "status_callback.persisted",
+      outcome: "success",
+      diagnostics: { status: event.status },
+    });
+  }
+  return result;
 }
 
 export async function processWhatsAppWebhookPayload(

@@ -106,6 +106,8 @@ src/
     supabase/
       client.ts               cliente de Supabase para el browser
       server.ts                cliente de Supabase para Server Components/Actions
+    observability/
+      whatsapp-ai.ts           eventos, sanitización y métricas WhatsApp/IA
     ics.ts                  -- generación de archivos .ics
     item-meta.ts             -- labels/iconos por tipo de item, formateo de fechas
   types/index.ts            -- tipos de dominio (Client, Trip, TripDay, Item, ...)
@@ -124,6 +126,21 @@ Esquema completo y políticas de RLS en `supabase/migrations/0001_init.sql`
 `0003_rls_harden.sql` (hardening adicional). Cada migración tiene comentarios
 SQL explicando qué política hace qué — es la fuente de verdad del modelo de
 datos, no la repitas de memoria en otro documento.
+
+## Observabilidad WhatsApp/IA
+
+Las rutas y servicios del agente WhatsApp/IA deben emitir telemetría mediante
+`src/lib/observability/whatsapp-ai.ts`. Esta capa es la única responsable de:
+
+- crear y propagar `correlationId`/`eventId`;
+- sanitizar errores, teléfonos, URLs privadas, prompts, completions, tokens,
+  payloads raw, SQL y stack traces;
+- producir logs estructurados y métricas operativas en memoria para WCC.
+
+Regla para nuevas features del agente WhatsApp: no usar `console.log` directo
+ni logs ad-hoc. Cada webhook, decisión IA, tool, envío, status callback o
+escalación relevante debe registrar un evento typed y sanitizado. Si la
+observabilidad falla, nunca debe bloquear la respuesta a WhatsApp.
 
 ## Entornos y variables
 
@@ -169,6 +186,9 @@ relevantes (`.env.local` en dev, configuradas en Vercel para producción):
 - Toda feature que dependa de una API key externa (Supabase, Google
   Maps/Places) debe degradar con gracia si la key no está configurada, no
   debe requerirla para que la app funcione en modo básico.
+- Toda feature nueva de WhatsApp/IA debe propagar el contexto de
+  observabilidad existente y tener pruebas si agrega nuevos tipos de evento o
+  diagnósticos.
 - Si un archivo de dominio empieza a acumular responsabilidades no relacionadas,
   crear un submódulo antes de que pase de ser revisable. Regla práctica:
   preferir PRs pequeños; si una extracción supera ~400 líneas cambiadas,

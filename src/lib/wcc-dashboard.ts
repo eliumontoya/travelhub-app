@@ -1,3 +1,4 @@
+import { getWhatsAppAiObservabilitySnapshot, type WhatsAppAiObservabilitySnapshot } from "@/lib/observability/whatsapp-ai";
 import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server";
 import { createWccClient } from "@/lib/wcc-client";
 import type { WhatsAppConversationStatus, WhatsAppKnowledgeStatus } from "@/types";
@@ -25,6 +26,7 @@ export type WccDashboardSummary = {
   knowledgeByStatus: Record<WhatsAppKnowledgeStatus, number>;
   recentConversations: WccRecentConversation[];
   recentContacts: WccRecentContact[];
+  observability: WhatsAppAiObservabilitySnapshot;
 };
 
 type Query = {
@@ -52,6 +54,7 @@ function emptySummary(overrides: Partial<WccDashboardSummary> = {}): WccDashboar
     knowledgeByStatus: emptyKnowledge,
     recentConversations: [],
     recentContacts: [],
+    observability: getWhatsAppAiObservabilitySnapshot(),
     ...overrides,
   };
 }
@@ -118,6 +121,7 @@ export async function getWccDashboardSummary(): Promise<WccDashboardSummary> {
         phoneE164: row.phone_e164 as string,
         lastMessageAt: (row.last_message_at as string | null) ?? undefined,
       })),
+      observability: getWhatsAppAiObservabilitySnapshot(),
     };
   } catch {
     return emptySummary({ isSupabaseConfigured: true, isConfiguredButUnavailable: true });
