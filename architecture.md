@@ -21,10 +21,11 @@ incorpore al proyecto. Sin detalles de negocio — eso vive en `project.md`.
 Cliente (browser)
    │
    ├── /dashboard/**  (autenticado, agente de viajes)
-   │      Server Components + Server Actions → src/lib/data.ts → Supabase
+   │      Server Components + Server Actions → src/lib/data.ts → src/lib/data/* → Supabase
    │
    └── /t/{slug}      (público, sin login, para el cliente final)
-          Server Component → src/lib/data.ts → Supabase (RLS: solo published)
+          Server Component → src/lib/data.ts → src/lib/data/trips.ts → Supabase
+          (RLS: solo published)
 ```
 
 - Todo el frontend y backend viven en la misma app Next.js — no hay un
@@ -36,18 +37,45 @@ Cliente (browser)
   políticas de Row Level Security de Postgres para exponer únicamente los
   viajes con `status = 'published'`.
 
-## Capa de datos: modo dual mock/Supabase
+## Capa de datos: fachada + módulos por dominio
 
-`src/lib/data.ts` es el único punto de acceso a datos desde las páginas. Cada
-función revisa `isSupabaseConfigured()` (definida en
-`src/lib/supabase/server.ts`, verifica que las env vars de Supabase existan):
+`src/lib/data.ts` es una **fachada de compatibilidad**: solo reexporta los
+módulos de `src/lib/data/*`. Las páginas y Server Actions pueden seguir
+importando desde `@/lib/data`, pero la implementación real vive separada por
+responsabilidad.
 
-- **Si Supabase está configurado**: lee/escribe directo en Postgres.
-- **Si no**: usa arrays en memoria de `src/lib/mock-data.ts` como fallback.
+| Archivo | Responsabilidad |
+|---------|-----------------|
+| `data/shared.ts` | Helpers comunes: cliente server de Supabase, mock/Supabase switch, paginación, slugs, sanitización. |
+| `data/clients.ts` | Clientes, tags, cumpleaños, fuentes de referido y asociaciones cliente/tag. |
+| `data/trips.ts` | Viajes, días, items, templates, packing list, historial, recordatorios y métricas de viaje. |
+| `data/documents.ts` | Supabase Storage, documentos, fotos, logos e imágenes de portada. |
+| `data/suppliers.ts` | Proveedores y conteos relacionados. |
+| `data/dashboard.ts` | Agregados para dashboard y actividad reciente. |
+| `data/settings.ts` | Configuración editable del sitio. |
+| `data/feedback.ts` | Feedback público de viajes. |
 
-Esto permite levantar el proyecto y navegarlo sin cuenta de Supabase. Nunca
-importar `mock-data.ts` directo desde una página — siempre pasar por
-`data.ts`.
+Cada módulo conserva el modo dual:
+
+- **Si Supabase está configurado** (`isSupabaseConfigured()`): lee/escribe en
+  Postgres/Storage.
+- **Si no**: usa los datos en memoria de `src/lib/mock-data.ts`.
+
+Esto permite levantar el proyecto sin cuenta de Supabase. Nunca importar
+`mock-data.ts` directo desde páginas, Server Actions o componentes.
+
+### Reglas anti-monolito
+
+- `src/lib/data.ts` no debe volver a tener lógica: solo exports.
+- Nueva lógica de datos debe vivir en el módulo de dominio más cercano. Si toca
+  dos dominios, dejar el orquestador en el dominio dueño del caso de uso y los
+  helpers compartidos en `data/shared.ts`.
+- Mappers `rowTo*` se quedan junto al dominio que conoce esa tabla.
+- Código de Storage va en `data/documents.ts`, no mezclado con viajes/clientes.
+- Agregados de lectura para widgets viven en `data/dashboard.ts`; no deben
+  crecer dentro de páginas.
+- Antes de mover o partir funciones, fijar contratos con tests en
+  `src/lib/__tests__/`.
 
 ## Estructura de carpetas relevantes
 
@@ -64,7 +92,16 @@ src/
   components/               -- componentes reutilizables (dialogs, combobox,
                                botones de calendario/QR/mapa)
   lib/
-    data.ts                 -- capa de acceso a datos (mock ⟷ Supabase)
+    data.ts                 -- fachada pública; solo reexporta src/lib/data/*
+    data/
+      shared.ts              helpers comunes, paginación, mock/Supabase switch
+      clients.ts             clientes, tags, cumpleaños, referidos
+      suppliers.ts           proveedores
+      trips.ts               viajes, días, items, templates, packing, reminders
+      documents.ts           documentos, fotos, portadas, logos, storage
+      dashboard.ts           agregados para dashboard
+      settings.ts            configuración del sitio
+      feedback.ts            feedback de viajes
     mock-data.ts            -- datos de prueba en memoria
     supabase/
       client.ts               cliente de Supabase para el browser
@@ -122,9 +159,17 @@ relevantes (`.env.local` en dev, configuradas en Vercel para producción):
   `window`/`navigator`).
 - Mutaciones vía Server Actions co-ubicadas en `actions.ts` dentro de cada
   ruta (ej. `src/app/dashboard/trips/[id]/actions.ts`).
+- Las páginas y Server Actions no deben hablar directo con Supabase ni con
+  `mock-data.ts`; siempre atraviesan `@/lib/data`.
+- La capa `src/lib/data/*` debe mantener funciones pequeñas por caso de uso y
+  evitar mezclar UI, navegación, cookies o lógica de formularios.
 - Reordenar listas (días, items) usa botones ↑/↓ sobre `sort_order` —
   decisión deliberada de no usar librerías de drag-and-drop, dado el volumen
   de uso esperado.
 - Toda feature que dependa de una API key externa (Supabase, Google
   Maps/Places) debe degradar con gracia si la key no está configurada, no
   debe requerirla para que la app funcione en modo básico.
+- Si un archivo de dominio empieza a acumular responsabilidades no relacionadas,
+  crear un submódulo antes de que pase de ser revisable. Regla práctica:
+  preferir PRs pequeños; si una extracción supera ~400 líneas cambiadas,
+  documentar la excepción o partirla.
