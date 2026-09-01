@@ -1,0 +1,7 @@
+schema: gentle-ai.sdd-state/v1
+change: issue-269-data-layer-domains
+artifact_store: hybrid
+base: origin/main@683e7b2
+delivery_strategy: exception-ok
+branch: feat/issue-269-data-layer-domains
+status: proposing
