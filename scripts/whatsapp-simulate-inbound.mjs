@@ -8,6 +8,28 @@ function signBody(rawBody, appSecret) {
   return `sha256=${createHmac("sha256", appSecret).update(rawBody, "utf8").digest("hex")}`;
 }
 
+function printFailureHint(status, body, signature) {
+  const error = typeof body === "object" && body ? body.error : String(body ?? "");
+
+  if (status === 503 && error.includes("signing secret is not configured")) {
+    console.error("\nDiagnóstico:");
+    console.error("  El webhook destino no tiene WHATSAPP_APP_SECRET configurado.");
+    console.error("  Configura en Vercel Production el App Secret de tu app de Meta y redeploya.");
+    console.error("  Ese mismo valor debe existir localmente en .env.local para que este script firme el payload.");
+    return;
+  }
+
+  if (status === 401) {
+    console.error("\nDiagnóstico:");
+    if (!signature) {
+      console.error("  Este script envió el payload sin firma porque no encontró WHATSAPP_APP_SECRET local.");
+      console.error("  Agrega WHATSAPP_APP_SECRET en .env.local con el mismo App Secret configurado en Vercel.");
+    } else {
+      console.error("  El webhook rechazó la firma. Revisa que WHATSAPP_APP_SECRET local sea exactamente el mismo que en Vercel.");
+    }
+  }
+}
+
 function loadDotEnv(path = ".env.local") {
   if (!existsSync(path)) return {};
   const env = {};
@@ -132,7 +154,7 @@ async function main() {
   });
 
   const rawBody = JSON.stringify(payload);
-  const appSecret = mergedEnv.WHATSAPP_APP_SECRET;
+  const appSecret = mergedEnv.WHATSAPP_APP_SECRET?.trim();
   const signature = appSecret ? signBody(rawBody, appSecret) : null;
   const headers = {
     "Content-Type": "application/json",
@@ -145,7 +167,7 @@ async function main() {
   console.log(`Text: ${text}`);
   console.log(`Signed: ${signature ? "yes" : "no"}`);
   if (!signature) {
-    console.warn("Warning: WHATSAPP_APP_SECRET is not configured; hardened webhooks will reject this POST with 401.");
+    console.warn("Warning: WHATSAPP_APP_SECRET is not configured locally; hardened webhooks will reject unsigned POSTs.");
   }
 
   if (args.dryRun) {
@@ -167,7 +189,10 @@ async function main() {
   console.log(`HTTP: ${response.status}`);
   console.log(JSON.stringify(body, null, 2));
 
-  if (!response.ok) process.exitCode = 1;
+  if (!response.ok) {
+    printFailureHint(response.status, body, signature);
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

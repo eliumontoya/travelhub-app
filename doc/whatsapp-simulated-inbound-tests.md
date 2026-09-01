@@ -54,9 +54,12 @@ SUPABASE_SERVICE_ROLE_KEY
 
 ```txt
 WHATSAPP_HUMAN_ALERT_PHONE
+WHATSAPP_APP_SECRET
 ```
 
-como teléfono simulado de remitente, salvo que se pase `--from` explícitamente.
+como teléfono simulado de remitente y secreto de firma, salvo que se pase `--from` explícitamente.
+
+El valor de `WHATSAPP_APP_SECRET` local debe ser exactamente el mismo App Secret configurado en Vercel para el entorno destino. Si producción responde `503` con `WhatsApp webhook signing secret is not configured`, el problema está en Vercel: falta configurar ese secreto en el servidor. Si responde `401`, normalmente el script no firmó o firmó con un secreto distinto.
 
 ## Resolución CRM de cliente por WhatsApp
 
