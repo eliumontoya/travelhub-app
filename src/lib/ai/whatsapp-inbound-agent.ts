@@ -1,5 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import {
+  recordWhatsAppAiEvent,
+  type WhatsAppAiCorrelationContext,
+} from "@/lib/observability/whatsapp-ai";
 import { createWhatsAppLLMProvider } from "./whatsapp-llm-provider";
 import type { TravelHubClientToolStatus } from "./tools/travelhub-client-tools";
 
@@ -357,6 +361,7 @@ export async function decideWhatsAppInboundMessage(
   options: {
     knowledgeEntries?: WhatsAppKnowledgeEntry[];
     provider?: WhatsAppInboundAgentProvider;
+    observabilityContext?: WhatsAppAiCorrelationContext;
   } = {}
 ): Promise<WhatsAppInboundAgentDecision> {
   const dynamicToolResults = input.dynamicToolResults ?? [];
@@ -374,9 +379,26 @@ export async function decideWhatsAppInboundMessage(
 
   const provider = options.provider ?? createWhatsAppLLMProvider() ?? defaultProvider;
   let providerOutput: unknown;
+  const providerStartedAt = Date.now();
+  recordWhatsAppAiEvent({
+    context: options.observabilityContext,
+    type: "ai.provider.started",
+    outcome: "success",
+    diagnostics: {
+      knowledgeCount: knowledgeEntries.length,
+      dynamicToolCount: dynamicToolResults.length,
+    },
+  });
   try {
     providerOutput = await provider({ ...input, messageText: input.messageText.trim(), knowledgeEntries, dynamicToolResults });
   } catch (error) {
+    recordWhatsAppAiEvent({
+      context: options.observabilityContext,
+      type: "ai.provider.failed",
+      outcome: "failure",
+      durationMs: Date.now() - providerStartedAt,
+      diagnostics: { error },
+    });
     return safeEscalation(
       "unknown",
       input.messageText.trim().slice(0, 180),
@@ -388,9 +410,21 @@ export async function decideWhatsAppInboundMessage(
       }
     );
   }
+  recordWhatsAppAiEvent({
+    context: options.observabilityContext,
+    type: "ai.provider.finished",
+    outcome: "success",
+    durationMs: Date.now() - providerStartedAt,
+  });
 
   const parsed = parseProviderOutput(providerOutput);
   if (!parsed.success) {
+    recordWhatsAppAiEvent({
+      context: options.observabilityContext,
+      type: "ai.provider.failed",
+      outcome: "failure",
+      diagnostics: parsed.diagnostics,
+    });
     return safeEscalation(
       "unknown",
       input.messageText.trim().slice(0, 180),

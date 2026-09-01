@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getWhatsAppAiObservabilitySnapshot, resetWhatsAppAiObservabilityForTests } from "@/lib/observability/whatsapp-ai";
 import { processWhatsAppInboundEvents } from "@/lib/whatsapp/inbound-service";
 import type { NormalizedWhatsAppInboundEvent } from "@/lib/whatsapp/normalize";
 import type { WhatsAppStore } from "@/lib/whatsapp/store";
@@ -40,6 +41,10 @@ function makeStore(inserted = true) {
 }
 
 describe("processWhatsAppInboundEvents", () => {
+  beforeEach(() => {
+    resetWhatsAppAiObservabilityForTests();
+  });
+
   it("persists intent, outbound answer, CRM event, and conversation state for auto-answer", async () => {
     const store = makeStore();
     const agent = vi.fn(async () => ({
@@ -61,6 +66,32 @@ describe("processWhatsAppInboundEvents", () => {
     expect(store.insertOutboundMessage).toHaveBeenCalledWith(expect.objectContaining({ purpose: "auto_answer", status: "sent" }));
     expect(store.createCrmSyncEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: "whatsapp.auto_answered" }));
     expect(store.markInboundMessageProcessed).toHaveBeenCalledWith({ messageId: "message-1", status: "responded" });
+  });
+
+  it("records a correlated sanitized lifecycle for auto-answer", async () => {
+    const store = makeStore();
+    const agent = vi.fn(async () => ({
+      intent: "inquiry" as const,
+      summary: "Pregunta por horario",
+      confidence: 0.92,
+      decision: "auto_answer" as const,
+      responseText: "Atendemos de lunes a viernes.",
+      citedKnowledgeIds: ["knowledge-1"],
+      citedToolCallIds: [],
+    }));
+    const sendText = vi.fn(async () => ({ ok: false, status: 500, error: "Bearer token failed for +5215551234567" }));
+
+    await processWhatsAppInboundEvents([textEvent], { store, agent, sendText });
+
+    const snapshot = getWhatsAppAiObservabilitySnapshot();
+    expect(snapshot.metrics.autoAnswers).toBe(1);
+    expect(snapshot.metrics.sendFailures).toBe(1);
+    expect(snapshot.recentEvents.map((event) => event.type)).toEqual(
+      expect.arrayContaining(["persistence.finished", "ai.decision", "send.finished"])
+    );
+    expect(snapshot.recentEvents.every((event) => event.correlationId === "wamid.in-1")).toBe(true);
+    expect(JSON.stringify(snapshot)).not.toContain("5215551234567");
+    expect(JSON.stringify(snapshot)).not.toContain("Bearer token");
   });
 
   it("creates escalation, customer follow-up, human alert attempt, and CRM event for needs_human", async () => {
@@ -157,6 +188,7 @@ describe("processWhatsAppInboundEvents", () => {
 
     expect(result).toMatchObject({ received: 1, processed: 0, duplicates: 1 });
     expect(result.events[0]).toMatchObject({ action: "duplicate_skipped" });
+    expect(getWhatsAppAiObservabilitySnapshot().metrics.duplicates).toBe(1);
     expect(agent).not.toHaveBeenCalled();
     expect(sendText).not.toHaveBeenCalled();
     expect(store.createIntent).not.toHaveBeenCalled();
@@ -165,6 +197,7 @@ describe("processWhatsAppInboundEvents", () => {
 
 
 it("processes status callbacks without inbound side effects", async () => {
+  resetWhatsAppAiObservabilityForTests();
   const store = makeStore();
   const agent = vi.fn();
   const sendText = vi.fn();
@@ -195,12 +228,14 @@ it("processes status callbacks without inbound side effects", async () => {
 
   expect(result.received).toBe(0);
   expect(result.statusCallbacks).toMatchObject({ received: 1, inserted: 1 });
+  expect(getWhatsAppAiObservabilitySnapshot().metrics.statusCallbacks).toBe(1);
   expect(store.persistInboundEvent).not.toHaveBeenCalled();
   expect(agent).not.toHaveBeenCalled();
   expect(sendText).not.toHaveBeenCalled();
 });
 
 it("does not require status persistence for inbound-only payloads", async () => {
+  resetWhatsAppAiObservabilityForTests();
   const store = makeStore();
   const agent = vi.fn(async () => ({
     intent: "inquiry" as const,

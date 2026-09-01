@@ -22,6 +22,10 @@ function Card({ label, value, helper }: { label: string; value: number; helper: 
   );
 }
 
+function EventTypeBadge({ type }: { type: string }) {
+  return <span className="rounded-full bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-300">{type}</span>;
+}
+
 export default async function WccDashboardPage() {
   const summary = await getWccDashboardSummary();
   const unavailable = summary.isConfiguredButUnavailable;
@@ -51,6 +55,45 @@ export default async function WccDashboardPage() {
         <Card label="Contactos" value={summary.recentContactCount} helper="Capturados por WhatsApp" />
         <Card label="Mensajes pendientes" value={summary.pendingMessageCount} helper="Recibidos/procesados" />
         <Card label="Mensajes fallidos" value={summary.failedMessageCount} helper="Requieren diagnóstico" />
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Observabilidad WhatsApp/IA</h3>
+            <p className="mt-1 text-sm text-slate-400">Métricas operativas sanitizadas del proceso local: webhooks, decisiones, tools, envíos y escalaciones.</p>
+          </div>
+          <span className="text-xs uppercase tracking-[0.16em] text-slate-500">Sin PII ni secretos</span>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Card label="Eventos observados" value={summary.observability.metrics.totalEvents} helper="Ventana reciente en memoria" />
+          <Card label="Webhooks" value={summary.observability.metrics.webhookEvents} helper="Admisión y rechazo" />
+          <Card label="Duplicados" value={summary.observability.metrics.duplicates} helper="Idempotencia WhatsApp" />
+          <Card label="Auto-respuestas" value={summary.observability.metrics.autoAnswers} helper="Decisiones IA seguras" />
+          <Card label="Needs human" value={summary.observability.metrics.needsHuman} helper="Derivaciones por decisión" />
+          <Card label="Escalaciones" value={summary.observability.metrics.escalations} helper="Casos creados" />
+          <Card label="Status callbacks" value={summary.observability.metrics.statusCallbacks} helper="Estados del proveedor" />
+          <Card label="Fallos de envío" value={summary.observability.metrics.sendFailures} helper="Cloud API o configuración" />
+          <Card label="Fallos IA/tools" value={summary.observability.metrics.aiFailures + summary.observability.metrics.toolFailures} helper="Proveedor o tools" />
+        </div>
+        <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950 p-4">
+          <h4 className="text-sm font-semibold text-slate-200">Fallos recientes sanitizados</h4>
+          {summary.observability.recentFailures.length ? (
+            <div className="mt-3 space-y-2">
+              {summary.observability.recentFailures.slice(0, 5).map((event) => (
+                <div key={event.eventId} className="flex flex-col gap-2 rounded-lg bg-slate-900 p-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <EventTypeBadge type={event.type} />
+                    <span>{event.occurredAt}</span>
+                  </div>
+                  <span className="font-mono text-slate-500">{event.correlationId.slice(0, 18)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500">Sin fallos observados en la ventana reciente.</p>
+          )}
+        </div>
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">

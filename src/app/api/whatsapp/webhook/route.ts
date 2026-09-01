@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createWhatsAppAiCorrelationContext, recordWhatsAppAiEvent } from "@/lib/observability/whatsapp-ai";
 import { processWhatsAppWebhookPayload } from "@/lib/whatsapp/inbound-service";
 import { verifyWhatsAppWebhookSignature } from "@/lib/whatsapp/signature";
 import { WhatsAppStoreConfigurationError } from "@/lib/whatsapp/store";
@@ -25,12 +26,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
+  const context = createWhatsAppAiCorrelationContext({
+    requestId: request.headers.get("x-vercel-id") ?? request.headers.get("x-request-id") ?? undefined,
+  });
+  recordWhatsAppAiEvent({ context, type: "webhook.received", outcome: "success" });
+
   const signature = verifyWhatsAppWebhookSignature({
     rawBody,
     signatureHeader: request.headers.get("x-hub-signature-256"),
   });
 
   if (!signature.ok) {
+    recordWhatsAppAiEvent({
+      context,
+      type: "webhook.rejected",
+      outcome: "failure",
+      diagnostics: { reason: signature.reason },
+    });
     if (signature.reason === "missing_secret") {
       return NextResponse.json({ error: "WhatsApp webhook signing secret is not configured" }, { status: 503 });
     }
@@ -41,13 +53,26 @@ export async function POST(request: NextRequest) {
   try {
     payload = JSON.parse(rawBody);
   } catch {
+    recordWhatsAppAiEvent({
+      context,
+      type: "webhook.failed",
+      outcome: "failure",
+      diagnostics: { reason: "invalid_json" },
+    });
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
   try {
-    const result = await processWhatsAppWebhookPayload(payload);
+    recordWhatsAppAiEvent({ context, type: "webhook.accepted", outcome: "success" });
+    const result = await processWhatsAppWebhookPayload(payload, { observabilityContext: context });
     return NextResponse.json(result);
   } catch (error) {
+    recordWhatsAppAiEvent({
+      context,
+      type: "webhook.failed",
+      outcome: "failure",
+      diagnostics: { error },
+    });
     if (error instanceof WhatsAppStoreConfigurationError) {
       return NextResponse.json({ error: "WhatsApp webhook persistence is not configured" }, { status: 503 });
     }
