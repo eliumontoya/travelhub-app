@@ -42,3 +42,6 @@ opencode.json
 
 # local agent memory
 .engram/
+
+# codegraph
+.codegraph/
