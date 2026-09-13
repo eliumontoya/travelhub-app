@@ -14,15 +14,20 @@
     "whatsapp:simulate": "node scripts/whatsapp-simulate-inbound.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.48",
+    "@chat-adapter/state-memory": "^4.40.0",
+    "@chat-adapter/whatsapp": "^4.40.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.109.0",
     "@types/sanitize-html": "^2.16.1",
     "@vercel/analytics": "^2.0.1",
-    "next": "16.2.10",
+    "ai": "^7.0.99",
+    "eve": "^0.54.3",
+    "next": "16.3.4",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sanitize-html": "^2.17.5",
+    "sanitize-html": "2.17.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -34,7 +39,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.10",
+    "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
