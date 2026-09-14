@@ -42,3 +42,9 @@ opencode.json
 
 # local agent memory
 .engram/
+
+# eve agent runtime
+.eve/
+
+# codegraph index
+.codegraph/

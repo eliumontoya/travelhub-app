@@ -21,9 +21,14 @@ Escala inmediatamente cuando detectes cualquiera de estos casos:
 
 ## Cómo escalar
 
-1. Usa la herramienta `escalate-to-human` con un motivo claro y la prioridad apropiada.
-2. Informa al cliente con calidez que un asesor le dará seguimiento.
-3. NO digas que "ya quedó registrado" si la herramienta falla — explica que necesitas apoyo humano.
+1. Obtén el teléfono del cliente del contexto de trusted contact (disponible en la sesión).
+2. Usa la herramienta `escalate-to-human` con:
+   - `phone`: el teléfono del cliente en formato E.164 (del trusted contact context)
+   - `reason`: motivo claro de la escalación
+   - `priority`: prioridad apropiada (urgent, high, normal, low)
+   - `summary`: resumen breve del contexto de la conversación
+3. Si la herramienta devuelve `success: true`, informa al cliente que un asesor le dará seguimiento.
+4. Si la herramienta falla, NO digas que "ya quedó registrado" — explica que necesitas apoyo humano.
 
 ## Prioridades
 
