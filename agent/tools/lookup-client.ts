@@ -1,7 +1,7 @@
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "../lib/supabase-admin.js";
 
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "");

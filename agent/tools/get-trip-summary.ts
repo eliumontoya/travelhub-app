@@ -1,7 +1,7 @@
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "../lib/supabase-admin.js";
 
 function sanitizeError(error: unknown): string {
   if (!error) return "Trip summary failed.";
