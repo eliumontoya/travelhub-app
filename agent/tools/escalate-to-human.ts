@@ -16,30 +16,54 @@ export default defineTool({
     reason: z.string().min(1).max(500).describe("Motivo breve de la escalación"),
     priority: z.enum(["low", "normal", "high", "urgent"]).default("normal").describe("Prioridad de la escalación"),
     summary: z.string().min(1).max(1000).describe("Resumen breve del contexto de la escalación"),
-    phone: z.string().min(5).max(32).describe("Número de WhatsApp del cliente en formato E.164"),
+    phone: z.string().min(5).max(32).optional().describe("Número de WhatsApp del cliente en formato E.164. Si no se proporciona, se usará el contacto más reciente."),
   }),
-  async execute({ reason, priority, summary, phone }: { reason: string; priority: string; summary: string; phone: string }) {
+  async execute({ reason, priority, summary, phone }: { reason: string; priority: string; summary: string; phone?: string }) {
     try {
       const supabase = getSupabaseAdmin();
 
-      const contactResult = await supabase
-        .from("whatsapp_contacts")
-        .select("id")
-        .eq("phone_e164", phone)
-        .maybeSingle();
+      let contactId: string;
 
-      if (contactResult.error) throw new Error(contactResult.error.message);
-      const contactRow = contactResult.data as Record<string, unknown> | null;
+      if (phone) {
+        const contactResult = await supabase
+          .from("whatsapp_contacts")
+          .select("id")
+          .eq("phone_e164", phone)
+          .maybeSingle();
 
-      if (!contactRow || typeof contactRow.id !== "string") {
-        return {
-          success: false,
-          escalated: false,
-          error: "No se encontró el contacto en la base de datos.",
-        };
+        if (contactResult.error) throw new Error(contactResult.error.message);
+        const contactRow = contactResult.data as Record<string, unknown> | null;
+
+        if (!contactRow || typeof contactRow.id !== "string") {
+          return {
+            success: false,
+            escalated: false,
+            error: "No se encontró el contacto en la base de datos.",
+          };
+        }
+
+        contactId = contactRow.id;
+      } else {
+        const contactResult = await supabase
+          .from("whatsapp_contacts")
+          .select("id")
+          .order("last_message_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (contactResult.error) throw new Error(contactResult.error.message);
+        const contactRow = contactResult.data as Record<string, unknown> | null;
+
+        if (!contactRow || typeof contactRow.id !== "string") {
+          return {
+            success: false,
+            escalated: false,
+            error: "No se encontró ningún contacto en la base de datos.",
+          };
+        }
+
+        contactId = contactRow.id;
       }
-
-      const contactId = contactRow.id;
 
       const conversationResult = await supabase
         .from("whatsapp_conversations")
