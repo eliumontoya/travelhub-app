@@ -16,13 +16,15 @@ export default defineTool({
     reason: z.string().min(1).max(500).describe("Motivo breve de la escalación"),
     priority: z.enum(["low", "normal", "high", "urgent"]).default("normal").describe("Prioridad de la escalación"),
     summary: z.string().min(1).max(1000).describe("Resumen breve del contexto de la escalación"),
-    phone: z.string().min(5).max(32).optional().describe("Número de WhatsApp del cliente en formato E.164. Si no se proporciona, se usará el contacto más reciente."),
+    phone: z.string().min(5).max(32).optional().describe("Número de WhatsApp del cliente en formato E.164. Si no se proporciona, la escalación se crea sin vincular a un contacto específico."),
   }),
   async execute({ reason, priority, summary, phone }: { reason: string; priority: string; summary: string; phone?: string }) {
     try {
       const supabase = getSupabaseAdmin();
 
-      let contactId: string;
+      let contactId: string | null = null;
+      let conversationId: string | null = null;
+      let messageId: string | null = null;
 
       if (phone) {
         const contactResult = await supabase
@@ -34,78 +36,48 @@ export default defineTool({
         if (contactResult.error) throw new Error(contactResult.error.message);
         const contactRow = contactResult.data as Record<string, unknown> | null;
 
-        if (!contactRow || typeof contactRow.id !== "string") {
-          return {
-            success: false,
-            escalated: false,
-            error: "No se encontró el contacto en la base de datos.",
-          };
+        if (contactRow && typeof contactRow.id === "string") {
+          contactId = contactRow.id;
+
+          const conversationResult = await supabase
+            .from("whatsapp_conversations")
+            .select("id")
+            .eq("contact_id", contactId)
+            .eq("status", "open")
+            .order("last_message_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (conversationResult.error) throw new Error(conversationResult.error.message);
+          const conversationRow = conversationResult.data as Record<string, unknown> | null;
+
+          if (conversationRow && typeof conversationRow.id === "string") {
+            conversationId = conversationRow.id;
+
+            const messageResult = await supabase
+              .from("whatsapp_messages")
+              .select("id")
+              .eq("conversation_id", conversationId)
+              .eq("direction", "inbound")
+              .order("occurred_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (messageResult.error) throw new Error(messageResult.error.message);
+            const messageRow = messageResult.data as Record<string, unknown> | null;
+
+            if (messageRow && typeof messageRow.id === "string") {
+              messageId = messageRow.id;
+            }
+          }
         }
-
-        contactId = contactRow.id;
-      } else {
-        const contactResult = await supabase
-          .from("whatsapp_contacts")
-          .select("id")
-          .order("last_message_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (contactResult.error) throw new Error(contactResult.error.message);
-        const contactRow = contactResult.data as Record<string, unknown> | null;
-
-        if (!contactRow || typeof contactRow.id !== "string") {
-          return {
-            success: false,
-            escalated: false,
-            error: "No se encontró ningún contacto en la base de datos.",
-          };
-        }
-
-        contactId = contactRow.id;
       }
-
-      const conversationResult = await supabase
-        .from("whatsapp_conversations")
-        .select("id")
-        .eq("contact_id", contactId)
-        .eq("status", "open")
-        .order("last_message_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (conversationResult.error) throw new Error(conversationResult.error.message);
-      const conversationRow = conversationResult.data as Record<string, unknown> | null;
-
-      if (!conversationRow || typeof conversationRow.id !== "string") {
-        return {
-          success: false,
-          escalated: false,
-          error: "No se encontró una conversación abierta para este contacto.",
-        };
-      }
-
-      const conversationId = conversationRow.id;
-
-      const messageResult = await supabase
-        .from("whatsapp_messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .eq("direction", "inbound")
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (messageResult.error) throw new Error(messageResult.error.message);
-      const messageRow = messageResult.data as Record<string, unknown> | null;
-
-      const messageId = messageRow && typeof messageRow.id === "string" ? messageRow.id : null;
 
       const escalationResult = await supabase
         .from("whatsapp_escalations")
         .insert({
-          conversation_id: conversationId,
-          contact_id: contactId,
+          ...(conversationId ? { conversation_id: conversationId } : {}),
+          ...(contactId ? { contact_id: contactId } : {}),
           ...(messageId ? { message_id: messageId } : {}),
           reason,
           priority,
@@ -126,18 +98,20 @@ export default defineTool({
         };
       }
 
-      await supabase
-        .from("whatsapp_conversations")
-        .update({ status: "escalated" })
-        .eq("id", conversationId);
+      if (conversationId) {
+        await supabase
+          .from("whatsapp_conversations")
+          .update({ status: "escalated" })
+          .eq("id", conversationId);
+      }
 
       return {
         success: true,
         escalated: true,
         escalationId: escalationRow.id,
-        conversationId,
-        contactId,
-        messageId,
+        ...(conversationId ? { conversationId } : {}),
+        ...(contactId ? { contactId } : {}),
+        ...(messageId ? { messageId } : {}),
         reason,
         priority,
         summary,
