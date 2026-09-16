@@ -175,6 +175,18 @@ describe("data layer (mock mode)", () => {
     });
   });
 
+  describe("createTrip client validation", () => {
+    it("rejects a trip without clients", async () => {
+      await expect(
+        createTrip({
+          clientIds: [],
+          title: "Trip Without Clients",
+          slug: `trip-without-clients-${Date.now()}`,
+        })
+      ).rejects.toThrow("Se requiere al menos un cliente para crear el viaje");
+    });
+  });
+
   describe("deleteTrip", () => {
     it("borra el viaje y sus datos relacionados en modo mock", async () => {
       const trip = await createTrip({
