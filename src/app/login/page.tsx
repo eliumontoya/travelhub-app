@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { signIn } from "./actions";
 
@@ -11,7 +12,16 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">TravelHub</h1>
+      <div className="mb-8 flex flex-col items-center">
+        <Image
+          src="/logo.jpeg"
+          alt="TravelHub"
+          width={182}
+          height={128}
+          priority
+          className="h-32 w-auto object-contain"
+        />
+      </div>
 
       {!configured ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
