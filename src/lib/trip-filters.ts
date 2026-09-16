@@ -2,7 +2,7 @@ import type { Client, Tag, Trip, TripFilters } from "@/types";
 
 export type TripFilterListItem = Pick<
   Trip,
-  "title" | "status" | "startDate" | "endDate" | "currency" | "instructions"
+  "title" | "status" | "startDate" | "endDate" | "currency" | "instructions" | "assignedAgentId"
 > & {
   clients: Client[];
   tags: Tag[];
@@ -24,6 +24,7 @@ export function hasActiveTripFilters(filters: Partial<TripFilters>) {
       filters.dateTo ||
       filters.clientIds?.length ||
       filters.tagIds?.length ||
+      filters.agentIds?.length ||
       filters.currency,
   );
 }
@@ -32,6 +33,9 @@ export function tripMatchesFilters(trip: TripFilterListItem, filters: Partial<Tr
   if (filters.status?.length && !filters.status.includes(trip.status)) return false;
   if (filters.tagIds?.length && !trip.tags.some((tag) => filters.tagIds!.includes(tag.id))) return false;
   if (filters.clientIds?.length && !trip.clients.some((client) => filters.clientIds!.includes(client.id))) {
+    return false;
+  }
+  if (filters.agentIds?.length && !filters.agentIds.includes(trip.assignedAgentId ?? "")) {
     return false;
   }
   if (filters.currency && trip.currency !== filters.currency) return false;

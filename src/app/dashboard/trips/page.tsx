@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ALL_CLIENTS_PAGE_SIZE, DEFAULT_PAGE_SIZE, getClients, getTags, getTripsWithClients } from "@/lib/data";
+import { ALL_CLIENTS_PAGE_SIZE, DEFAULT_PAGE_SIZE, getClients, getTags, getTravelAgents, getTripsWithClients } from "@/lib/data";
 import { hasActiveTripFilters } from "@/lib/trip-filters";
 import type { TripCurrency, TripFilters, TripStatus } from "@/types";
 import { TripsExplorer } from "./TripsExplorer";
@@ -18,10 +18,11 @@ export default async function TripsIndexPage({
 }) {
   const params = await searchParams;
   const { filters, page } = parseTripsSearchParams(params);
-  const [{ items: trips, totalCount }, { items: clients }, tags] = await Promise.all([
+  const [{ items: trips, totalCount }, { items: clients }, tags, travelAgents] = await Promise.all([
     getTripsWithClients({ filters, page, pageSize: DEFAULT_PAGE_SIZE }),
     getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
     getTags(),
+    getTravelAgents(),
   ]);
   const totalPages = Math.max(1, Math.ceil(totalCount / DEFAULT_PAGE_SIZE));
 
@@ -47,6 +48,7 @@ export default async function TripsIndexPage({
         trips={trips}
         clients={clients}
         tags={tags}
+        travelAgents={travelAgents}
         initialFilters={filters}
         hasActiveFilters={hasActiveTripFilters(filters)}
         totalCount={totalCount}
@@ -81,6 +83,8 @@ function parseTripsSearchParams(params: TripsPageSearchParams) {
   if (clientIds.length) filters.clientIds = clientIds;
   const tagIds = parseCsv(params.tags);
   if (tagIds.length) filters.tagIds = tagIds;
+  const agentIds = parseCsv(params.agent);
+  if (agentIds.length) filters.agentIds = agentIds;
 
   const currency = firstParam(params.currency);
   if (VALID_CURRENCIES.includes(currency as TripCurrency)) {
@@ -145,7 +149,7 @@ function PaginationLink({
 
 function buildPageHref(params: TripsPageSearchParams, page: number) {
   const next = new URLSearchParams();
-  (["q", "status", "dateFrom", "dateTo", "client", "tags", "currency"] as const).forEach((key) => {
+  (["q", "status", "dateFrom", "dateTo", "client", "tags", "agent", "currency"] as const).forEach((key) => {
     const value = firstParam(params[key]);
     if (value) next.set(key, value);
   });

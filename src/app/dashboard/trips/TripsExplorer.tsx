@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
-import { Client, Tag, TripCurrency, TripFilters, TripStatus } from "@/types";
+import { Client, Tag, TravelAgent, TripCurrency, TripFilters, TripStatus } from "@/types";
 import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-meta";
 import { bulkUpdateTripStatusAction, moveTripStatusAction } from "@/app/dashboard/actions";
 import { TripBoardView } from "@/components/TripBoardView";
@@ -30,12 +30,14 @@ type TripListItem = {
   instructions?: string;
   clients: Client[];
   tags: Tag[];
+  assignedAgentId?: string;
 };
 
 export function TripsExplorer({
   trips,
   clients,
   tags,
+  travelAgents,
   initialFilters,
   hasActiveFilters,
   totalCount,
@@ -44,6 +46,7 @@ export function TripsExplorer({
   trips: TripListItem[];
   clients: Client[];
   tags: Tag[];
+  travelAgents?: TravelAgent[];
   initialFilters: Partial<TripFilters>;
   hasActiveFilters: boolean;
   totalCount: number;
@@ -78,6 +81,7 @@ export function TripsExplorer({
         onChange={() => undefined}
         clients={clients}
         tags={tags}
+        travelAgents={travelAgents}
       />
 
       <div className="mb-4 mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -169,6 +173,14 @@ export function TripsExplorer({
                       {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
                       {" · "}
                       {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
+                      {trip.assignedAgentId && travelAgents && (
+                        <>
+                          {" · "}
+                          <span className="text-blue-600 dark:text-blue-400">
+                            {travelAgents.find((a) => a.id === trip.assignedAgentId)?.name ?? "Agente"}
+                          </span>
+                        </>
+                      )}
                     </p>
                     {trip.tags.length > 0 && (
                       <ul className="mt-1.5 flex flex-wrap gap-1.5">
@@ -195,7 +207,7 @@ export function TripsExplorer({
           )}
         </div>
       ) : (
-        <TripBoardView trips={trips} onMoveStatus={moveTripStatusAction} />
+        <TripBoardView trips={trips} travelAgents={travelAgents} onMoveStatus={moveTripStatusAction} />
       )}
 
       {viewMode === "list" && pagination}

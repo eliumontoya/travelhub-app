@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
     ".codex/**",
     ".config/**",
     ".engram/**",
+    ".eve/**",
     ".nodeterm/**",
     ".obsidian/**",
     ".opencode/**",

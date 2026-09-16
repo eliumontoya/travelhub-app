@@ -25,7 +25,9 @@ describe("trip filters", () => {
   it("detecta filtros activos solo cuando hay valores reales", () => {
     expect(hasActiveTripFilters({ query: "" })).toBe(false);
     expect(hasActiveTripFilters({ tagIds: [] })).toBe(false);
+    expect(hasActiveTripFilters({ agentIds: [] })).toBe(false);
     expect(hasActiveTripFilters({ query: "italia" })).toBe(true);
+    expect(hasActiveTripFilters({ agentIds: ["a1"] })).toBe(true);
   });
 
   it("matchea filtros combinados con búsqueda accent-insensitive", () => {
@@ -45,5 +47,11 @@ describe("trip filters", () => {
   it("rechaza viajes fuera del rango por traslape", () => {
     expect(tripMatchesFilters(trip, { dateFrom: "2026-10-01" })).toBe(false);
     expect(tripMatchesFilters(trip, { dateTo: "2026-09-01" })).toBe(false);
+  });
+
+  it("matches trips by assigned agent", () => {
+    expect(tripMatchesFilters({ ...trip, assignedAgentId: "a1" }, { agentIds: ["a1"] })).toBe(true);
+    expect(tripMatchesFilters({ ...trip, assignedAgentId: "a2" }, { agentIds: ["a1"] })).toBe(false);
+    expect(tripMatchesFilters({ ...trip }, { agentIds: ["a1"] })).toBe(false);
   });
 });

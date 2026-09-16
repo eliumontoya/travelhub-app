@@ -6,6 +6,7 @@ import {
   getClients,
   getSuppliers,
   getTags,
+  getTravelAgents,
   getTripById,
   getTripFeedback,
   getTripInternalNotes,
@@ -24,6 +25,7 @@ import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-displ
 import { ItemFormDialog } from "@/components/ItemFormDialog";
 import { MoveItemToDayDialog } from "@/components/MoveItemToDayDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
+import { TravelAgentCombobox } from "@/components/TravelAgentCombobox";
 import { GenerateDaysButton } from "@/components/GenerateDaysButton";
 import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
 import { TripInternalNotesDialog } from "@/components/TripInternalNotesDialog";
@@ -95,6 +97,7 @@ import {
   updateTripInstructionsAction,
   updateTripInternalNotesAction,
   updateTripTravelerCountAction,
+  updateTripAssignedAgentAction,
   uploadDocumentAction,
   uploadTripDocumentAction,
   uploadTripPhotoAction,
@@ -121,13 +124,14 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }] =
+  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }, travelAgents] =
     await Promise.all([
       getTripById(id),
       getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
       getTags(),
       getTripInternalNotes(id),
       getSuppliers({ pageSize: ALL_SUPPLIERS_PAGE_SIZE }),
+      getTravelAgents(),
     ]);
   if (!trip) notFound();
   const feedback = await getTripFeedback(trip.id);
@@ -550,6 +554,22 @@ export default async function TripEditorPage({
                   }
                   onSubmit={setTripTagsAction.bind(null, trip.id)}
                 />
+                <form action={updateTripAssignedAgentAction.bind(null, trip.id)} className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Agente asignado
+                  </label>
+                  <TravelAgentCombobox
+                    travelAgents={travelAgents}
+                    name="assignedAgentId"
+                    defaultValue={trip.assignedAgentId}
+                  />
+                  <button
+                    type="submit"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    Guardar agente
+                  </button>
+                </form>
                 <TripInstructionsDialog
                   trip={trip}
                   trigger={

@@ -27,6 +27,7 @@ export async function createTripAction(formData: FormData) {
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
   const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
   const templateId = String(formData.get("templateId") ?? "").trim() || undefined;
+  const assignedAgentId = String(formData.get("assignedAgentId") ?? "").trim() || undefined;
 
   const newClientName = String(formData.get("newClientName") ?? "").trim();
   if (newClientName) {
@@ -66,6 +67,7 @@ export async function createTripAction(formData: FormData) {
     travelerCount,
     tagIds,
     currency,
+    assignedAgentId,
   };
   const trip = templateId
     ? await createTripFromTemplate(templateId, tripInput)

@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { Client, Tag, TripStatus } from "@/types";
+import { Client, Tag, TravelAgent, TripStatus } from "@/types";
 import { formatDateShort, formatAssignedClients, formatTags } from "@/lib/item-meta";
 
 type TripWithMeta = {
@@ -13,6 +13,7 @@ type TripWithMeta = {
   endDate: string;
   clients: Client[];
   tags: Tag[];
+  assignedAgentId?: string;
 };
 
 const statusMeta: Record<TripStatus, { label: string; color: string }> = {
@@ -28,9 +29,11 @@ const columns: TripStatus[] = ["draft", "published", "archived"];
 
 export function TripBoardView({
   trips,
+  travelAgents,
   onMoveStatus,
 }: {
   trips: TripWithMeta[];
+  travelAgents?: TravelAgent[];
   onMoveStatus: (tripId: string, status: TripStatus) => Promise<void>;
 }) {
   return (
@@ -47,7 +50,7 @@ export function TripBoardView({
             </div>
             <div className="flex flex-col gap-3">
               {columnTrips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} onMoveStatus={onMoveStatus} />
+                <TripCard key={trip.id} trip={trip} travelAgents={travelAgents} onMoveStatus={onMoveStatus} />
               ))}
               {columnTrips.length === 0 && (
                 <p className="rounded-lg border border-dashed border-gray-200 p-3 text-center text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500">
@@ -64,9 +67,11 @@ export function TripBoardView({
 
 function TripCard({
   trip,
+  travelAgents,
   onMoveStatus,
 }: {
   trip: TripWithMeta;
+  travelAgents?: TravelAgent[];
   onMoveStatus: (tripId: string, status: TripStatus) => Promise<void>;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -80,6 +85,14 @@ function TripCard({
       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
       <p className="text-xs text-gray-400 dark:text-gray-500">
         {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
+        {trip.assignedAgentId && travelAgents && (
+          <>
+            {" · "}
+            <span className="text-blue-600 dark:text-blue-400">
+              {travelAgents.find((a) => a.id === trip.assignedAgentId)?.name ?? "Agente"}
+            </span>
+          </>
+        )}
       </p>
       {trip.tags.length > 0 && (
         <ul className="mt-1.5 flex flex-wrap gap-1.5">

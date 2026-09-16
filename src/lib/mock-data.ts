@@ -12,6 +12,7 @@ import {
   PackingItem,
   TripFeedback,
   Supplier,
+  TravelAgent,
 } from "@/types";
 
 export const mockClients: Client[] = [
@@ -248,6 +249,7 @@ export const mockTrips: Trip[] = [
     currency: "EUR",
     isTemplate: false,
     showCostsToClient: true,
+    assignedAgentId: "a1",
     createdAt: "2026-07-01T09:00:00Z",
     updatedAt: "2026-07-01T09:00:00Z",
   },
@@ -395,6 +397,26 @@ export const mockSuppliers: Supplier[] = [
     tags: [],
     createdAt: "2026-07-10T10:00:00Z",
     updatedAt: "2026-07-10T10:00:00Z",
+  },
+];
+
+// Catálogo mock de agentes de viajes (issue #294), espejo de la tabla travel_agents.
+export const mockTravelAgents: TravelAgent[] = [
+  {
+    id: "a1",
+    name: "Eliu Montoya",
+    email: "eliu@example.com",
+    phone: "+52 55 1234 5678",
+    notes: "Agente principal",
+    createdAt: "2026-07-01T10:00:00Z",
+    updatedAt: "2026-07-01T10:00:00Z",
+  },
+  {
+    id: "a2",
+    name: "María González",
+    email: "maria@example.com",
+    createdAt: "2026-07-02T10:00:00Z",
+    updatedAt: "2026-07-02T10:00:00Z",
   },
 ];
 

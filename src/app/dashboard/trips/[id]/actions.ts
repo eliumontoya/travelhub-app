@@ -368,6 +368,14 @@ export async function setTripTagsAction(tripId: string, formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function updateTripAssignedAgentAction(tripId: string, formData: FormData) {
+  await assertTripEditable(tripId);
+  const raw = String(formData.get("assignedAgentId") ?? "").trim();
+  await updateTrip(tripId, { assignedAgentId: raw || null });
+  revalidateTrip(tripId);
+  revalidatePath("/dashboard");
+}
+
 export async function addPackingItemAction(tripId: string, formData: FormData) {
   await assertTripEditable(tripId);
   const label = String(formData.get("label") ?? "").trim();

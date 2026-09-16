@@ -20,6 +20,7 @@ export type CreateTripInput = {
   tagIds?: string[];
   currency?: Trip["currency"];
   isTemplate?: boolean;
+  assignedAgentId?: string | null;
 };
 
 export type UpdateTripInput = Partial<{
@@ -36,6 +37,7 @@ export type UpdateTripInput = Partial<{
   showCostsToClient: boolean;
   salePrice: number | null;
   commissionRate: number | null;
+  assignedAgentId: string | null;
 }>;
 
 export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
@@ -197,6 +199,18 @@ async function getSupabaseTripIdsForFilters(
     matchingTripIds = intersectTripIds(
       matchingTripIds,
       new Set((data ?? []).map((row) => row.trip_id as string)),
+    );
+  }
+
+  if (filters.agentIds?.length) {
+    const { data, error } = await supabase
+      .from("trips")
+      .select("id")
+      .in("assigned_agent_id", filters.agentIds);
+    if (error) throw error;
+    matchingTripIds = intersectTripIds(
+      matchingTripIds,
+      new Set((data ?? []).map((row) => row.id as string)),
     );
   }
 
@@ -772,6 +786,9 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       createdAt: now,
       updatedAt: now,
     };
+    if (input.assignedAgentId) {
+      trip.assignedAgentId = input.assignedAgentId;
+    }
     mockTrips.unshift(trip);
     clientIds.forEach((clientId, idx) => {
       mockTripClients.push({
@@ -803,6 +820,7 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       currency: input.currency ?? "MXN",
       traveler_count: input.travelerCount ?? 1,
       is_template: isTemplate,
+      assigned_agent_id: input.assignedAgentId ?? null,
     })
     .select()
     .single();
@@ -980,6 +998,10 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
     if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
     if (input.salePrice !== undefined) trip.salePrice = input.salePrice ?? undefined;
     if (input.commissionRate !== undefined) trip.commissionRate = input.commissionRate ?? undefined;
+    if (input.assignedAgentId !== undefined) {
+      if (input.assignedAgentId) trip.assignedAgentId = input.assignedAgentId;
+      else delete trip.assignedAgentId;
+    }
     if (input.status !== undefined && input.status !== previousStatus) {
       mockTripStatusHistory.push({
         id: uid(),
@@ -1019,6 +1041,7 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
   if (input.showCostsToClient !== undefined) patch.show_costs_to_client = input.showCostsToClient;
   if (input.salePrice !== undefined) patch.sale_price = input.salePrice;
   if (input.commissionRate !== undefined) patch.commission_rate = input.commissionRate;
+  if (input.assignedAgentId !== undefined) patch.assigned_agent_id = input.assignedAgentId;
   const { data, error } = await supabase.from("trips").update(patch).eq("id", id).select().single();
   if (error) throw error;
 
@@ -1235,6 +1258,10 @@ export function rowToTrip(row: Record<string, unknown>): Trip {
     createdAt: row.created_at as string,
     updatedAt: (row.updated_at as string) ?? (row.created_at as string),
     reminderSentAt: (row.reminder_sent_at as string) ?? undefined,
+    assignedAgentId:
+      row.assigned_agent_id !== null && row.assigned_agent_id !== undefined
+        ? (row.assigned_agent_id as string)
+        : undefined,
     salePrice:
       row.sale_price !== null && row.sale_price !== undefined ? Number(row.sale_price) : undefined,
     commissionRate:
