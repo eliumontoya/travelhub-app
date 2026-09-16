@@ -426,7 +426,7 @@ export async function uploadTripCoverImage(tripId: string, file: File): Promise<
   }
   await removeTripCoverObjectIfExists(tripId);
   const supabase = await createServerSupabase();
-  const path = `covers/${tripId}/${Date.now()}-${file.name}`;
+  const path = `covers/${tripId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(PHOTOS_BUCKET)
     .upload(path, file, { contentType: file.type || undefined });

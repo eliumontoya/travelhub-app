@@ -100,7 +100,7 @@ export default async function PublicTripPage({
         className="bg-gray-900 bg-cover bg-center print:hidden"
         style={{
           backgroundImage: trip.coverImageUrl
-            ? `linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.35)), url(${trip.coverImageUrl})`
+            ? `linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.35)), url("${trip.coverImageUrl}")`
             : undefined,
         }}
       >
