@@ -1,23 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Client, Tag, Trip } from "@/types";
+import { Client, Tag, TravelAgent, Trip } from "@/types";
 import { createTripAction } from "@/app/dashboard/trips/new/actions";
 import { ClientMultiCombobox } from "@/components/ClientMultiCombobox";
 import { MinClientsGuard } from "@/components/MinClientsGuard";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { TagMultiCombobox } from "@/components/TagMultiCombobox";
+import { TravelAgentCombobox } from "@/components/TravelAgentCombobox";
 
 export function NewTripForm({
   clients,
   tags,
   templates,
+  travelAgents,
   error,
   clientId,
 }: {
   clients: Client[];
   tags: Tag[];
   templates: Trip[];
+  travelAgents: TravelAgent[];
   error?: string;
   clientId?: string;
 }) {
@@ -107,6 +110,15 @@ export function NewTripForm({
           <option value="USD">USD — Dólar estadounidense</option>
           <option value="EUR">EUR — Euro</option>
         </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Agente asignado</label>
+        <TravelAgentCombobox
+          travelAgents={travelAgents}
+          name="assignedAgentId"
+        />
+        <p className="mt-1 text-xs text-gray-400">Opcional. Puedes dejarlo vacío y asignarlo después.</p>
       </div>
 
       <div>

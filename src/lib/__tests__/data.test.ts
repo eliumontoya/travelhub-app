@@ -15,6 +15,7 @@ import {
   createTripDay,
   deleteTrip,
   updateClient,
+  updateTrip,
   deleteClient,
   getTripById,
   getTrips,
@@ -29,6 +30,11 @@ import {
   createSupplier,
   updateSupplier,
   getSupplierById,
+  getTravelAgents,
+  getTravelAgentById,
+  createTravelAgent,
+  updateTravelAgent,
+  deleteTravelAgent,
 } from "@/lib/data";
 import {
   mockItems,
@@ -166,6 +172,18 @@ describe("data layer (mock mode)", () => {
       for (const trip of result.items) {
         expect(trip.isTemplate).toBe(false);
       }
+    });
+  });
+
+  describe("createTrip client validation", () => {
+    it("rejects a trip without clients", async () => {
+      await expect(
+        createTrip({
+          clientIds: [],
+          title: "Trip Without Clients",
+          slug: `trip-without-clients-${Date.now()}`,
+        })
+      ).rejects.toThrow("Se requiere al menos un cliente para crear el viaje");
     });
   });
 
@@ -387,6 +405,155 @@ describe("data layer (mock mode)", () => {
       expect(enriched.lat).toBe(19.433);
       expect(enriched.lng).toBe(-99.133);
       expect(enriched.googlePlaceId).toBe("ChIJ-confirmed-enrichment");
+    });
+  });
+
+  describe("travel agents catalog", () => {
+    it("returns all travel agents", async () => {
+      const agents = await getTravelAgents();
+      expect(agents.length).toBeGreaterThanOrEqual(2);
+      expect(agents.map((a) => a.name)).toContain("Eliu Montoya");
+    });
+
+    it("finds a travel agent by id", async () => {
+      const agent = await getTravelAgentById("a1");
+      expect(agent).not.toBeNull();
+      expect(agent!.id).toBe("a1");
+      expect(agent!.name).toBe("Eliu Montoya");
+    });
+
+    it("returns null for unknown agent id", async () => {
+      const agent = await getTravelAgentById("unknown-agent");
+      expect(agent).toBeNull();
+    });
+
+    it("requires a name to create an agent", async () => {
+      await expect(createTravelAgent({ name: "" })).rejects.toThrow("El nombre es obligatorio");
+    });
+
+    it("creates and stores a travel agent", async () => {
+      const created = await createTravelAgent({
+        name: "Agente de Prueba",
+        email: "test@agent.com",
+        phone: "+52 55 9999 0000",
+        notes: "Notas de prueba",
+      });
+      expect(created.name).toBe("Agente de Prueba");
+      expect(created.email).toBe("test@agent.com");
+      expect(created.phone).toBe("+52 55 9999 0000");
+      expect(created.notes).toBe("Notas de prueba");
+
+      const found = await getTravelAgentById(created.id);
+      expect(found?.name).toBe("Agente de Prueba");
+    });
+
+    it("updates a travel agent", async () => {
+      const created = await createTravelAgent({ name: "Original Agent" });
+      const updated = await updateTravelAgent(created.id, { name: "Updated Agent", email: "up@example.com" });
+      expect(updated.name).toBe("Updated Agent");
+      expect(updated.email).toBe("up@example.com");
+
+      const found = await getTravelAgentById(created.id);
+      expect(found?.name).toBe("Updated Agent");
+    });
+
+    it("rejects update with empty name", async () => {
+      const created = await createTravelAgent({ name: "Named Agent" });
+      await expect(updateTravelAgent(created.id, { name: "" })).rejects.toThrow("El nombre es obligatorio");
+    });
+
+    it("deletes an unreferenced agent", async () => {
+      const created = await createTravelAgent({ name: "Agent to Delete" });
+      await deleteTravelAgent(created.id);
+      await expect(getTravelAgentById(created.id)).resolves.toBeNull();
+    });
+
+    it("nullifies assigned_agent_id on referenced trips when deleting an agent", async () => {
+      const agent = await createTravelAgent({ name: "Referenced Agent" });
+      const trip = await createTrip({
+        clientIds: ["c1"],
+        title: "Assigned Trip",
+        slug: `assigned-trip-${agent.id}`,
+        startDate: "2026-10-01",
+        endDate: "2026-10-02",
+        assignedAgentId: agent.id,
+      });
+      expect(trip.assignedAgentId).toBe(agent.id);
+
+      await deleteTravelAgent(agent.id);
+
+      await expect(getTravelAgentById(agent.id)).resolves.toBeNull();
+      const details = await getTripWithDetails(trip.slug);
+      expect(details?.assignedAgentId).toBeUndefined();
+    });
+  });
+
+  describe("trip assignment", () => {
+    it("creates a trip with an assigned agent", async () => {
+      const trip = await createTrip({
+        clientIds: ["c1"],
+        title: "Trip With Agent",
+        slug: `trip-with-agent-${Date.now()}`,
+        startDate: "2026-11-01",
+        endDate: "2026-11-05",
+        assignedAgentId: "a1",
+      });
+      expect(trip.assignedAgentId).toBe("a1");
+    });
+
+    it("creates a trip without an assigned agent", async () => {
+      const trip = await createTrip({
+        clientIds: ["c1"],
+        title: "Trip Without Agent",
+        slug: `trip-no-agent-${Date.now()}`,
+        startDate: "2026-11-01",
+        endDate: "2026-11-05",
+      });
+      expect(trip.assignedAgentId).toBeUndefined();
+    });
+
+    it("updates a trip to change its assigned agent", async () => {
+      const trip = await createTrip({
+        clientIds: ["c1"],
+        title: "Reassign Trip",
+        slug: `reassign-trip-${Date.now()}`,
+        startDate: "2026-11-01",
+        endDate: "2026-11-05",
+        assignedAgentId: "a1",
+      });
+      const updated = await updateTrip(trip.id, { assignedAgentId: "a2" });
+      expect(updated.assignedAgentId).toBe("a2");
+    });
+
+    it("updates a trip to clear its assigned agent", async () => {
+      const trip = await createTrip({
+        clientIds: ["c1"],
+        title: "Clear Agent Trip",
+        slug: `clear-agent-trip-${Date.now()}`,
+        startDate: "2026-11-01",
+        endDate: "2026-11-05",
+        assignedAgentId: "a1",
+      });
+      const updated = await updateTrip(trip.id, { assignedAgentId: null });
+      expect(updated.assignedAgentId).toBeUndefined();
+    });
+  });
+
+  describe("getTripsWithClients agent filter", () => {
+    it("filters trips by a single assigned agent", async () => {
+      const result = await getTripsWithClients({ filters: { agentIds: ["a1"] } });
+      expect(result.items.map((trip) => trip.id)).toContain("t1");
+    });
+
+    it("filters trips by multiple assigned agents", async () => {
+      const result = await getTripsWithClients({ filters: { agentIds: ["a1", "a2"] } });
+      expect(result.items.map((trip) => trip.id)).toContain("t1");
+    });
+
+    it("returns empty when no trip matches the selected agent", async () => {
+      const result = await getTripsWithClients({ filters: { agentIds: ["no-such-agent"] } });
+      expect(result.items).toHaveLength(0);
+      expect(result.totalCount).toBe(0);
     });
   });
 

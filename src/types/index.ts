@@ -18,6 +18,7 @@ export type TripFilters = {
   clientIds?: string[];
   tagIds?: string[];
   currency?: TripCurrency;
+  agentIds?: string[];
 };
 
 export interface Client {
@@ -72,6 +73,8 @@ export interface Trip {
   updatedAt: string;
   /** Timestamp del envío del recordatorio automático por email; undefined = aún no enviado. */
   reminderSentAt?: string;
+  /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
+  assignedAgentId?: string;
   /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
   salePrice?: number;
   /** Solo agente: nunca se selecciona ni se envía a la vista pública /t/[slug]. */
@@ -146,6 +149,16 @@ export interface Supplier {
   notes?: string;
   tags: string[];
   deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TravelAgent {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }

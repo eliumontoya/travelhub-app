@@ -90,5 +90,6 @@ describe("public trip details", () => {
     expect(queriedTables).not.toContain("trip_clients");
     expect(queriedTables).not.toContain("trip_tags");
     expect(queriedTables).not.toContain("trip_status_history");
+    expect(queriedTables).not.toContain("travel_agents");
   });
 });

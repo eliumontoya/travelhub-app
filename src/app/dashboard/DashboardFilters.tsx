@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Client, Tag, TripFilters, TripStatus, TripCurrency } from "@/types";
+import type { Client, Tag, TravelAgent, TripFilters, TripStatus, TripCurrency } from "@/types";
 
 function normalize(text: string) {
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -29,10 +29,12 @@ export function DashboardFilters({
   onChange,
   clients,
   tags,
+  travelAgents,
 }: {
   onChange: (filters: Partial<TripFilters>) => void;
   clients: Client[];
   tags: Tag[];
+  travelAgents?: TravelAgent[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,7 +53,7 @@ export function DashboardFilters({
 
   function syncUrl(f: Partial<TripFilters>) {
     const params = new URLSearchParams(searchParams.toString());
-    const filterKeys = ["q", "status", "dateFrom", "dateTo", "client", "tags", "currency", "page", "clientsPage"] as const;
+    const filterKeys = ["q", "status", "dateFrom", "dateTo", "client", "tags", "agent", "currency", "page", "clientsPage"] as const;
     filterKeys.forEach((key) => params.delete(key));
 
     if (f.query) params.set("q", f.query);
@@ -60,6 +62,7 @@ export function DashboardFilters({
     if (f.dateTo) params.set("dateTo", f.dateTo);
     if (f.clientIds?.length) params.set("client", f.clientIds.join(","));
     if (f.tagIds?.length) params.set("tags", f.tagIds.join(","));
+    if (f.agentIds?.length) params.set("agent", f.agentIds.join(","));
     if (f.currency) params.set("currency", f.currency);
 
     router.replace(`?${params.toString()}`, { scroll: false });
@@ -73,6 +76,7 @@ export function DashboardFilters({
     if (!next.dateTo) delete next.dateTo;
     if (!next.clientIds?.length) delete next.clientIds;
     if (!next.tagIds?.length) delete next.tagIds;
+    if (!next.agentIds?.length) delete next.agentIds;
     if (!next.currency) delete next.currency;
     return next;
   }
@@ -163,6 +167,19 @@ export function DashboardFilters({
         });
       });
     }
+    if (filters.agentIds?.length && travelAgents) {
+      filters.agentIds.forEach((aid) => {
+        const agent = travelAgents.find((a) => a.id === aid);
+        badges.push({
+          key: `agent-${aid}`,
+          label: agent?.name ?? aid,
+          onRemove: () => {
+            const next = (filters.agentIds ?? []).filter((id) => id !== aid);
+            updateFilters({ agentIds: next.length ? next : undefined }, true);
+          },
+        });
+      });
+    }
     if (filters.currency) {
       badges.push({
         key: "currency",
@@ -173,7 +190,7 @@ export function DashboardFilters({
 
     return badges;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, clients, tags]);
+  }, [filters, clients, tags, travelAgents]);
 
   // Client combobox state
   const [clientQuery, setClientQuery] = useState("");
@@ -196,6 +213,19 @@ export function DashboardFilters({
       .filter((t) => normalize(t.name).includes(q))
       .slice(0, 8);
   }, [tags, tagQuery, filters.tagIds]);
+
+  // Agent multi-combobox state
+  const [agentQuery, setAgentQuery] = useState("");
+  const [agentOpen, setAgentOpen] = useState(false);
+  const agentResults = useMemo(() => {
+    const selected = filters.agentIds ?? [];
+    const q = normalize(agentQuery.trim());
+    if (!q || !travelAgents) return [];
+    return travelAgents
+      .filter((a) => !selected.includes(a.id))
+      .filter((a) => normalize(a.name).includes(q))
+      .slice(0, 8);
+  }, [travelAgents, agentQuery, filters.agentIds]);
 
   return (
     <div className="space-y-3">
@@ -316,6 +346,46 @@ export function DashboardFilters({
           )}
         </div>
 
+        {/* Agent multi-combobox */}
+        {travelAgents && travelAgents.length > 0 && (
+          <div className="relative">
+            <input
+              type="text"
+              value={agentQuery}
+              onChange={(e) => {
+                setAgentQuery(e.target.value);
+                setAgentOpen(true);
+              }}
+              onFocus={() => setAgentOpen(true)}
+              onBlur={() => setTimeout(() => setAgentOpen(false), 150)}
+              placeholder="Filtrar por agente…"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              autoComplete="off"
+            />
+            {agentOpen && agentResults.length > 0 && (
+              <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-900">
+                {agentResults.map((a) => (
+                  <li key={a.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setAgentQuery("");
+                        setAgentOpen(false);
+                        const next = [...(filters.agentIds ?? []), a.id];
+                        updateFilters({ agentIds: next }, true);
+                      }}
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      {a.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* Date range */}
         <div className="flex gap-2">
           <input
@@ -402,6 +472,8 @@ function deserializeFilters(searchParams: URLSearchParams): Partial<TripFilters>
   if (client) filters.clientIds = client.split(",");
   const tags = searchParams.get("tags");
   if (tags) filters.tagIds = tags.split(",");
+  const agent = searchParams.get("agent");
+  if (agent) filters.agentIds = agent.split(",");
   const currency = searchParams.get("currency") as TripCurrency | null;
   if (currency && CURRENCY_OPTIONS.includes(currency)) filters.currency = currency;
   return filters;
