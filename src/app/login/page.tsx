@@ -23,6 +23,8 @@ export default async function LoginPage({
         />
       </div>
 
+      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+
       {!configured ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           Supabase no está configurado todavía. Sigue los pasos de{" "}

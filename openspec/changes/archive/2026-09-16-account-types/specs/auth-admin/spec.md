@@ -1,12 +1,6 @@
-# Auth Admin Specification
+# Delta for Auth Admin
 
-**Baseline**: baseline-from-current-implementation
-
-## Purpose
-
-Protect agent-only dashboard operations while allowing local development without Supabase configuration.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Dashboard authentication
 
@@ -30,6 +24,8 @@ The system MUST protect `/dashboard/**` with Supabase authentication AND a valid
 - WHEN they request a dashboard route
 - THEN the system MUST redirect them away from the dashboard with an authorization error
 
+(Previously: any valid authenticated session was sufficient for dashboard access; now a valid role is also required.)
+
 ### Requirement: Mock-mode development access
 
 The system MUST allow dashboard access without Supabase authentication when Supabase is not configured, AND MUST enforce the same role model as Supabase mode. Mock accounts MUST carry role metadata; mock-mode role enforcement MUST match production behavior.
@@ -46,28 +42,4 @@ The system MUST allow dashboard access without Supabase authentication when Supa
 - WHEN a developer opens `/dashboard`
 - THEN the middleware MUST deny access
 
-### Requirement: Login and sign-out
-
-The system MUST provide email/password login through Supabase and sign-out from dashboard settings/profile controls.
-
-#### Scenario: Successful login
-
-- GIVEN Supabase is configured and credentials are valid
-- WHEN the user submits the login form
-- THEN the system MUST create a session and redirect to `redirectTo` or `/dashboard`
-
-#### Scenario: Supabase missing on login
-
-- GIVEN Supabase is not configured
-- WHEN the user submits the login form
-- THEN the system MUST return to login with a configuration error
-
-### Requirement: Site contact settings
-
-The system MUST let the authenticated agent update public contact email and phone used by public trip pages.
-
-#### Scenario: Update contact settings
-
-- GIVEN the agent opens settings
-- WHEN they submit a valid email and phone
-- THEN the public trip contact details MUST use the updated values
+(Previously: mock mode allowed unrestricted dashboard access; now it enforces role validation.)
