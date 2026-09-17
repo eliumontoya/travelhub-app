@@ -1,4 +1,5 @@
 import {
+  AccountProfile,
   Client,
   Trip,
   TripDay,
@@ -14,6 +15,26 @@ import {
   Supplier,
   TravelAgent,
 } from "@/types";
+
+export const mockProfiles: Record<string, AccountProfile> = {
+  "mock-admin": {
+    id: "mock-admin",
+    role: "admin",
+    features: [],
+  },
+  "mock-agent": {
+    id: "mock-agent",
+    role: "agent",
+    features: ["trips"],
+    travelAgentId: "a1",
+  },
+};
+
+export let currentMockAccountId: string = "mock-admin";
+
+export function setCurrentMockAccountId(id: string) {
+  currentMockAccountId = id;
+}
 
 export const mockClients: Client[] = [
   {
