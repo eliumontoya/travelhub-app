@@ -15,6 +15,17 @@ import {
   TravelAgent,
 } from "@/types";
 
+// Fuente de verdad mock para hashes de PIN de cliente (issue #302).
+// Espejo de clients.pin_hash; nunca almacena el PIN en texto plano.
+export const mockClientPinHashes: Map<string, string> = new Map();
+
+// Fuente de verdad mock para intentos fallidos de login por email (issue #302).
+// Espejo de client_login_attempts; usada por el módulo de auth en la siguiente slice.
+export const mockClientLoginAttempts: Map<
+  string,
+  { failures: number; windowStartedAt: string; updatedAt: string }
+> = new Map();
+
 export const mockClients: Client[] = [
   {
     id: "c1",

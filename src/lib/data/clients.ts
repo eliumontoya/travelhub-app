@@ -1,6 +1,8 @@
+import bcrypt from "bcryptjs";
 import { Client, Tag } from "@/types";
-import { mockClients, mockClientTags, mockTags, mockTripClients, mockTrips, mockTripTags } from "@/lib/mock-data";
+import { mockClientPinHashes, mockClients, mockClientTags, mockTags, mockTripClients, mockTrips, mockTripTags } from "@/lib/mock-data";
 import { ALL_CLIENTS_PAGE_SIZE, PaginationParams, PaginatedResult, createServerSupabase, effectiveWhatsapp, isSupabaseConfigured, paginationBounds, sanitizeNote, slugify, uid } from "@/lib/data/shared";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 // ---------- Clients ----------
 
@@ -50,6 +52,51 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
     .maybeSingle();
   if (error) throw error;
   return data ? rowToClient(data) : null;
+}
+
+// ---------- Client PIN (issue #302) ----------
+// Los PINs nunca salen de esta capa: no hay campo pin/pin_hash en el tipo Client.
+
+export async function setClientPin(clientId: string, pin: string): Promise<void> {
+  const hash = await bcrypt.hash(pin, 10);
+  if (!isSupabaseConfigured()) {
+    mockClientPinHashes.set(clientId, hash);
+    return;
+  }
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("clients").update({ pin_hash: hash }).eq("id", clientId);
+  if (error) throw error;
+}
+
+export async function getClientPinHashByEmail(email: string): Promise<string | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!isSupabaseConfigured()) {
+    const client = mockClients.find((c) => c.email.toLowerCase() === normalized);
+    if (!client) return null;
+    return mockClientPinHashes.get(client.id) ?? null;
+  }
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("pin_hash")
+    .eq("email", normalized)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.pin_hash as string | null) ?? null;
+}
+
+export async function hasClientPin(clientId: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) {
+    return mockClientPinHashes.has(clientId);
+  }
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("pin_hash")
+    .eq("id", clientId)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data?.pin_hash);
 }
 
 // Genera el slug público (/c/{slug}) con el mismo helper y patrón que el
