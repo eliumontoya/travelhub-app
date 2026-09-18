@@ -1,12 +1,16 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { signOutAction } from "@/app/dashboard/settings/actions";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getCurrentUserRole } from "@/lib/auth/roles";
 import { ALL_CLIENTS_PAGE_SIZE, ALL_TRIPS_PAGE_SIZE, getClients, getTripsWithClients } from "@/lib/data";
 import { getChangelog } from "@/lib/changelog";
+
+const MOCK_ACCOUNT_COOKIE = "x-mock-account-id";
 
 export default async function DashboardLayout({
   children,
@@ -21,6 +25,11 @@ export default async function DashboardLayout({
     } = await supabase.auth.getUser();
     email = user?.email ?? null;
   }
+
+  const cookieStore = await cookies();
+  const mockAccountId = cookieStore.get(MOCK_ACCOUNT_COOKIE)?.value;
+  const role = await getCurrentUserRole(mockAccountId);
+  const isAdmin = role === "admin";
 
   const changelog = getChangelog();
 
@@ -62,24 +71,28 @@ export default async function DashboardLayout({
               >
                 Proveedores
               </Link>
-              <Link
-                href="/dashboard/travel-agents"
-                className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                Agentes
-              </Link>
-              <Link
-                href="/dashboard/wcc"
-                className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
-              >
-                WhatsApp C.C.
-              </Link>
-              <Link
-                href="/dashboard/settings"
-                className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                Ajustes
-              </Link>
+              {isAdmin && (
+                <>
+                  <Link
+                    href="/dashboard/travel-agents"
+                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  >
+                    Agentes
+                  </Link>
+                  <Link
+                    href="/dashboard/wcc"
+                    className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
+                  >
+                    WhatsApp C.C.
+                  </Link>
+                  <Link
+                    href="/dashboard/settings"
+                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  >
+                    Ajustes
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-2">

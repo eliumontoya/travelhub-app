@@ -10,6 +10,15 @@ export type TripStatus = "draft" | "published" | "archived";
 
 export type TripCurrency = "MXN" | "USD" | "EUR";
 
+export type AccountRole = "admin" | "agent";
+
+export interface AccountProfile {
+  id: string;
+  role: AccountRole;
+  features: string[];
+  travelAgentId?: string;
+}
+
 export type TripFilters = {
   query?: string;
   status?: TripStatus[];

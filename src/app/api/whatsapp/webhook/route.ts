@@ -67,15 +67,18 @@ export async function POST(request: NextRequest) {
     const result = await processWhatsAppWebhookPayload(payload, { observabilityContext: context });
     return NextResponse.json(result);
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("[WhatsApp Webhook Error]", { message: errorMessage, stack: errorStack, error });
     recordWhatsAppAiEvent({
       context,
       type: "webhook.failed",
       outcome: "failure",
-      diagnostics: { error },
+      diagnostics: { error, message: errorMessage },
     });
     if (error instanceof WhatsAppStoreConfigurationError) {
       return NextResponse.json({ error: "WhatsApp webhook persistence is not configured" }, { status: 503 });
     }
-    return NextResponse.json({ error: "WhatsApp webhook processing failed" }, { status: 500 });
+    return NextResponse.json({ error: "WhatsApp webhook processing failed", details: errorMessage }, { status: 500 });
   }
 }

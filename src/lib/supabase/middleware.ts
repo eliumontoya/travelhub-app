@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { AccountRole } from "@/types";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -8,7 +9,7 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return { response, user: null as null };
+    return { response, user: null as null, role: null as AccountRole | null };
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -30,5 +31,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return { response, user };
+  let role: AccountRole | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (data?.role === "admin" || data?.role === "agent") {
+      role = data.role;
+    }
+  }
+
+  return { response, user, role };
 }

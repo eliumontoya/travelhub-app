@@ -1,4 +1,5 @@
 import {
+  AccountProfile,
   Client,
   Trip,
   TripDay,
@@ -15,16 +16,34 @@ import {
   TravelAgent,
 } from "@/types";
 
-// Fuente de verdad mock para hashes de PIN de cliente (issue #302).
-// Espejo de clients.pin_hash; nunca almacena el PIN en texto plano.
+// Mock source of truth for client PIN hashes (issue #302) — mirrors clients.pin_hash.
 export const mockClientPinHashes: Map<string, string> = new Map();
 
-// Fuente de verdad mock para intentos fallidos de login por email (issue #302).
-// Espejo de client_login_attempts; usada por el módulo de auth en la siguiente slice.
+// Mock source of truth for failed login attempts per email (issue #302) — mirrors client_login_attempts.
 export const mockClientLoginAttempts: Map<
   string,
   { failures: number; windowStartedAt: string; updatedAt: string }
 > = new Map();
+
+export const mockProfiles: Record<string, AccountProfile> = {
+  "mock-admin": {
+    id: "mock-admin",
+    role: "admin",
+    features: [],
+  },
+  "mock-agent": {
+    id: "mock-agent",
+    role: "agent",
+    features: ["trips"],
+    travelAgentId: "a1",
+  },
+};
+
+export let currentMockAccountId: string = "mock-admin";
+
+export function setCurrentMockAccountId(id: string) {
+  currentMockAccountId = id;
+}
 
 export const mockClients: Client[] = [
   {
