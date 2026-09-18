@@ -17,6 +17,7 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { DEFAULT_LANG, dictionary, getLangFromSearchParams } from "@/lib/i18n";
 import { resolveItemLocation } from "@/lib/item-location";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ClientSessionButton } from "@/components/ClientSessionButton";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { getDailyWeather } from "@/lib/weather";
 import { PackingListManager } from "@/components/PackingListManager";
@@ -88,7 +89,10 @@ export default async function PublicTripPage({
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0 dark:bg-gray-950">
-      <ThemeToggle className="fixed right-4 top-4 z-30 print:hidden" />
+      <div className="fixed right-4 top-4 z-30 flex items-center gap-2 print:hidden">
+        <ClientSessionButton returnTo={`/t/${slug}`} />
+        <ThemeToggle />
+      </div>
 
       {isDraftPreview && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-800 print:hidden dark:border-amber-950 dark:bg-amber-950/30 dark:text-amber-300">

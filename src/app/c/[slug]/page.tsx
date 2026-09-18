@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getClientPublishedTripsBySlug } from "@/lib/data";
 import { formatDateLong } from "@/lib/item-meta";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ClientSessionButton } from "@/components/ClientSessionButton";
 
 export default async function ClientTripHistoryPage({
   params,
@@ -16,6 +18,11 @@ export default async function ClientTripHistoryPage({
 
   return (
     <main className="min-h-screen bg-gray-50 pb-16 dark:bg-gray-950">
+      <div className="fixed right-4 top-4 z-30 flex items-center gap-2">
+        <ClientSessionButton returnTo={`/c/${slug}`} />
+        <ThemeToggle />
+      </div>
+
       <div
         className="flex h-40 items-end bg-gray-800 sm:h-48"
         style={

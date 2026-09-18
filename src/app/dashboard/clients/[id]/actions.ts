@@ -1,16 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   deleteClientDocument,
   getClientDocuments,
   getOrCreateTag,
   removeClientCoverImage,
+  setClientPin,
   setClientTags,
   updateClient,
   uploadClientCoverImage,
   uploadClientDocument,
 } from "@/lib/data";
+import { validateClientPin } from "@/lib/client-pin-validation";
 
 export async function updateClientAction(clientId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -70,4 +73,18 @@ export async function setClientTagsAction(clientId: string, formData: FormData) 
   await setClientTags(clientId, tagIds);
   revalidatePath(`/dashboard/clients/${clientId}`);
   revalidatePath("/dashboard");
+}
+
+export async function updateClientPinAction(clientId: string, formData: FormData) {
+  const pin = String(formData.get("pin") ?? "");
+  const confirmPin = String(formData.get("confirmPin") ?? "");
+
+  const validation = validateClientPin(pin, confirmPin);
+  if (!validation.ok) {
+    redirect(`/dashboard/clients/${clientId}?pinError=${encodeURIComponent(validation.error)}`);
+  }
+
+  await setClientPin(clientId, pin);
+  revalidatePath(`/dashboard/clients/${clientId}`);
+  redirect(`/dashboard/clients/${clientId}?pinSuccess=1`);
 }

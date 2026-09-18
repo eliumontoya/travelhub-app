@@ -20,6 +20,7 @@ import {
   removeClientCoverAction,
   setClientTagsAction,
   updateClientAction,
+  updateClientPinAction,
   uploadClientCoverAction,
   uploadClientDocumentAction,
 } from "./actions";
@@ -37,10 +38,13 @@ const statusMeta = {
 
 export default async function ClientDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ pinError?: string; pinSuccess?: string }>;
 }) {
   const { id } = await params;
+  const { pinError, pinSuccess } = await searchParams;
   const client = await getClientById(id);
   if (!client) notFound();
 
@@ -195,6 +199,68 @@ export default async function ClientDetailPage({
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Guardar cambios
+          </button>
+        </form>
+      </details>
+
+      <details
+        className="mb-8 rounded-lg border border-gray-200 bg-white p-4"
+        open={Boolean(pinError || pinSuccess)}
+      >
+        <summary className="cursor-pointer text-sm font-medium text-gray-700">
+          PIN de acceso para el cliente
+        </summary>
+        <form
+          action={updateClientPinAction.bind(null, client.id)}
+          className="mt-4 space-y-3"
+        >
+          {pinError && (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {pinError}
+            </p>
+          )}
+          {pinSuccess && (
+            <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              PIN actualizado correctamente.
+            </p>
+          )}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nuevo PIN</label>
+              <input
+                name="pin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                minLength={4}
+                maxLength={6}
+                required
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Confirmar PIN</label>
+              <input
+                name="confirmPin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                minLength={4}
+                maxLength={6}
+                required
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            El PIN debe tener entre 4 y 6 dígitos. Se almacena como un hash; nunca
+            se guarda en texto plano.
+          </p>
+          <button
+            type="submit"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Guardar PIN
           </button>
         </form>
       </details>
