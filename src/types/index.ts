@@ -47,6 +47,12 @@ export interface Client {
   updatedAt: string;
 }
 
+/** Cliente autenticado vía email + PIN. No contiene el PIN ni su hash. */
+export type ClientSession = {
+  clientId: string;
+  expiresAt: number;
+};
+
 export interface Tag {
   id: string;
   name: string;

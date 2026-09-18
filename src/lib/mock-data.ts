@@ -16,6 +16,15 @@ import {
   TravelAgent,
 } from "@/types";
 
+// Mock source of truth for client PIN hashes (issue #302) — mirrors clients.pin_hash.
+export const mockClientPinHashes: Map<string, string> = new Map();
+
+// Mock source of truth for failed login attempts per email (issue #302) — mirrors client_login_attempts.
+export const mockClientLoginAttempts: Map<
+  string,
+  { failures: number; windowStartedAt: string; updatedAt: string }
+> = new Map();
+
 export const mockProfiles: Record<string, AccountProfile> = {
   "mock-admin": {
     id: "mock-admin",
