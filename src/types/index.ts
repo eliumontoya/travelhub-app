@@ -320,6 +320,7 @@ export type ItemMetadata =
 type BaseItem = {
   id: string;
   tripDayId: string;
+  createdByClientId: string | null;
   title: string;
   startTime?: string;
   endTime?: string;

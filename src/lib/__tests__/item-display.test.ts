@@ -7,6 +7,7 @@ describe("formatItemDetailRows", () => {
     const item: Item = {
       id: "item-1",
       tripDayId: "day-1",
+      createdByClientId: null,
       type: "flight",
       title: "Vuelo",
       sortOrder: 0,

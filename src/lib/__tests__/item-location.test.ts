@@ -5,6 +5,7 @@ import type { ItemWithSupplier } from "@/types";
 const baseItem: ItemWithSupplier = {
   id: "item-1",
   tripDayId: "day-1",
+  createdByClientId: null,
   type: "hotel",
   title: "Hotel stay",
   sortOrder: 0,

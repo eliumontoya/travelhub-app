@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getSiteSettings, getTripWithDetails } from "@/lib/data";
+import { canClientAddActivities, getSiteSettings, getTripWithDetails } from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
@@ -24,6 +24,9 @@ import { PackingListManager } from "@/components/PackingListManager";
 import { PrintButton } from "@/components/PrintButton";
 import type { ItemWithSupplier } from "@/types";
 import { isTravelerTripVisible } from "@/lib/trip-visibility";
+import { getClientSession } from "@/lib/client-auth";
+import { TravelerActivityForm } from "@/components/TravelerActivityForm";
+import { canRenderTravelerActivityControls } from "@/lib/traveler-activity-controls";
 
 export async function generateMetadata({
   params,
@@ -66,9 +69,21 @@ export default async function PublicTripPage({
   const lang = getLangFromSearchParams(resolvedSearchParams) ?? DEFAULT_LANG;
   const previewToken = getPreviewToken(resolvedSearchParams);
   const t = dictionary[lang];
-  const [trip, contact] = await Promise.all([getTripWithDetails(slug), getSiteSettings()]);
+  const [trip, contact, session] = await Promise.all([
+    getTripWithDetails(slug),
+    getSiteSettings(),
+    getClientSession(),
+  ]);
   if (!trip || !isTravelerTripVisible(trip.status, trip.id, previewToken)) notFound();
   const isDraftPreview = trip.status === "draft";
+  const hasTravelerActivityAssignment = session && trip.status === "published"
+    ? await canClientAddActivities(trip.id, session.clientId)
+    : false;
+  const canManageTravelerActivities = canRenderTravelerActivityControls({
+    tripStatus: trip.status,
+    clientId: session?.clientId,
+    hasAssignment: hasTravelerActivityAssignment,
+  });
 
   const totalCost = trip.showCostsToClient
     ? trip.days.reduce(
@@ -208,6 +223,10 @@ export default async function PublicTripPage({
                     </p>
                     <NoteHtml html={day.notes} className="text-sm text-gray-600 dark:text-gray-400" />
                   </div>
+                )}
+
+                {canManageTravelerActivities && (
+                  <TravelerActivityForm tripId={trip.id} tripDayId={day.id} slug={trip.slug} />
                 )}
 
                 <div className="space-y-3">
@@ -351,6 +370,9 @@ export default async function PublicTripPage({
                           </div>
                           <div className="shrink-0 print:hidden">
                             <AddToCalendarButton item={item} date={day.date} lang={lang} />
+                            {canManageTravelerActivities && item.type === "activity" && item.createdByClientId === session?.clientId && (
+                              <TravelerActivityForm tripId={trip.id} tripDayId={day.id} slug={trip.slug} item={item} />
+                            )}
                           </div>
                         </div>
                       </div>

@@ -535,6 +535,7 @@ export const mockItems: Item[] = [
   {
     id: "i1",
     tripDayId: "d1",
+    createdByClientId: null,
     type: "flight",
     title: "Vuelo AeroMéxico AM45 CDMX -> Roma",
     startTime: "08:30",
@@ -557,6 +558,7 @@ export const mockItems: Item[] = [
   {
     id: "i2",
     tripDayId: "d1",
+    createdByClientId: null,
     type: "hotel",
     title: "Check-in Hotel Artemide",
     startTime: "16:00",
@@ -579,6 +581,7 @@ export const mockItems: Item[] = [
   {
     id: "i3",
     tripDayId: "d2",
+    createdByClientId: null,
     type: "activity",
     title: "Tour privado Coliseo Romano",
     startTime: "10:00",
@@ -604,6 +607,7 @@ export const mockItems: Item[] = [
   {
     id: "i4",
     tripDayId: "d2",
+    createdByClientId: null,
     type: "restaurant",
     title: "Cena en Roscioli",
     startTime: "20:00",
