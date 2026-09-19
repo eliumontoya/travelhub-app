@@ -190,7 +190,7 @@ async function nextSortOrder(serviceId: string): Promise<number> {
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return (data?.sort_order as number | undefined) ?? -1 + 1;
+  return ((data?.sort_order as number | undefined) ?? -1) + 1;
 }
 
 export async function addChecklistItem(

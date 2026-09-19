@@ -4,10 +4,12 @@ import {
   deleteChecklistItem,
   ensureServiceForAssignment,
   getServiceForClientTrip,
+  getServiceWithChecklist,
   getServicesProgressForClient,
   markUploadProcessed,
   reorderChecklistItems,
   requestReUpload,
+  updateChecklistItem,
   uploadServiceDocument,
 } from "@/lib/data/services";
 import {
@@ -17,10 +19,12 @@ import {
 } from "@/lib/mock-data";
 
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
+  isSupabaseConfigured: vi.fn(),
   createClient: vi.fn(),
   getSupabaseAdmin: vi.fn(),
 }));
+
+import { isSupabaseConfigured, getSupabaseAdmin } from "@/lib/supabase/server";
 
 function resetServiceMocks() {
   mockServices.length = 0;
@@ -28,7 +32,11 @@ function resetServiceMocks() {
   mockServiceUploads.length = 0;
 }
 
-beforeEach(resetServiceMocks);
+beforeEach(() => {
+  resetServiceMocks();
+  vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+  vi.clearAllMocks();
+});
 
 describe("services data layer (mock mode)", () => {
   it("ensureServiceForAssignment creates one service and is idempotent", async () => {
@@ -159,5 +167,38 @@ describe("services data layer (mock mode)", () => {
     const progress = await getServicesProgressForClient("c1");
 
     expect(progress.get(service.id)).toEqual({ completed: 1, total: 3 });
+  });
+
+  it("updateChecklistItem edits the label and toggles required", async () => {
+    const service = await ensureServiceForAssignment("t1", "c1");
+    const item = await addChecklistItem(service.id, { label: "Passport", required: true });
+
+    await updateChecklistItem(item.id, { label: "Passport copy", required: false });
+
+    const updated = mockServiceChecklistItems.find((i) => i.id === item.id);
+    expect(updated).toBeDefined();
+    expect(updated!.label).toBe("Passport copy");
+    expect(updated!.required).toBe(false);
+  });
+
+  it("ensureServiceForAssignment is idempotent under concurrent duplicate requests", async () => {
+    const [first, second] = await Promise.all([
+      ensureServiceForAssignment("t1", "c1"),
+      ensureServiceForAssignment("t1", "c1"),
+    ]);
+
+    expect(first.id).toBe(second.id);
+    expect(mockServices).toHaveLength(1);
+  });
+
+  it("getServiceWithChecklist uses the service-role admin client, not the anon client", async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+    vi.mocked(getSupabaseAdmin).mockImplementation(() => {
+      throw new Error("ADMIN_CLIENT_USED");
+    });
+
+    await expect(getServiceWithChecklist("svc1")).rejects.toThrow("ADMIN_CLIENT_USED");
+    expect(getSupabaseAdmin).toHaveBeenCalledTimes(1);
   });
 });

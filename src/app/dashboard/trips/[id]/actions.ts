@@ -38,6 +38,14 @@ import {
   uploadTripCoverImage,
   removeTripCoverImage,
   moveItemToDay,
+  addChecklistItem,
+  updateChecklistItem,
+  deleteChecklistItem,
+  reorderChecklistItems,
+  markUploadProcessed,
+  requestReUpload,
+  getServiceWithChecklist,
+  getServicesForTrip,
 } from "@/lib/data";
 import { ItemType, TripCurrency } from "@/types";
 import { validateItemMetadata } from "@/lib/item-metadata-schemas";
@@ -472,6 +480,77 @@ export async function deleteTripDocumentAction(tripId: string, slug: string, doc
 
 export async function getTripDocumentsAction(tripId: string) {
   return getTripDocuments(tripId);
+}
+
+export async function addChecklistItemAction(
+  tripId: string,
+  serviceId: string,
+  formData: FormData
+) {
+  await assertTripEditable(tripId);
+  const label = String(formData.get("label") ?? "").trim();
+  if (!label) return;
+  const required =
+    formData.get("required") === "on" || formData.get("required") === "true";
+  await addChecklistItem(serviceId, { label, required });
+  revalidateTrip(tripId);
+}
+
+export async function updateChecklistItemAction(
+  tripId: string,
+  checklistItemId: string,
+  formData: FormData
+) {
+  await assertTripEditable(tripId);
+  const label = String(formData.get("label") ?? "").trim();
+  const required =
+    formData.get("required") === "on" || formData.get("required") === "true";
+  await updateChecklistItem(checklistItemId, { label, required });
+  revalidateTrip(tripId);
+}
+
+export async function deleteChecklistItemAction(
+  tripId: string,
+  checklistItemId: string
+) {
+  await assertTripEditable(tripId);
+  await deleteChecklistItem(checklistItemId);
+  revalidateTrip(tripId);
+}
+
+export async function reorderChecklistItemsAction(
+  tripId: string,
+  serviceId: string,
+  orderedIds: string[]
+) {
+  await assertTripEditable(tripId);
+  await reorderChecklistItems(serviceId, orderedIds);
+  revalidateTrip(tripId);
+}
+
+export async function markUploadProcessedAction(
+  tripId: string,
+  uploadId: string
+) {
+  await assertTripEditable(tripId);
+  await markUploadProcessed(uploadId);
+  revalidateTrip(tripId);
+}
+
+export async function requestReUploadAction(
+  tripId: string,
+  uploadId: string,
+  formData: FormData
+) {
+  await assertTripEditable(tripId);
+  const comment = String(formData.get("comment") ?? "").trim();
+  await requestReUpload(uploadId, comment);
+  revalidateTrip(tripId);
+}
+
+export async function getServicesWithChecklistsForTripAction(tripId: string) {
+  const services = await getServicesForTrip(tripId);
+  return Promise.all(services.map((s) => getServiceWithChecklist(s.id)));
 }
 
 // Clona un viaje completo (días + items, sin documentos) en un nuevo viaje en

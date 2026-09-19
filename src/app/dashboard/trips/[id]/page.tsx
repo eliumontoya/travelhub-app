@@ -41,6 +41,7 @@ import { TripCoverImage } from "@/components/TripCoverImage";
 import { TripDocuments } from "@/components/TripDocuments";
 import { PackingListManager } from "@/components/PackingListManager";
 import { ReorderButtons } from "@/components/ReorderButtons";
+import { ServiceChecklistManager } from "./ServiceChecklistManager";
 import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
 import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton";
 import { FlightStatusBadge } from "@/components/FlightStatusBadge";
@@ -104,6 +105,13 @@ import {
   uploadTripCoverAction,
   removeTripCoverAction,
   getTripDocumentsAction,
+  addChecklistItemAction,
+  updateChecklistItemAction,
+  deleteChecklistItemAction,
+  reorderChecklistItemsAction,
+  markUploadProcessedAction,
+  requestReUploadAction,
+  getServicesWithChecklistsForTripAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
@@ -124,7 +132,7 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }, travelAgents] =
+  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }, travelAgents, servicesWithChecklists] =
     await Promise.all([
       getTripById(id),
       getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
@@ -132,7 +140,9 @@ export default async function TripEditorPage({
       getTripInternalNotes(id),
       getSuppliers({ pageSize: ALL_SUPPLIERS_PAGE_SIZE }),
       getTravelAgents(),
+      getServicesWithChecklistsForTripAction(id),
     ]);
+  const clientNameById = Object.fromEntries(clients.map((c) => [c.id, c.name]));
   if (!trip) notFound();
   const feedback = await getTripFeedback(trip.id);
 
@@ -760,6 +770,18 @@ export default async function TripEditorPage({
             />
             )}
 
+            <ServiceChecklistManager
+              tripId={trip.id}
+              servicesWithChecklists={servicesWithChecklists}
+              clientNameById={clientNameById}
+              isEditable={isEditable}
+              addChecklistItemAction={addChecklistItemAction.bind(null, trip.id)}
+              updateChecklistItemAction={updateChecklistItemAction.bind(null, trip.id)}
+              deleteChecklistItemAction={deleteChecklistItemAction.bind(null, trip.id)}
+              reorderChecklistItemsAction={reorderChecklistItemsAction.bind(null, trip.id)}
+              markUploadProcessedAction={markUploadProcessedAction.bind(null, trip.id)}
+              requestReUploadAction={requestReUploadAction.bind(null, trip.id)}
+            />
 
             {trip.statusHistory.length > 0 && (
               <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
