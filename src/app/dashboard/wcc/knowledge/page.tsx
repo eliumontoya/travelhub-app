@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createKnowledgeAction } from "./actions";
 import { KnowledgeForm } from "./knowledge-form";
 import { KnowledgeStatusForm } from "./status-form";
+import { KnowledgeImportExport } from "./import-export";
 import { getWccKnowledgeList, wccKnowledgeStatuses } from "@/lib/wcc-knowledge";
 import { formatRelativeTime } from "@/lib/item-meta";
 import { WccEmptyState, WccNotice } from "../components";
@@ -49,6 +50,8 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
           <KnowledgeForm action={createKnowledgeAction} submitLabel="Crear knowledge" />
         </div>
       </section>
+
+      <KnowledgeImportExport totalCount={list.totalCount} />
 
       <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
