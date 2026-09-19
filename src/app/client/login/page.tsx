@@ -18,7 +18,6 @@ export default async function ClientLoginPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-8">
       <div className="mb-8 flex flex-col items-center">
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">HUBit by TravelHub</p>
         <p className="text-sm text-gray-500 dark:text-gray-400">Acceso para clientes</p>
         <Image
           src="/logo.jpeg"
