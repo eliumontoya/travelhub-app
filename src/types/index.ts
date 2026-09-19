@@ -68,6 +68,7 @@ export interface ClientHomeTrip {
   salePrice?: number;
   assignedAgentId?: string;
   assignedAgentName?: string;
+  serviceProgress?: { completed: number; total: number };
 }
 
 /** Vista de perfil expuesta en el home del cliente. Whitelist: omite
@@ -172,6 +173,52 @@ export interface TripDocument {
   filename: string;
   mimeType?: string;
   createdAt: string;
+}
+
+export type ServiceType = "trip_documents";
+
+export type ServiceUploadStatus = "uploaded" | "processed" | "re_upload_requested";
+
+export interface Service {
+  id: string;
+  tripId: string;
+  clientId: string;
+  serviceType: ServiceType;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceChecklistItem {
+  id: string;
+  serviceId: string;
+  label: string;
+  required: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceUpload {
+  id: string;
+  serviceId: string;
+  checklistItemId: string;
+  filePath: string;
+  filename: string;
+  mimeType?: string;
+  status: ServiceUploadStatus;
+  agentComment?: string;
+  fileRemoved: boolean;
+  uploadedAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceChecklistItemWithUpload extends ServiceChecklistItem {
+  upload?: ServiceUpload & { url: string | null };
+}
+
+export interface ServiceWithChecklist extends Service {
+  items: ServiceChecklistItemWithUpload[];
 }
 
 export interface Supplier {
