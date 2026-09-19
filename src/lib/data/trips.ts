@@ -1,9 +1,10 @@
 import { Client, ClientHomeTrip, Item, ItemWithSupplier, PackingItem, Supplier, Tag, Trip, TripDay, TripFilters, TripStatusHistoryEntry, TripWithDetails } from "@/types";
-import { mockClients, mockItems, mockPackingItems, mockTags, mockTravelAgents, mockTripClients, mockTripDays, mockTripFeedback, mockTripInternalNotes, mockTripPhotos, mockTripStatusHistory, mockTripTags, mockTrips, getTripWithDetails as mockGetTripWithDetails } from "@/lib/mock-data";
+import { mockClients, mockItems, mockPackingItems, mockServiceChecklistItems, mockServices, mockTags, mockTravelAgents, mockTripClients, mockTripDays, mockTripFeedback, mockTripInternalNotes, mockTripPhotos, mockTripStatusHistory, mockTripTags, mockTrips, getTripWithDetails as mockGetTripWithDetails } from "@/lib/mock-data";
 import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, hasActiveTripFilters, isSupabaseConfigured, paginationBounds, sanitizeNote, tripMatchesFilters, uid } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { rowToClient, rowToTag } from "@/lib/data/clients";
 import { DOCUMENTS_BUCKET, PHOTOS_BUCKET, getSignedDocumentUrl, rowToDocument, rowToTripDocument, rowToTripPhoto, storagePathFromPublicUrl } from "@/lib/data/documents";
+import { deleteChecklistItem, ensureServiceForAssignment } from "@/lib/data/services";
 
 // ---------- Trips ----------
 
@@ -896,6 +897,9 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
         createdAt: new Date(Date.parse(now) + idx).toISOString(),
       });
     });
+    await Promise.all(
+      clientIds.map((clientId) => ensureServiceForAssignment(trip.id, clientId))
+    );
     (input.tagIds ?? []).forEach((tagId, idx) => {
       mockTripTags.push({
         tripId: trip.id,
@@ -931,6 +935,9 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
       .from("trip_clients")
       .insert(clientIds.map((clientId) => ({ trip_id: trip.id, client_id: clientId })));
     if (linksError) throw linksError;
+    await Promise.all(
+      clientIds.map((clientId) => ensureServiceForAssignment(trip.id, clientId))
+    );
   }
 
   if (input.tagIds?.length) {
@@ -1018,12 +1025,17 @@ export async function setTripClients(tripId: string, clientIds: string[]): Promi
     const current = mockTripClients.filter((tc) => tc.tripId === tripId);
     const currentIds = new Set(current.map((tc) => tc.clientId));
     const nextIds = new Set(clientIds);
+    const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
+    const toAdd = clientIds.filter((id) => !currentIds.has(id));
 
     for (let i = mockTripClients.length - 1; i >= 0; i--) {
       const tc = mockTripClients[i];
       if (tc.tripId === tripId && !nextIds.has(tc.clientId)) {
         mockTripClients.splice(i, 1);
       }
+    }
+    for (const clientId of toRemove) {
+      await deleteServiceForClient(tripId, clientId);
     }
     const now = Date.now();
     clientIds.forEach((clientId, idx) => {
@@ -1035,6 +1047,9 @@ export async function setTripClients(tripId: string, clientIds: string[]): Promi
         });
       }
     });
+    await Promise.all(
+      toAdd.map((clientId) => ensureServiceForAssignment(tripId, clientId))
+    );
 
     const trip = mockTrips.find((t) => t.id === tripId);
     if (trip) trip.clientId = clientIds[0];
@@ -1060,6 +1075,9 @@ export async function setTripClients(tripId: string, clientIds: string[]): Promi
       .eq("trip_id", tripId)
       .in("client_id", toRemove);
     if (removeError) throw removeError;
+    for (const clientId of toRemove) {
+      await deleteServiceForClient(tripId, clientId);
+    }
   }
 
   if (toAdd.length) {
@@ -1070,6 +1088,9 @@ export async function setTripClients(tripId: string, clientIds: string[]): Promi
         { onConflict: "trip_id,client_id", ignoreDuplicates: true }
       );
     if (addError) throw addError;
+    await Promise.all(
+      toAdd.map((clientId) => ensureServiceForAssignment(tripId, clientId))
+    );
   }
 
   const { error: mirrorError } = await supabase
@@ -1160,6 +1181,16 @@ export async function deleteTrip(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
     const tripIndex = mockTrips.findIndex((t) => t.id === id);
     if (tripIndex < 0) throw new Error("Viaje no encontrado");
+
+    const services = mockServices.filter((s) => s.tripId === id);
+    for (const service of services) {
+      const items = mockServiceChecklistItems.filter((i) => i.serviceId === service.id);
+      for (const item of items) {
+        await deleteChecklistItem(item.id);
+      }
+    }
+    removeWhere(mockServices, (s) => s.tripId === id);
+
     const dayIds = new Set(mockTripDays.filter((d) => d.tripId === id).map((d) => d.id));
     const itemIds = new Set(mockItems.filter((i) => dayIds.has(i.tripDayId)).map((i) => i.id));
 
@@ -1227,6 +1258,25 @@ export async function deleteTrip(id: string): Promise<void> {
     }
   }
 
+  const { data: serviceRows, error: servicesError } = await supabase
+    .from("services")
+    .select("id")
+    .eq("trip_id", id);
+  if (servicesError) throw servicesError;
+  const serviceIds = (serviceRows ?? []).map((row) => row.id as string);
+  if (serviceIds.length) {
+    const { data: serviceUploadRows, error: serviceUploadsError } = await supabase
+      .from("service_uploads")
+      .select("file_path")
+      .in("service_id", serviceIds);
+    if (serviceUploadsError) throw serviceUploadsError;
+    documentPaths.push(
+      ...(serviceUploadRows ?? [])
+        .map((row) => row.file_path as string)
+        .filter(Boolean)
+    );
+  }
+
   if (documentPaths.length) await supabase.storage.from(DOCUMENTS_BUCKET).remove(documentPaths);
   if (photoPaths.length) await supabase.storage.from(PHOTOS_BUCKET).remove(photoPaths);
 
@@ -1237,6 +1287,55 @@ export async function deleteTrip(id: string): Promise<void> {
 function removeWhere<T>(items: T[], predicate: (item: T) => boolean): void {
   for (let i = items.length - 1; i >= 0; i--) {
     if (predicate(items[i])) items.splice(i, 1);
+  }
+}
+
+// Borra el servicio trip_documents de un cliente dentro de un viaje,
+// eliminando primero sus checklist items (y con ello sus uploads + objetos
+// de storage) para evitar huérfanos. Se usa en setTripClients (remoción) y
+// deleteTrip (cascada).
+async function deleteServiceForClient(tripId: string, clientId: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const service = mockServices.find(
+      (s) =>
+        s.tripId === tripId &&
+        s.clientId === clientId &&
+        s.serviceType === "trip_documents"
+    );
+    if (!service) return;
+    const items = mockServiceChecklistItems.filter((i) => i.serviceId === service.id);
+    for (const item of items) {
+      await deleteChecklistItem(item.id);
+    }
+    const idx = mockServices.findIndex((s) => s.id === service.id);
+    if (idx >= 0) mockServices.splice(idx, 1);
+    return;
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: serviceRows, error: serviceError } = await supabase
+    .from("services")
+    .select("id")
+    .eq("trip_id", tripId)
+    .eq("client_id", clientId)
+    .eq("service_type", "trip_documents");
+  if (serviceError) throw serviceError;
+
+  for (const row of serviceRows ?? []) {
+    const serviceId = row.id as string;
+    const { data: itemRows, error: itemsError } = await supabase
+      .from("service_checklist_items")
+      .select("id")
+      .eq("service_id", serviceId);
+    if (itemsError) throw itemsError;
+    for (const itemRow of itemRows ?? []) {
+      await deleteChecklistItem(itemRow.id as string);
+    }
+    const { error: deleteServiceError } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", serviceId);
+    if (deleteServiceError) throw deleteServiceError;
   }
 }
 
