@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { getClientSession } from "@/lib/client-auth";
 import { getClientHomeTrips, getClientProfileForHome } from "@/lib/data";
+import {
+  getServiceForClientTrip,
+  getServicesProgressForClient,
+} from "@/lib/data/services";
 import { clientLogout } from "./login/actions";
 
 export default async function ClientHomePage() {
@@ -11,6 +15,21 @@ export default async function ClientHomePage() {
 
   const profile = await getClientProfileForHome(session.clientId);
   const trips = await getClientHomeTrips(session.clientId);
+  const progressByServiceId = await getServicesProgressForClient(
+    session.clientId
+  );
+  const tripsWithProgress = await Promise.all(
+    trips.map(async (trip) => {
+      const service = await getServiceForClientTrip(
+        session.clientId,
+        trip.id
+      );
+      const progress = service
+        ? progressByServiceId.get(service.id)
+        : undefined;
+      return { ...trip, serviceProgress: progress };
+    })
+  );
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-4 py-8">
@@ -64,11 +83,11 @@ export default async function ClientHomePage() {
 
       <section>
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Mis viajes</h2>
-        {trips.length === 0 ? (
+        {tripsWithProgress.length === 0 ? (
           <p className="text-sm text-gray-600 dark:text-gray-400">Todavía no tenés viajes cargados.</p>
         ) : (
           <ul className="space-y-4">
-            {trips.map((trip) => (
+            {tripsWithProgress.map((trip) => (
               <li
                 key={trip.id}
                 className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
@@ -98,6 +117,19 @@ export default async function ClientHomePage() {
                   >
                     {trip.status === "published" ? "Publicado" : "Borrador"}
                   </span>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                  <a
+                    href={`/client/trips/${trip.id}/documents`}
+                    className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Documentos
+                  </a>
+                  {trip.serviceProgress && trip.serviceProgress.total > 0 && (
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {trip.serviceProgress.completed}/{trip.serviceProgress.total}
+                    </span>
+                  )}
                 </div>
                 {(trip.salePrice !== undefined || trip.assignedAgentName) && (
                   <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-300">

@@ -16,6 +16,11 @@ vi.mock("@/lib/data", () => ({
   getClientHomeTrips: vi.fn(),
 }));
 
+vi.mock("@/lib/data/services", () => ({
+  getServiceForClientTrip: vi.fn(),
+  getServicesProgressForClient: vi.fn(),
+}));
+
 vi.mock("../login/actions", () => ({
   clientLogout: vi.fn(),
 }));
@@ -23,6 +28,10 @@ vi.mock("../login/actions", () => ({
 import { redirect } from "next/navigation";
 import { getClientSession } from "@/lib/client-auth";
 import { getClientHomeTrips, getClientProfileForHome } from "@/lib/data";
+import {
+  getServiceForClientTrip,
+  getServicesProgressForClient,
+} from "@/lib/data/services";
 import { clientLogout } from "../login/actions";
 
 function getText(node: ReactNode): string {
@@ -172,5 +181,52 @@ describe("/client home page", () => {
 
     expect(forms.length).toBeGreaterThan(0);
     expect(forms.some((f) => f.action === clientLogout)).toBe(true);
+  });
+
+  it("shows a Documentos link and a text progress counter per trip", async () => {
+    vi.mocked(getClientSession).mockResolvedValue({ clientId: "c1", expiresAt: Date.now() + 10000 });
+    vi.mocked(getClientProfileForHome).mockResolvedValue({
+      name: "Ana",
+      email: "ana@example.com",
+      phone: "",
+      whatsapp: "",
+      birthDate: "",
+      notes: "",
+      referralSource: null,
+    });
+    vi.mocked(getClientHomeTrips).mockResolvedValue([
+      {
+        id: "t1",
+        title: "Luna de miel en Italia",
+        slug: "italia-perez-2026",
+        startDate: "2026-09-10",
+        endDate: "2026-09-17",
+        status: "published",
+        currency: "EUR",
+        travelerCount: 2,
+      },
+    ]);
+    vi.mocked(getServiceForClientTrip).mockResolvedValue({
+      id: "svc1",
+      tripId: "t1",
+      clientId: "c1",
+      serviceType: "trip_documents",
+      status: "active",
+      createdAt: "",
+      updatedAt: "",
+    });
+    vi.mocked(getServicesProgressForClient).mockResolvedValue(
+      new Map([["svc1", { completed: 2, total: 5 }]])
+    );
+
+    const { default: ClientHomePage } = await import("../page");
+    const element = await ClientHomePage();
+    const links = findLinks(element);
+    const text = getText(element);
+
+    const docsLink = links.find((l) => l.href === "/client/trips/t1/documents");
+    expect(docsLink).toBeDefined();
+    expect(docsLink?.text).toContain("Documentos");
+    expect(text).toContain("2/5");
   });
 });
