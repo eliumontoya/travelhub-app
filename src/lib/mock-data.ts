@@ -14,6 +14,9 @@ import {
   TripFeedback,
   Supplier,
   TravelAgent,
+  Service,
+  ServiceChecklistItem,
+  ServiceUpload,
 } from "@/types";
 
 // Mock source of truth for client PIN hashes (issue #302) — mirrors clients.pin_hash.
@@ -687,3 +690,79 @@ export const mockSiteSettings: SiteSettings = {
 // Feedback del cliente post-viaje (issue #46), espejo de la tabla
 // trip_feedback. Vacío por defecto: sin datos de prueba precargados.
 export const mockTripFeedback: TripFeedback[] = [];
+
+// Servicios por (viaje, cliente) para el portal de documentos (issue #312),
+// espejo de la tabla services.
+export const mockServices: Service[] = [
+  {
+    id: "svc1",
+    tripId: "t1",
+    clientId: "c1",
+    serviceType: "trip_documents",
+    status: "active",
+    createdAt: "2026-07-01T09:00:00Z",
+    updatedAt: "2026-07-01T09:00:00Z",
+  },
+];
+
+// Checklist de documentos por servicio (issue #312), espejo de
+// service_checklist_items.
+export const mockServiceChecklistItems: ServiceChecklistItem[] = [
+  {
+    id: "sci1",
+    serviceId: "svc1",
+    label: "Pasaporte",
+    required: true,
+    sortOrder: 0,
+    createdAt: "2026-07-01T09:00:00Z",
+    updatedAt: "2026-07-01T09:00:00Z",
+  },
+  {
+    id: "sci2",
+    serviceId: "svc1",
+    label: "Seguro de viaje",
+    required: false,
+    sortOrder: 1,
+    createdAt: "2026-07-01T09:00:00Z",
+    updatedAt: "2026-07-01T09:00:00Z",
+  },
+  {
+    id: "sci3",
+    serviceId: "svc1",
+    label: "Visado",
+    required: true,
+    sortOrder: 2,
+    createdAt: "2026-07-01T09:00:00Z",
+    updatedAt: "2026-07-01T09:00:00Z",
+  },
+];
+
+// Uploads de documentos por item de checklist (issue #312), espejo de
+// service_uploads. En modo mock filePath es una ruta simulada porque no hay
+// bucket real.
+export const mockServiceUploads: ServiceUpload[] = [
+  {
+    id: "scu1",
+    serviceId: "svc1",
+    checklistItemId: "sci1",
+    filePath: "services/svc1/sci1/1000000000000-pasaporte.pdf",
+    filename: "pasaporte.pdf",
+    mimeType: "application/pdf",
+    status: "processed",
+    fileRemoved: true,
+    uploadedAt: "2026-07-02T09:00:00Z",
+    updatedAt: "2026-07-02T09:00:00Z",
+  },
+  {
+    id: "scu2",
+    serviceId: "svc1",
+    checklistItemId: "sci2",
+    filePath: "services/svc1/sci2/1000000000001-seguro.pdf",
+    filename: "seguro.pdf",
+    mimeType: "application/pdf",
+    status: "uploaded",
+    fileRemoved: false,
+    uploadedAt: "2026-07-02T09:00:00Z",
+    updatedAt: "2026-07-02T09:00:00Z",
+  },
+];
