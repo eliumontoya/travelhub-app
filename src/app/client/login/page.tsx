@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { clientSignIn } from "./actions";
 
 export default async function ClientLoginPage({
@@ -17,8 +18,15 @@ export default async function ClientLoginPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-8">
       <div className="mb-8 flex flex-col items-center">
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">TravelHub</p>
         <p className="text-sm text-gray-500 dark:text-gray-400">Acceso para clientes</p>
+        <Image
+          src="/logo.jpeg"
+          alt="HUBit by TravelHub"
+          width={182}
+          height={128}
+          priority
+          className="mt-4 h-32 w-auto object-contain"
+        />
       </div>
 
       {status && statusMessages[status] && (
