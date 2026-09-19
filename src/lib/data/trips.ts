@@ -1,6 +1,7 @@
-import { Client, Item, ItemWithSupplier, PackingItem, Supplier, Tag, Trip, TripDay, TripFilters, TripStatusHistoryEntry, TripWithDetails } from "@/types";
-import { mockClients, mockItems, mockPackingItems, mockTags, mockTripClients, mockTripDays, mockTripFeedback, mockTripInternalNotes, mockTripPhotos, mockTripStatusHistory, mockTripTags, mockTrips, getTripWithDetails as mockGetTripWithDetails } from "@/lib/mock-data";
-import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, createServerSupabase, hasActiveTripFilters, isSupabaseConfigured, paginationBounds, sanitizeNote, tripMatchesFilters, uid } from "@/lib/data/shared";
+import { Client, ClientHomeTrip, Item, ItemWithSupplier, PackingItem, Supplier, Tag, Trip, TripDay, TripFilters, TripStatusHistoryEntry, TripWithDetails } from "@/types";
+import { mockClients, mockItems, mockPackingItems, mockTags, mockTravelAgents, mockTripClients, mockTripDays, mockTripFeedback, mockTripInternalNotes, mockTripPhotos, mockTripStatusHistory, mockTripTags, mockTrips, getTripWithDetails as mockGetTripWithDetails } from "@/lib/mock-data";
+import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, hasActiveTripFilters, isSupabaseConfigured, paginationBounds, sanitizeNote, tripMatchesFilters, uid } from "@/lib/data/shared";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { rowToClient, rowToTag } from "@/lib/data/clients";
 import { DOCUMENTS_BUCKET, PHOTOS_BUCKET, getSignedDocumentUrl, rowToDocument, rowToTripDocument, rowToTripPhoto, storagePathFromPublicUrl } from "@/lib/data/documents";
 
@@ -364,6 +365,104 @@ export async function getClientTripSummary(clientId: string): Promise<ClientTrip
     archivedCount: trips.filter((t) => t.status === "archived").length,
     totalCost: null,
   };
+}
+
+function toClientHomeTrip(trip: Trip): ClientHomeTrip {
+  const agentName = trip.assignedAgentId
+    ? mockTravelAgents.find((a) => a.id === trip.assignedAgentId)?.name
+    : undefined;
+  return {
+    id: trip.id,
+    title: trip.title,
+    slug: trip.slug,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    coverImageUrl: trip.coverImageUrl,
+    status: trip.status,
+    currency: trip.currency,
+    travelerCount: trip.travelerCount,
+    salePrice: trip.salePrice,
+    assignedAgentId: trip.assignedAgentId,
+    assignedAgentName: agentName,
+  };
+}
+
+function rowToClientHomeTrip(row: Record<string, unknown>, agentsById: Map<string, string>): ClientHomeTrip {
+  const assignedAgentId =
+    row.assigned_agent_id !== null && row.assigned_agent_id !== undefined
+      ? (row.assigned_agent_id as string)
+      : undefined;
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    slug: row.slug as string,
+    startDate: (row.start_date as string) ?? "",
+    endDate: (row.end_date as string) ?? "",
+    coverImageUrl: (row.cover_image_url as string) ?? undefined,
+    status: row.status as Trip["status"],
+    currency: (row.currency as Trip["currency"]) ?? "MXN",
+    travelerCount: (row.traveler_count as number) ?? 1,
+    salePrice:
+      row.sale_price !== null && row.sale_price !== undefined ? Number(row.sale_price) : undefined,
+    assignedAgentId,
+    assignedAgentName: assignedAgentId ? agentsById.get(assignedAgentId) : undefined,
+  };
+}
+
+// Viajes visibles para el cliente en su home (issue #307). Se leen vía
+// trip_clients (fuente de verdad), se filtran draft|published, se ocultan
+// archived, y se resuelven nombres de agentes en batch. Modo Supabase usa
+// service role; si falta la service key se degrada a [] sin lanzar.
+export async function getClientHomeTrips(clientId: string): Promise<ClientHomeTrip[]> {
+  if (!isSupabaseConfigured()) {
+    const tripIds = new Set(
+      mockTripClients.filter((tc) => tc.clientId === clientId).map((tc) => tc.tripId)
+    );
+    return mockTrips
+      .filter((t) => tripIds.has(t.id) && (t.status === "draft" || t.status === "published"))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(toClientHomeTrip);
+  }
+  if (!canUseServiceRole()) return [];
+  const supabase = getSupabaseAdmin();
+
+  const { data: linkRows, error: linksError } = await supabase
+    .from("trip_clients")
+    .select("trip_id")
+    .eq("client_id", clientId);
+  if (linksError) throw linksError;
+
+  const tripIds = (linkRows ?? []).map((l: Record<string, unknown>) => l.trip_id as string);
+  if (!tripIds.length) return [];
+
+  const { data: tripRows, error: tripsError } = await supabase
+    .from("trips")
+    .select("*")
+    .in("id", tripIds)
+    .in("status", ["draft", "published"])
+    .order("created_at", { ascending: false });
+  if (tripsError) throw tripsError;
+
+  const agentIds = [
+    ...new Set(
+      (tripRows ?? [])
+        .map((r: Record<string, unknown>) => r.assigned_agent_id as string | null)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+  let agentsById = new Map<string, string>();
+  if (agentIds.length) {
+    const { data: agentRows, error: agentsError } = await supabase
+      .from("travel_agents")
+      .select("id, name")
+      .in("id", agentIds);
+    if (agentsError) throw agentsError;
+    agentsById = new Map(
+      (agentRows ?? []).map((r: Record<string, unknown>) => [r.id as string, r.name as string])
+    );
+  }
+
+  return (tripRows ?? []).map((row: Record<string, unknown>) => rowToClientHomeTrip(row, agentsById));
 }
 
 export async function getTripById(id: string): Promise<TripWithDetails | null> {

@@ -53,6 +53,30 @@ export type ClientSession = {
   expiresAt: number;
 };
 
+/** Vista de viaje expuesta en el home del cliente. Whitelist: nunca expone
+ *  commissionRate ni internalNotes. El cliente sí ve salePrice y su agente. */
+export interface ClientHomeTrip {
+  id: string;
+  title: string;
+  slug: string;
+  startDate: string;
+  endDate: string;
+  coverImageUrl?: string;
+  status: TripStatus;
+  currency: TripCurrency;
+  travelerCount: number;
+  salePrice?: number;
+  assignedAgentId?: string;
+  assignedAgentName?: string;
+}
+
+/** Vista de perfil expuesta en el home del cliente. Whitelist: omite
+ *  campos internos como id, slug, createdAt, updatedAt. */
+export type ClientProfileForHome = Pick<
+  Client,
+  "name" | "email" | "phone" | "whatsapp" | "birthDate" | "notes" | "referralSource" | "coverImageUrl"
+>;
+
 export interface Tag {
   id: string;
   name: string;

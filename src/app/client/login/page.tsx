@@ -42,7 +42,7 @@ export default async function ClientLoginPage({
       )}
 
       <form action={clientSignIn} className="space-y-4">
-        <input type="hidden" name="redirectTo" value={redirectTo ?? "/client/login?status=success"} />
+        <input type="hidden" name="redirectTo" value={redirectTo ?? "/client"} />
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Email

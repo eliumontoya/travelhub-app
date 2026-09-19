@@ -6,6 +6,10 @@ import { hasActiveTripFilters, tripMatchesFilters } from "@/lib/trip-filters";
 
 export { sanitizeNote, createServerSupabase, isSupabaseConfigured, slugify, sanitizeStorageKey, hasActiveTripFilters, tripMatchesFilters };
 
+export function canUseServiceRole(): boolean {
+  return isSupabaseConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function uid() {
   return crypto.randomUUID();
 }
