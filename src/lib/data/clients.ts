@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { Client, Tag } from "@/types";
+import { Client, ClientProfileForHome, Tag } from "@/types";
 import { mockClientPinHashes, mockClients, mockClientTags, mockTags, mockTripClients, mockTrips, mockTripTags } from "@/lib/mock-data";
-import { ALL_CLIENTS_PAGE_SIZE, PaginationParams, PaginatedResult, createServerSupabase, effectiveWhatsapp, isSupabaseConfigured, paginationBounds, sanitizeNote, slugify, uid } from "@/lib/data/shared";
+import { ALL_CLIENTS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, effectiveWhatsapp, isSupabaseConfigured, paginationBounds, sanitizeNote, slugify, uid } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 // ---------- Clients ----------
@@ -52,6 +52,30 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
     .maybeSingle();
   if (error) throw error;
   return data ? rowToClient(data) : null;
+}
+
+function toClientProfileForHome(client: Client): ClientProfileForHome {
+  const { name, email, phone, whatsapp, birthDate, notes, referralSource, coverImageUrl } = client;
+  return { name, email, phone, whatsapp, birthDate, notes, referralSource, coverImageUrl };
+}
+
+// Perfil reducido para el home del cliente (issue #307). Modo mock: lectura
+// directa de mockClients. Modo Supabase: service role (anon RLS no puede leer
+// la fila del cliente) con degradación controlada si falta la service key.
+export async function getClientProfileForHome(clientId: string): Promise<ClientProfileForHome | null> {
+  if (!isSupabaseConfigured()) {
+    const client = mockClients.find((c) => c.id === clientId);
+    return client ? toClientProfileForHome(client) : null;
+  }
+  if (!canUseServiceRole()) return null;
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("id", clientId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toClientProfileForHome(rowToClient(data)) : null;
 }
 
 // ---------- Client PIN (issue #302) ----------
