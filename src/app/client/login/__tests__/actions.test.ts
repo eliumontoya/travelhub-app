@@ -51,7 +51,7 @@ describe("client login actions", () => {
         "123456"
       );
       expect(issueClientSession).toHaveBeenCalledWith("c1");
-      expect(redirect).toHaveBeenCalledWith("/client/login?status=success");
+      expect(redirect).toHaveBeenCalledWith("/client");
     });
 
     it("redirects to invalid status when credentials do not match", async () => {

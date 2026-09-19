@@ -10,7 +10,7 @@ import {
 export async function clientSignIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const pin = String(formData.get("pin") ?? "").trim();
-  const redirectTo = String(formData.get("redirectTo") ?? "/client/login?status=success").trim();
+  const redirectTo = String(formData.get("redirectTo") ?? "/client").trim();
 
   const result = await verifyClientCredentials(email, pin);
 
@@ -19,7 +19,7 @@ export async function clientSignIn(formData: FormData) {
   }
 
   await issueClientSession(result.clientId);
-  redirect(redirectTo || "/client/login?status=success");
+  redirect(redirectTo || "/client");
 }
 
 export async function clientLogout() {
