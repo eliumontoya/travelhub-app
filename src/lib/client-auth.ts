@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { getClientByEmail, getClientPinHashByEmail } from "@/lib/data/clients";
+import { getClientByEmailAdmin, getClientPinHashByEmail } from "@/lib/data/clients";
 import { isSupabaseConfigured } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { mockClientLoginAttempts } from "@/lib/mock-data";
@@ -201,7 +201,7 @@ export async function verifyClientCredentials(email: string, pin: string): Promi
 
   await resetLoginAttempts(normalizedEmail);
 
-  const client = await getClientByEmail(normalizedEmail);
+  const client = await getClientByEmailAdmin(normalizedEmail);
   if (!client) {
     // Defensive: a hash exists only when a client row exists.
     return { ok: false, reason: "invalid" };

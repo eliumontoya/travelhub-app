@@ -54,6 +54,25 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
   return data ? rowToClient(data) : null;
 }
 
+// Variante service-role para el login del cliente. El cliente no tiene sesión
+// Supabase Auth (usa cookie propia), así que createServerSupabase() corre como
+// `anon` y RLS le niega el SELECT sobre `clients`. El service role sí puede
+// leer la fila; se usa solo después de verificar el PIN.
+export async function getClientByEmailAdmin(email: string): Promise<Client | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!isSupabaseConfigured()) {
+    return mockClients.find((c) => c.email.toLowerCase() === normalized) ?? null;
+  }
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("email", normalized)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToClient(data) : null;
+}
+
 function toClientProfileForHome(client: Client): ClientProfileForHome {
   const { name, email, phone, whatsapp, birthDate, notes, referralSource, coverImageUrl } = client;
   return { name, email, phone, whatsapp, birthDate, notes, referralSource, coverImageUrl };
