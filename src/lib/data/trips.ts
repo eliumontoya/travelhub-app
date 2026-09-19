@@ -1812,11 +1812,230 @@ export type CreateItemInput = {
 
 export type UpdateItemInput = Partial<Omit<CreateItemInput, "tripDayId">>;
 
+const TRAVELER_ACTIVITY_LIMITS = {
+  title: 120,
+  location: 200,
+  notes: 2_000,
+} as const;
+
+const UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT = { ok: false, reason: "unauthorized" } as const;
+const INVALID_TRAVELER_ACTIVITY_RESULT = { ok: false, reason: "invalid" } as const;
+
+export type TravelerActivityFields = {
+  title: string;
+  startTime?: string;
+  location?: string;
+  notes?: string;
+};
+
+export type CreateTravelerActivityInput = TravelerActivityFields & {
+  tripId: string;
+  tripDayId: string;
+  clientId: string;
+};
+
+export type UpdateTravelerActivityInput = CreateTravelerActivityInput & {
+  itemId: string;
+};
+
+export type DeleteTravelerActivityInput = Pick<
+  UpdateTravelerActivityInput,
+  "tripId" | "tripDayId" | "clientId" | "itemId"
+>;
+
+export type TravelerActivityResult =
+  | { ok: true; item: Item }
+  | typeof UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT
+  | typeof INVALID_TRAVELER_ACTIVITY_RESULT;
+
+export type DeleteTravelerActivityResult =
+  | { ok: true }
+  | typeof UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+
+type NormalizedTravelerActivityFields = {
+  title: string;
+  startTime: string | null;
+  location: string | null;
+  notes: string | null;
+};
+
+function normalizeTravelerActivityFields(
+  input: TravelerActivityFields
+): NormalizedTravelerActivityFields | null {
+  const title = input.title?.trim();
+  const startTime = input.startTime?.trim() || null;
+  const location = input.location?.trim() || null;
+  const notes = input.notes?.trim() || null;
+
+  if (
+    !title ||
+    title.length > TRAVELER_ACTIVITY_LIMITS.title ||
+    (location !== null && location.length > TRAVELER_ACTIVITY_LIMITS.location) ||
+    (notes !== null && notes.length > TRAVELER_ACTIVITY_LIMITS.notes) ||
+    (startTime !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime))
+  ) {
+    return null;
+  }
+
+  return {
+    title,
+    startTime,
+    location,
+    notes: notes === null ? null : sanitizeNote(notes),
+  };
+}
+
+function isMockTravelerEligible(tripId: string, tripDayId: string, clientId: string): boolean {
+  const trip = mockTrips.find((candidate) => candidate.id === tripId);
+  if (trip?.status !== "published") return false;
+  if (!mockTripClients.some((assignment) => assignment.tripId === tripId && assignment.clientId === clientId)) {
+    return false;
+  }
+  return mockTripDays.some((day) => day.id === tripDayId && day.tripId === tripId && !day.deletedAt);
+}
+
+function findMockTravelerActivity(input: DeleteTravelerActivityInput): Item | undefined {
+  return mockItems.find(
+    (candidate) =>
+      candidate.id === input.itemId &&
+      candidate.tripDayId === input.tripDayId &&
+      candidate.type === "activity" &&
+      candidate.createdByClientId === input.clientId &&
+      !candidate.deletedAt
+  );
+}
+
+export async function canClientAddActivities(tripId: string, clientId: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) {
+    const trip = mockTrips.find((candidate) => candidate.id === tripId);
+    return Boolean(
+      trip?.status === "published" &&
+      mockTripClients.some((assignment) => assignment.tripId === tripId && assignment.clientId === clientId)
+    );
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data: trip, error: tripError } = await supabase
+    .from("trips")
+    .select("id")
+    .eq("id", tripId)
+    .eq("status", "published")
+    .maybeSingle();
+  if (tripError || !trip) return false;
+
+  const { data: assignment, error: assignmentError } = await supabase
+    .from("trip_clients")
+    .select("trip_id")
+    .eq("trip_id", tripId)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  return !assignmentError && Boolean(assignment);
+}
+
+export async function createTravelerActivity(input: CreateTravelerActivityInput): Promise<TravelerActivityResult> {
+  const fields = normalizeTravelerActivityFields(input);
+  if (!fields) return INVALID_TRAVELER_ACTIVITY_RESULT;
+
+  if (!isSupabaseConfigured()) {
+    if (!isMockTravelerEligible(input.tripId, input.tripDayId, input.clientId)) {
+      return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+    }
+    const sortOrder = mockItems
+      .filter((item) => item.tripDayId === input.tripDayId && !item.deletedAt)
+      .reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1;
+    const item: Item = {
+      id: uid(),
+      tripDayId: input.tripDayId,
+      createdByClientId: input.clientId,
+      type: "activity",
+      title: fields.title,
+      startTime: fields.startTime ?? undefined,
+      location: fields.location ?? undefined,
+      notes: fields.notes ?? undefined,
+      sortOrder,
+      metadata: null,
+    };
+    mockItems.push(item);
+    return { ok: true, item };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.rpc("create_traveler_activity", {
+    p_trip_id: input.tripId,
+    p_trip_day_id: input.tripDayId,
+    p_client_id: input.clientId,
+    p_title: fields.title,
+    p_start_time: fields.startTime,
+    p_location: fields.location,
+    p_notes: fields.notes,
+  });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+  return { ok: true, item: rowToItem(row) };
+}
+
+export async function updateTravelerActivity(input: UpdateTravelerActivityInput): Promise<TravelerActivityResult> {
+  const fields = normalizeTravelerActivityFields(input);
+  if (!fields) return INVALID_TRAVELER_ACTIVITY_RESULT;
+
+  if (!isSupabaseConfigured()) {
+    if (!isMockTravelerEligible(input.tripId, input.tripDayId, input.clientId)) {
+      return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+    }
+    const item = findMockTravelerActivity(input);
+    if (!item) return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+    item.title = fields.title;
+    item.startTime = fields.startTime ?? undefined;
+    item.location = fields.location ?? undefined;
+    item.notes = fields.notes ?? undefined;
+    return { ok: true, item };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.rpc("update_traveler_activity", {
+    p_trip_id: input.tripId,
+    p_trip_day_id: input.tripDayId,
+    p_client_id: input.clientId,
+    p_item_id: input.itemId,
+    p_title: fields.title,
+    p_start_time: fields.startTime,
+    p_location: fields.location,
+    p_notes: fields.notes,
+  });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+  return { ok: true, item: rowToItem(row) };
+}
+
+export async function deleteTravelerActivity(
+  input: DeleteTravelerActivityInput
+): Promise<DeleteTravelerActivityResult> {
+  if (!isSupabaseConfigured()) {
+    if (!isMockTravelerEligible(input.tripId, input.tripDayId, input.clientId)) {
+      return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+    }
+    const item = findMockTravelerActivity(input);
+    if (!item) return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
+    item.deletedAt = new Date().toISOString();
+    return { ok: true };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.rpc("soft_delete_traveler_activity", {
+    p_trip_id: input.tripId,
+    p_trip_day_id: input.tripDayId,
+    p_client_id: input.clientId,
+    p_item_id: input.itemId,
+  });
+  return error ? UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT : { ok: true };
+}
+
 export async function createItem(input: CreateItemInput): Promise<Item> {
   if (!isSupabaseConfigured()) {
     const item = {
       id: uid(),
       tripDayId: input.tripDayId,
+      createdByClientId: null,
       type: input.type,
       title: input.title,
       startTime: input.startTime,
@@ -1851,6 +2070,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
       notes: sanitizeNote(input.notes),
       cost: input.cost ?? null,
       supplier_id: input.supplierId || null,
+      created_by_client_id: null,
       sort_order: input.sortOrder ?? 0,
       item_metadata: input.metadata ?? null,
     })
@@ -1966,7 +2186,7 @@ export async function getItemById(id: string): Promise<Item | null> {
   const { data, error } = await supabase
     .from("items")
     .select(
-      "id, trip_day_id, type, title, start_time, end_time, location, lat, lng, confirmation_code, notes, cost, supplier_id, sort_order, item_metadata, deleted_at"
+      "id, trip_day_id, type, title, start_time, end_time, location, lat, lng, confirmation_code, notes, cost, supplier_id, created_by_client_id, sort_order, item_metadata, deleted_at"
     )
     .eq("id", id)
     .is("deleted_at", null)
@@ -2068,6 +2288,7 @@ export function rowToItem(row: Record<string, unknown>): Item {
     notes: (row.notes as string) ?? undefined,
     cost: row.cost !== null && row.cost !== undefined ? Number(row.cost) : undefined,
     supplierId: (row.supplier_id as string) ?? undefined,
+    createdByClientId: (row.created_by_client_id as string | null) ?? null,
     sortOrder: row.sort_order as number,
     metadata,
   } as Item;
