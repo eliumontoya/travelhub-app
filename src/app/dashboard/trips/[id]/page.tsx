@@ -787,7 +787,7 @@ export default async function TripEditorPage({
               <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
                 <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Historial de estado</h2>
                 <ul className="space-y-1.5">
-                  {[...trip.statusHistory].reverse().map((entry) => (
+                  {[...trip.statusHistory].reverse().slice(0, 3).map((entry) => (
                     <li key={entry.id} className="text-sm text-gray-600 dark:text-gray-400">
                       <span className="block text-xs text-gray-400 dark:text-gray-500">{formatDateTime(entry.changedAt)}</span>
                       <span>

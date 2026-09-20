@@ -11,6 +11,10 @@ import {
   isTravelerActivitySubmitShortcut,
   TravelerActivityForm,
 } from "./TravelerActivityForm";
+import {
+  TravelerActivityAddFormPanel,
+  TravelerActivityAddFormProvider,
+} from "./TravelerActivityAddFormPanel";
 
 describe("TravelerActivityForm", () => {
   it("renders an accessible add form and owner edit controls", () => {
@@ -38,5 +42,18 @@ describe("TravelerActivityForm", () => {
     expect(isTravelerActivitySubmitShortcut({ key: "Enter", ctrlKey: false, metaKey: true })).toBe(true);
     expect(isTravelerActivitySubmitShortcut({ key: "Enter", ctrlKey: false, metaKey: false })).toBe(false);
     expect(isTravelerActivitySubmitShortcut({ key: "Escape", ctrlKey: true, metaKey: false })).toBe(false);
+  });
+
+  it("renders collapsed add-activity panels by default", () => {
+    const markup = renderToStaticMarkup(
+      <TravelerActivityAddFormProvider>
+        <TravelerActivityAddFormPanel tripId="trip-1" tripDayId="day-1" slug="paris-2026" />
+        <TravelerActivityAddFormPanel tripId="trip-1" tripDayId="day-2" slug="paris-2026" />
+      </TravelerActivityAddFormProvider>
+    );
+
+    expect(markup).toContain("+ Agregar actividad a este día");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain("Agregar una actividad");
   });
 });

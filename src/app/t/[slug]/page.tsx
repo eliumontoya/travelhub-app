@@ -26,6 +26,10 @@ import type { ItemWithSupplier } from "@/types";
 import { isTravelerTripVisible } from "@/lib/trip-visibility";
 import { getClientSession } from "@/lib/client-auth";
 import { TravelerActivityForm } from "@/components/TravelerActivityForm";
+import {
+  TravelerActivityAddFormPanel,
+  TravelerActivityAddFormProvider,
+} from "@/components/TravelerActivityAddFormPanel";
 import { canRenderTravelerActivityControls } from "@/lib/traveler-activity-controls";
 
 export async function generateMetadata({
@@ -196,13 +200,14 @@ export default async function PublicTripPage({
             </p>
           </div>
 
-          <div className="space-y-8">
-            {trip.days.map((day, dayIdx) => (
-              <article
-                key={day.id}
-                id={`day-${day.id}`}
-                className="scroll-mt-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none dark:border-gray-800 dark:bg-gray-900"
-              >
+          <TravelerActivityAddFormProvider>
+            <div className="space-y-8">
+              {trip.days.map((day, dayIdx) => (
+                <article
+                  key={day.id}
+                  id={`day-${day.id}`}
+                  className="scroll-mt-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none dark:border-gray-800 dark:bg-gray-900"
+                >
                 <header className="mb-4 flex flex-col gap-2 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between print:border-b-0 print:pb-0 dark:border-gray-800">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">Día {dayIdx + 1}</p>
@@ -226,7 +231,7 @@ export default async function PublicTripPage({
                 )}
 
                 {canManageTravelerActivities && (
-                  <TravelerActivityForm tripId={trip.id} tripDayId={day.id} slug={trip.slug} />
+                  <TravelerActivityAddFormPanel tripId={trip.id} tripDayId={day.id} slug={trip.slug} />
                 )}
 
                 <div className="space-y-3">
@@ -379,9 +384,10 @@ export default async function PublicTripPage({
                     );
                   })}
                 </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          </TravelerActivityAddFormProvider>
         </section>
 
         <aside className="order-2 space-y-4 lg:order-none print:hidden">

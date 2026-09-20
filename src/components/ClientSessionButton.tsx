@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { getClientSession } from "@/lib/client-auth";
-import { clientLogout } from "@/app/client/login/actions";
 
 /**
- * Header icon that exposes the client login/logout entry point.
+ * Header icon that exposes the client account entry point.
  * It does NOT gate the page; it only reflects the current session state.
  */
 export async function ClientSessionButton({
@@ -32,15 +31,13 @@ export async function ClientSessionButton({
   }
 
   return (
-    <form action={clientLogout}>
-      <button
-        type="submit"
-        aria-label="Cerrar sesión"
-        title="Cerrar sesión"
-        className={`flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 ${className}`}
-      >
-        🚪
-      </button>
-    </form>
+    <Link
+      href="/client"
+      aria-label="Ir a mi cuenta"
+      title="Ir a mi cuenta"
+      className={`flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 ${className}`}
+    >
+      🔐
+    </Link>
   );
 }
