@@ -2,17 +2,19 @@ import Link from "next/link";
 import {
   getClientReferralSourceCounts,
   getRecentActivity,
+  getRecentTripStatusHistory,
   getTripsPerMonth,
   getTripStats,
   getUpcomingBirthdays,
   getUpcomingUnpublishedTrips,
 } from "@/lib/data";
-import { formatDateShort, formatRelativeTime } from "@/lib/item-meta";
+import { formatDateShort, formatDateTime, formatRelativeTime } from "@/lib/item-meta";
 import DashboardKpiCards from "@/components/DashboardKpiCards";
 import { TripsTrendChart } from "@/components/TripsTrendChart";
 import { IntegrationsStatusCard } from "@/components/IntegrationsStatusCard";
 import { ClientsByReferralSourceCard } from "@/components/ClientsByReferralSourceCard";
 import { hasSettingsSavedFlash, type DashboardFlashSearchParams } from "@/lib/dashboard-flash";
+import { tripStatusLabel } from "@/lib/data/dashboard";
 
 const activityMeta = {
   trip: { icon: "🧳", label: "viaje" },
@@ -37,6 +39,7 @@ export default async function DashboardPage({
     recentActivity,
     tripsPerMonth,
     upcomingBirthdays,
+    recentStatusHistory,
     referralSourceCounts,
   ] = await Promise.all([
     getTripStats(),
@@ -44,6 +47,7 @@ export default async function DashboardPage({
     getRecentActivity(),
     getTripsPerMonth(),
     getUpcomingBirthdays(),
+    getRecentTripStatusHistory(3),
     getClientReferralSourceCounts(),
   ]);
 
@@ -107,6 +111,38 @@ export default async function DashboardPage({
       <div className="mt-10">
         <TripsTrendChart data={tripsPerMonth} />
       </div>
+
+      <section className="mb-8 mt-8">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Historial de estado
+        </h2>
+        {recentStatusHistory.length > 0 ? (
+          <ul className="grid gap-2">
+            {recentStatusHistory.map((entry) => (
+              <li key={entry.id}>
+                <Link
+                  href={entry.href}
+                  className="flex flex-col gap-1 rounded-xl border border-gray-200 bg-white p-4 text-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 sm:p-5"
+                >
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {entry.tripTitle}
+                  </span>
+                  <span className="text-gray-600 dark:text-gray-300">
+                    {tripStatusLabel(entry.fromStatus)} → {tripStatusLabel(entry.toStatus)}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {formatDateTime(entry.changedAt)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+            Todavía no hay historial de estado.
+          </div>
+        )}
+      </section>
 
       <section className="mb-8 mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950">
         <h2 className="mb-3 text-sm font-semibold text-amber-800 dark:text-amber-300">

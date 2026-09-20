@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getClientSession } from "@/lib/client-auth";
 import {
   getServiceForClientTrip,
   getServiceWithChecklist,
 } from "@/lib/data/services";
+import { getTripById } from "@/lib/data";
 import { ServiceChecklistItemWithUpload } from "@/types";
 import { uploadDocument } from "./actions";
 
@@ -12,7 +14,8 @@ function statusLabel(item: ServiceChecklistItemWithUpload) {
   if (status === "processed") return { icon: "✅", text: "Procesado" };
   if (status === "re_upload_requested")
     return { icon: "⚠", text: "Re-subir solicitado" };
-  if (status === "uploaded") return { icon: "🔄", text: "Pendiente de revisión" };
+  if (status === "uploaded")
+    return { icon: "🔄", text: "Pendiente de revisión" };
   return { icon: "⬜", text: "Pendiente" };
 }
 
@@ -37,19 +40,38 @@ export default async function ClientTripDocumentsPage({
     redirect("/client");
   }
 
-  const checklist = await getServiceWithChecklist(service.id);
-  const completed = checklist.items.filter((i) => i.upload?.status === "processed").length;
+  const [checklist, trip] = await Promise.all([
+    getServiceWithChecklist(service.id),
+    getTripById(service.tripId),
+  ]);
+  const completed = checklist.items.filter(
+    (i) => i.upload?.status === "processed",
+  ).length;
   const total = checklist.items.length;
+  const tripHref =
+    trip?.status === "published" && trip.slug ? `/t/${trip.slug}` : "/client";
+  const tripLinkLabel =
+    trip?.status === "published" ? "Ver itinerario" : "Ver en mi cuenta";
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-4 py-8">
       <header className="mb-6">
-        <a
-          href="/client"
-          className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-        >
-          ← Volver a mis viajes
-        </a>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Link
+            href="/client"
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            ← Volver a mis viajes
+          </Link>
+          {trip && (
+            <Link
+              href={tripHref}
+              className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              {tripLinkLabel}
+            </Link>
+          )}
+        </div>
         <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
           Documentos del viaje
         </h1>

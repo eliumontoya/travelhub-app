@@ -1,7 +1,7 @@
-import { Trip } from "@/types";
+import { Trip, TripStatus, TripStatusHistoryEntry } from "@/types";
 import { ALL_CLIENTS_PAGE_SIZE, ALL_TRIPS_PAGE_SIZE } from "@/lib/data/shared";
 import { getClients } from "@/lib/data/clients";
-import { getTrips } from "@/lib/data/trips";
+import { getTripStatusHistory, getTrips } from "@/lib/data/trips";
 
 // ---------- Actividad reciente (dashboard) ----------
 
@@ -49,6 +49,40 @@ export async function getRecentActivity(limit = 8): Promise<ActivityFeedItem[]> 
   return [...tripItems, ...clientItems]
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, limit);
+}
+
+
+export type RecentTripStatusHistoryItem = TripStatusHistoryEntry & {
+  tripTitle: string;
+  href: string;
+};
+
+export async function getRecentTripStatusHistory(
+  limit = 3
+): Promise<RecentTripStatusHistoryItem[]> {
+  const { items: trips } = await getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE });
+  const histories = await Promise.all(
+    trips.map(async (trip) => {
+      const entries = await getTripStatusHistory(trip.id);
+      return entries.map((entry) => ({
+        ...entry,
+        tripTitle: trip.title,
+        href: `/dashboard/trips/${trip.id}`,
+      }));
+    })
+  );
+
+  return histories
+    .flat()
+    .sort((a, b) => b.changedAt.localeCompare(a.changedAt))
+    .slice(0, limit);
+}
+
+export function tripStatusLabel(status: TripStatus | null) {
+  if (status === "draft") return "Borrador";
+  if (status === "published") return "Publicado";
+  if (status === "archived") return "Archivado";
+  return "Sin estado";
 }
 
 // ---------- Dashboard stats ----------
