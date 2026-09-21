@@ -10,6 +10,7 @@ import {
   getTripById,
   getTripFeedback,
   getTripInternalNotes,
+  getServiceDocumentSummariesForTrip,
 } from "@/lib/data";
 import {
   itemTypeMeta,
@@ -111,7 +112,8 @@ import {
   reorderChecklistItemsAction,
   markUploadProcessedAction,
   requestReUploadAction,
-  getServicesWithChecklistsForTripAction,
+  getServiceChecklistForTripAction,
+  addChecklistItemToTripServicesAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
@@ -132,7 +134,7 @@ export default async function TripEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }, travelAgents, servicesWithChecklists] =
+  const [trip, { items: clients }, tags, internalNotes, { items: allSuppliers }, travelAgents, serviceDocumentSummaries] =
     await Promise.all([
       getTripById(id),
       getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE }),
@@ -140,7 +142,7 @@ export default async function TripEditorPage({
       getTripInternalNotes(id),
       getSuppliers({ pageSize: ALL_SUPPLIERS_PAGE_SIZE }),
       getTravelAgents(),
-      getServicesWithChecklistsForTripAction(id),
+      getServiceDocumentSummariesForTrip(id),
     ]);
   const clientNameById = Object.fromEntries(clients.map((c) => [c.id, c.name]));
   if (!trip) notFound();
@@ -772,9 +774,11 @@ export default async function TripEditorPage({
 
             <ServiceChecklistManager
               tripId={trip.id}
-              servicesWithChecklists={servicesWithChecklists}
+              summaries={serviceDocumentSummaries}
               clientNameById={clientNameById}
-              isEditable={isEditable}
+              isArchived={trip.status === "archived"}
+              getServiceChecklistAction={getServiceChecklistForTripAction.bind(null, trip.id)}
+              addChecklistItemToTripServicesAction={addChecklistItemToTripServicesAction.bind(null, trip.id)}
               addChecklistItemAction={addChecklistItemAction.bind(null, trip.id)}
               updateChecklistItemAction={updateChecklistItemAction.bind(null, trip.id)}
               deleteChecklistItemAction={deleteChecklistItemAction.bind(null, trip.id)}

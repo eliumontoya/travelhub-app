@@ -1,12 +1,8 @@
-# Service Upload Review Specification
+# Delta for Service Upload Review
 
 **Baseline**: baseline-from-current-implementation
 
-## Purpose
-
-Allow the agent to review uploaded files and transition them to `processed` or `re_upload_requested` status.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Agent marks upload as processed
 
@@ -73,25 +69,6 @@ The agent MUST be able to mark an upload as `re_upload_requested` on draft or pu
 - AND the old storage object is deleted from the bucket
 - AND the `agent_comment` is cleared
 
-### Requirement: Client sees agent comment after re-upload request
-
-When an upload is in `re_upload_requested` status, the client MUST see the agent's comment and be able to upload a replacement file.
-
-#### Scenario: Client views re-upload request with comment
-
-- GIVEN an upload with status `re_upload_requested` and comment "Scan is blurry"
-- WHEN the client views the checklist
-- THEN the item displays a warning indicator (⚠) with the agent's comment visible
-- AND the client can upload a replacement file for that item
-
-#### Scenario: Client re-uploads after re-upload request
-
-- GIVEN an upload with status `re_upload_requested`
-- WHEN the client uploads a new file for that item
-- THEN the upload status resets to `uploaded`
-- AND the old storage object is deleted from the bucket
-- AND the `agent_comment` is cleared
-
 ### Requirement: Only agent can transition upload status
 
 The system MUST NOT allow the client to change an upload's status. Only agent-facing actions MAY transition uploads between `uploaded`, `processed`, and `re_upload_requested`.
@@ -101,6 +78,8 @@ The system MUST NOT allow the client to change an upload's status. Only agent-fa
 - GIVEN a client has an upload in status `uploaded`
 - WHEN the client attempts to set the status to `processed`
 - THEN the operation is rejected
+
+## ADDED Requirements
 
 ### Requirement: Agent receives upload review counts
 

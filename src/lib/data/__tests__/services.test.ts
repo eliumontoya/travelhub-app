@@ -3,12 +3,16 @@ import {
   addChecklistItem,
   deleteChecklistItem,
   ensureServiceForAssignment,
+  getServiceChecklistForTrip,
+  getServiceDocumentSummariesForTrip,
   getServiceForClientTrip,
   getServiceWithChecklist,
   getServicesProgressForClient,
+  hasOwnedServiceRequirements,
   markUploadProcessed,
   reorderChecklistItems,
   requestReUpload,
+  addChecklistItemToTripServices,
   updateChecklistItem,
   uploadServiceDocument,
 } from "@/lib/data/services";
@@ -167,6 +171,83 @@ describe("services data layer (mock mode)", () => {
     const progress = await getServicesProgressForClient("c1");
 
     expect(progress.get(service.id)).toEqual({ completed: 1, total: 3 });
+  });
+
+  it("summarizes processed and uploaded work without counting re-upload requests", async () => {
+    const service = await ensureServiceForAssignment("t1", "c1");
+    const processed = await addChecklistItem(service.id, { label: "Passport", required: true });
+    const uploaded = await addChecklistItem(service.id, { label: "Visa", required: true });
+    const requested = await addChecklistItem(service.id, { label: "Insurance", required: false });
+
+    const processedUpload = await uploadServiceDocument(
+      service.id,
+      processed.id,
+      new File(["x"], "passport.pdf", { type: "application/pdf" })
+    );
+    await uploadServiceDocument(
+      service.id,
+      uploaded.id,
+      new File(["x"], "visa.pdf", { type: "application/pdf" })
+    );
+    const requestedUpload = await uploadServiceDocument(
+      service.id,
+      requested.id,
+      new File(["x"], "insurance.pdf", { type: "application/pdf" })
+    );
+    await markUploadProcessed(processedUpload.id);
+    await requestReUpload(requestedUpload.id, "Please upload a clearer scan");
+
+    await expect(getServiceDocumentSummariesForTrip("t1")).resolves.toEqual([
+      {
+        serviceId: service.id,
+        clientId: "c1",
+        processed: 1,
+        total: 3,
+        awaitingReview: 1,
+      },
+    ]);
+  });
+
+  it("keeps owned presence and checklist detail scoped to the trip", async () => {
+    const owned = await ensureServiceForAssignment("t1", "c1");
+    const foreign = await ensureServiceForAssignment("t2", "c2");
+    await addChecklistItem(owned.id, { label: "Passport", required: true });
+    await addChecklistItem(foreign.id, { label: "Visa", required: true });
+
+    await expect(hasOwnedServiceRequirements("t1", "c1")).resolves.toBe(true);
+    await expect(hasOwnedServiceRequirements("t1", "c2")).resolves.toBe(false);
+    await expect(getServiceChecklistForTrip("t1", owned.id)).resolves.toMatchObject({
+      id: owned.id,
+      items: [{ label: "Passport" }],
+    });
+    await expect(getServiceChecklistForTrip("t1", foreign.id)).rejects.toThrow(
+      "El servicio no pertenece al viaje"
+    );
+  });
+
+  it("bulk assignment creates an independent item for every valid service", async () => {
+    const first = await ensureServiceForAssignment("t1", "c1");
+    const second = await ensureServiceForAssignment("t1", "c2");
+
+    const created = await addChecklistItemToTripServices("t1", {
+      label: "Passport copy",
+      required: true,
+    });
+
+    expect(created).toHaveLength(2);
+    expect(created.map((item) => item.serviceId).sort()).toEqual([first.id, second.id].sort());
+    expect(mockServiceChecklistItems).toHaveLength(2);
+    expect(new Set(created.map((item) => item.id)).size).toBe(2);
+  });
+
+  it("bulk assignment validates every target before writing", async () => {
+    const service = await ensureServiceForAssignment("t1", "c1");
+    service.status = "inactive";
+
+    await expect(
+      addChecklistItemToTripServices("t1", { label: "Passport copy", required: true })
+    ).rejects.toThrow("No todos los servicios del viaje están disponibles");
+    expect(mockServiceChecklistItems).toHaveLength(0);
   });
 
   it("updateChecklistItem edits the label and toggles required", async () => {

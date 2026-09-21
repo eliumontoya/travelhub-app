@@ -221,6 +221,14 @@ export interface ServiceWithChecklist extends Service {
   items: ServiceChecklistItemWithUpload[];
 }
 
+export interface ServiceDocumentSummary {
+  serviceId: string;
+  clientId: string;
+  processed: number;
+  total: number;
+  awaitingReview: number;
+}
+
 export interface Supplier {
   id: string;
   name: string;
