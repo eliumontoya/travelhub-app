@@ -1,0 +1,76 @@
+# Tasks: MCP Agent-Action Tools (port 41 tools to main MCP server)
+
+## Review Workload Forecast
+
+| Field | Value |
+|-------|-------|
+| Estimated changed lines | 1900 – 2600 (8 new tool modules ≈ 1200–1450; per-module wiring tests ≈ 1300–1600; helper ≈ 25; registration + discovery-test update ≈ 60–100) |
+| 400-line budget risk | **High** |
+| Chained PRs recommended | **Yes** |
+| Suggested split | PR 1 (data helper) → PR 2 (clients + suppliers) → PR 3 (trips + tripDays) → PR 4 (items + packing + internalNotes + documents) → PR 5 (registration + discovery test) |
+| Delivery strategy | auto-chain |
+| Chain strategy | **pending** — auto-chain asks for the missing strategy (`stacked-to-main` vs `feature-branch-chain`) before slicing |
+
+```
+Decision needed before apply: No
+Chained PRs recommended: Yes
+Chain strategy: pending
+400-line budget risk: High
+```
+
+**Workload note:** the port is overwhelmingly mechanical — all 41 tools follow the same four error-mapping patterns (`safeCall`, null-check getter, not-found-by-throw, `delete_supplier` business signal) already established in `src/lib/mcp/tools/service-documents.ts`, and the Zod shapes are carried from the legacy branch with only the two design tightenings (`clientIds` min 1; slug generation). Per-line review load is therefore lower than novel code, but PRs 2–4 still each land ~800–1100 authored lines. If the team prefers tighter slices than one phase per PR, each module (module + its focused test file) is independently revertable and can be split out.
+
+### Suggested Work Units
+
+| Unit | Goal | Likely PR | Focused test command | Runtime harness | Rollback boundary |
+|------|------|-----------|----------------------|-----------------|-------------------|
+| 1 | Data helper `getSignedServiceDocumentUploadUrl` (RED→GREEN) | PR 1 | `npm run test -- documents` | `npx tsc --noEmit` + Vitest documents suite — helper is a pure data-layer unit; MCP route not involved | Revert `src/lib/data/documents.ts` helper + its test block in `src/lib/data/__tests__/documents.test.ts`; no tool depends on it yet |
+| 2 | `clients.ts` (7 tools) + `suppliers.ts` (6 tools) with wiring tests | PR 2 | `npm run test -- clients` then `npm run test -- suppliers` | Vitest via `InMemoryTransport.createLinkedPair()` + `client.callTool` — real MCP protocol over in-memory transport, per-tool dispatch | Delete the two modules + their test files; `server.ts` untouched, deployed surface stays 7 tools |
+| 3 | `trips.ts` (9) + `tripDays.ts` (6) with wiring tests | PR 3 | `npm run test -- trips` then `npm run test -- tripDays` | Vitest InMemoryTransport (same harness) | Delete the two modules + their test files; no registration change |
+| 4 | `items.ts` (7) + `packing.ts` (3) + `internalNotes.ts` (2) + `documents.ts` (1) with wiring tests | PR 4 | `npm run test -- items` then `packing`, `internalNotes`, `documents` | Vitest InMemoryTransport (same harness) | Delete the four modules + their test files; no registration change |
+| 5 | Register all 8 modules in `server.ts`; update `route-tools.test.ts` to the 48-tool surface; full verify | PR 5 | `npm run test` (full) + `npx tsc --noEmit` + `npm run lint` + `npm run build` | Full Vitest suite + production build — 48-tool `listTools` assertion is the integration gate | Revert `server.ts` + `route-tools.test.ts`; restores the 7-tool surface with zero data/DB impact |
+
+---
+
+**Strict TDD is active** (`openspec/config.yaml` `apply.tdd: true`, `test_command: npm run test`). Every implementation task is preceded by its RED test task: write the failing test first, observe it fail (`npm run test -- <target>`), then implement, then observe GREEN. `npx tsc --noEmit` runs at each phase close.
+
+**Test-file strategy:** the discovery-test update (`route-tools.test.ts`) is deferred to Phase 5 because it couples to `server.ts` registration; per-module wiring tests in Phases 2–4 build their own `new McpServer(...)` + `registerXxxTools(server)` so each PR slice is independently RED→GREEN without touching `server.ts`.
+
+**Spec-driven surface note:** `create_client` / `create_supplier` expose exactly the fields named in `mcp-client-tools` / `mcp-supplier-tools` specs (no `whatsapp`, no `googlePlaceId`) — the specs are the contract; the design's open question is settled by them.
+
+## Phase 1: Data helper — `getSignedServiceDocumentUploadUrl` (RED→GREEN)
+
+- [x] 1.1 **RED** — Add a unit test block to `src/lib/data/__tests__/documents.test.ts` for `getSignedServiceDocumentUploadUrl`: mock `getSupabaseAdmin().storage.from(DOCUMENTS_BUCKET).createSignedUploadUrl` (via `vi.mock("@/lib/supabase/server")` and `vi.mock("@/lib/data/documents")` as needed per existing test conventions); assert the helper is called with `(path, { upsert: false })`, returns `data.signedUrl`, throws when `createSignedUploadUrl` returns an error, and never returns the service-role key. Run `npm run test -- documents` → observe RED (export missing).
+- [x] 1.2 **GREEN** — Implement `getSignedServiceDocumentUploadUrl(path: string, expiresIn = 3600): Promise<string>` in `src/lib/data/documents.ts`, mirroring `getSignedServiceDocumentDownloadUrl` (same `getSupabaseAdmin()`, same `DOCUMENTS_BUCKET`, throw-on-failure); `expiresIn` is metadata-only (not passed to `createSignedUploadUrl`). Run `npm run test -- documents` → GREEN.
+- [x] 1.3 Verify `npx tsc --noEmit` passes and `npm run test` shows no regressions in the documents suite. Rollback: revert the helper + its test block (nothing else references it yet).
+
+## Phase 2: Tool modules 1 — clients + suppliers (RED→GREEN per module)
+
+- [x] 2.1 **RED** — Create `src/lib/mcp/tools/__tests__/clients.test.ts`: build a local `McpServer` with `registerClientTools(server)` + `InMemoryTransport`; for each of the 7 tools (`list_clients`, `get_client`, `create_client`, `update_client`, `get_client_tags`, `set_client_tags`, `get_client_trips`) assert: correct `data.fn()` dispatch with exact args (no trailing client arg), object payloads round-trip as JSON through `success()` (never `"[object Object]"`), `get_client`/`update_client` map `null` → `/^NOT_FOUND: client <id>$/` with `isError: true`, and unexpected throws sanitize to `"An unexpected error occurred"` with no leaked text (mirror `route-tools.test.ts` patterns). Run `npm run test -- clients` → RED (module missing).
+- [x] 2.2 **GREEN** — Create `src/lib/mcp/tools/clients.ts` exporting `registerClientTools(server: McpServer)`: Zod shapes per design (`page`/`pageSize` bounds, `email`/`url` formats), direct `data.getClients` / `getClientById` / `createClient` / `updateClient` / `getClientTags` / `setClientTags` / `Promise.all([getTripsByClientId, getClientTripSummary])` calls, local `safeCall` helper copied from `service-documents.ts`, `success()` for all object payloads. Run `npm run test -- clients` → GREEN; `npx tsc --noEmit`.
+- [x] 2.3 **RED** — Create `src/lib/mcp/tools/__tests__/suppliers.test.ts`: for each of the 6 tools (`list_suppliers`, `get_supplier`, `create_supplier`, `update_supplier`, `delete_supplier`, `restore_supplier`) assert dispatch + JSON round-trip + sanitization; for `delete_supplier` additionally assert `{ ok: false, itemCount }` → `isError: true` with the static reference-count message and `force: true` proceeds; `get_supplier`/`update_supplier` `null` → `/^NOT_FOUND: supplier <id>$/`. Run `npm run test -- suppliers` → RED.
+- [x] 2.4 **GREEN** — Create `src/lib/mcp/tools/suppliers.ts` exporting `registerSupplierTools(server)`: direct `data.getSuppliers` / `getSupplierById` / `createSupplier` / `updateSupplier` / `softDeleteSupplier(id, force?)` (read `result.ok` / `result.itemCount` directly) / `restoreSupplier`; business-signal `mcpError` for referenced suppliers. Run `npm run test -- suppliers` → GREEN; `npx tsc --noEmit`; `npm run lint`. Rollback (phase): delete both modules + both test files — `server.ts` untouched, surface stays 7 tools.
+
+## Phase 3: Tool modules 2 — trips + tripDays (RED→GREEN per module)
+
+- [x] 3.1 **RED** — Create `src/lib/mcp/tools/__tests__/trips.test.ts`: for the 9 tools (`list_trips`, `get_trip`, `create_trip`, `create_trip_from_template`, `update_trip`, `set_trip_clients`, `set_trip_tags`, `save_trip_as_template`, `list_templates`) assert dispatch + JSON round-trip + sanitization; for `create_trip` / `create_trip_from_template` assert empty `clientIds: []` is rejected at schema validation AND that a valid call passes a non-empty `slug` matching the `slugify(title)` prefix + uniqueness suffix to `createTrip` / `createTripFromTemplate`; `get_trip`/`update_trip` `null` → `/^NOT_FOUND: trip <id>$/`, `create_trip_from_template` with missing template → `/^NOT_FOUND: template <id>$/`. Run `npm run test -- trips` → RED.
+- [x] 3.2 **GREEN** — Create `src/lib/mcp/tools/trips.ts` exporting `registerTripTools(server)`: Zod shapes per design (`TripStatus` / `TripCurrency` enums; `clientIds` required min 1 on both create tools), `list_trips` filter assembly (`status` → array, `clientId` → `clientIds`, `tagId` → `tagIds`, dates), slug generation via `@/lib/slugify` (`slugify(title) || "viaje"` + `Date.now().toString(36)`) before `createTrip` / `createTripFromTemplate`, precheck `getTripById` → `notFound`, `saveTripAsTemplate` catch `isNotFoundMessage` → `notFound("trip", …)`. Run `npm run test -- trips` → GREEN; `npx tsc --noEmit`.
+- [x] 3.3 **RED** — Create `src/lib/mcp/tools/__tests__/tripDays.test.ts`: for the 6 tools (`add_trip_day`, `update_trip_day`, `delete_trip_day`, `restore_trip_day`, `generate_trip_days`, `reorder_trip_days`) assert dispatch + JSON round-trip; `update_trip_day` / `generate_trip_days` not-found-by-throw (`"… no encontrado"`) → `/^NOT_FOUND: trip day <id>$/` and `/^NOT_FOUND: trip <id>$/` respectively. Run `npm run test -- tripDays` → RED.
+- [x] 3.4 **GREEN** — Create `src/lib/mcp/tools/tripDays.ts` exporting `registerTripDayTools(server)`: direct `data.createTripDay` / `updateTripDay` / `deleteTripDay` / `restoreTripDay` / `generateTripDays` / `reorderTripDays(order)`; local `guardFailure`-style mapper for not-found-by-throw tools. Run `npm run test -- tripDays` → GREEN; `npx tsc --noEmit`; `npm run lint`. Rollback (phase): delete both modules + both test files — no registration change.
+
+## Phase 4: Tool modules 3 — items + packing + internalNotes + documents (RED→GREEN per module)
+
+- [x] 4.1 **RED** — Create `src/lib/mcp/tools/__tests__/items.test.ts`: for the 7 tools (`add_item`, `update_item`, `delete_item`, `restore_item`, `move_item`, `duplicate_item`, `reorder_items`) assert dispatch + JSON round-trip; `add_item` rejects unsupported `type` (not in `ItemType` enum); `update_item` / `duplicate_item` not-found-by-throw → `/^NOT_FOUND: item <id>$/`; `duplicate_item` resolves `destDayId = targetDayId ?? source?.tripDayId` and maps `getItemById` `null` → `/^NOT_FOUND: item <id>$/`. Run `npm run test -- items` → RED.
+- [x] 4.2 **GREEN** — Create `src/lib/mcp/tools/items.ts` exporting `registerItemTools(server)`: Zod shapes per design (`type` enum from `ItemType`), direct `data.createItem` / `updateItem` / `deleteItem` / `restoreItem` / `moveItemToDay` / `getItemById` + `duplicateItem` / `reorderItems(order)`; local guard mapper for not-found-by-throw tools. Run `npm run test -- items` → GREEN; `npx tsc --noEmit`.
+- [x] 4.3 **RED** — Create `src/lib/mcp/tools/__tests__/packing.test.ts`: for the 3 tools (`add_packing_item`, `update_packing_item`, `delete_packing_item`) assert dispatch + JSON round-trip; `update_packing_item` not-found-by-throw → `/^NOT_FOUND: packing item <id>$/`. Run `npm run test -- packing` → RED.
+- [x] 4.4 **GREEN** — Create `src/lib/mcp/tools/packing.ts` exporting `registerPackingTools(server)`: direct `data.createPackingItem` / `updatePackingItem` / `deletePackingItem`. Run `npm run test -- packing` → GREEN; `npx tsc --noEmit`.
+- [x] 4.5 **RED** — Create `src/lib/mcp/tools/__tests__/internalNotes.test.ts`: for the 2 tools (`get_trip_internal_notes`, `update_trip_internal_notes`) assert precheck `getTripById` `null` → `/^NOT_FOUND: trip <id>$/`, dispatch to `getTripInternalNotes` / `updateTripInternalNotes`, and `null` notes round-trip. Run `npm run test -- internalNotes` → RED.
+- [x] 4.6 **GREEN** — Create `src/lib/mcp/tools/internalNotes.ts` exporting `registerInternalNoteTools(server)`: precheck `getTripById` → `notFound("trip", id)` then `data.getTripInternalNotes` / `updateTripInternalNotes`; results `success({ internalNotes })` / `success({ success: true })`. Run `npm run test -- internalNotes` → GREEN; `npx tsc --noEmit`.
+- [x] 4.7 **RED** — Create `src/lib/mcp/tools/__tests__/documents.test.ts`: for `get_document_upload_url` mock `getSignedServiceDocumentUploadUrl` and assert dispatch with `(path, expiresIn ?? 300)`, result envelope `{ uploadUrl, expiresIn }` (default 300, echoes custom `expiresIn` in 60..604800), invalid `expiresIn` rejected, and a throw maps to sanitized `"An unexpected error occurred"` with no credential/stack text in the result. Run `npm run test -- documents` → RED.
+- [x] 4.8 **GREEN** — Create `src/lib/mcp/tools/documents.ts` exporting `registerDocumentTools(server)`: Zod `path` min 1 + `expiresIn` int 60..604800 optional, direct `data.getSignedServiceDocumentUploadUrl(path, expiresIn ?? 300)`, `success({ uploadUrl, expiresIn: expiresIn ?? 300 })`, catch → `unexpectedError`. Run `npm run test -- documents` → GREEN; `npx tsc --noEmit`; `npm run lint`. Rollback (phase): delete the four modules + four test files — no registration change.
+
+## Phase 5: Registration + discovery test + full verify
+
+- [x] 5.1 **RED** — Update `src/app/api/mcp/__tests__/route-tools.test.ts`: replace the 7-name `EXPECTED_TOOLS` with the full 48-name set (7 service-document + 41 agent-action, names from the proposal's tool-surface table) and assert the sorted `listTools` result equals exactly that set (also proves no name collisions, per the design's preferred strategy). Run `npm run test -- route-tools` → RED (registration not yet present).
+- [x] 5.2 **GREEN** — Modify `src/lib/mcp/server.ts`: import and register the 8 new modules alongside `registerServiceDocumentTools(server)` in the design's order (clients +7 = 14, suppliers +6 = 20, trips +9 = 29, tripDays +6 = 35, items +7 = 42, packing +3 = 45, internalNotes +2 = 47, documents +1 = 48). Run `npm run test -- route-tools` → GREEN; confirm 48 unique tool names with non-empty descriptions.
+- [x] 5.3 Full verification: `npm run test` (entire suite, no data-layer regressions), `npx tsc --noEmit`, `npm run lint`, `npm run build`. Success criteria from design: `createMcpServer()` registers exactly 48 tools; every new tool calls its data function directly; object payloads round-trip as JSON; not-found failures surface `NOT_FOUND: <resource> <id>`; `get_document_upload_url` returns a presigned PUT URL with the service role configured; both create-trip tools reject empty `clientIds` and generate a slug. Rollback (whole change): delete the 8 modules, restore `server.ts` to register only `registerServiceDocumentTools`, remove the helper from `src/lib/data/documents.ts`, and revert the `route-tools.test.ts` assertion — prior commit restores the 7-tool surface with no DB/policy risk.
