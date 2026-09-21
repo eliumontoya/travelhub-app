@@ -67,6 +67,17 @@ const mockDataFns = {
   // internal notes
   getTripInternalNotes: vi.fn(),
   updateTripInternalNotes: vi.fn(),
+  // travel agents
+  getTravelAgents: vi.fn(),
+  getTravelAgentById: vi.fn(),
+  createTravelAgent: vi.fn(),
+  updateTravelAgent: vi.fn(),
+  deleteTravelAgent: vi.fn(),
+  // traveler activities
+  canClientAddActivities: vi.fn(),
+  createTravelerActivity: vi.fn(),
+  updateTravelerActivity: vi.fn(),
+  deleteTravelerActivity: vi.fn(),
 };
 
 vi.mock("@/lib/data", () => mockDataFns);
@@ -138,6 +149,17 @@ const EXPECTED_TOOLS = [
   "get_trip_internal_notes",
   "update_trip_internal_notes",
   "get_document_upload_url",
+  // travel agents (5):
+  "list_travel_agents",
+  "get_travel_agent",
+  "create_travel_agent",
+  "update_travel_agent",
+  "delete_travel_agent",
+  // traveler activities (4):
+  "can_client_add_activities",
+  "create_traveler_activity",
+  "update_traveler_activity",
+  "delete_traveler_activity",
 ] as const;
 
 interface ToolListEntry {
@@ -247,13 +269,13 @@ afterEach(() => {
 });
 
 describe("MCP tool registration", () => {
-  it("registers exactly the 48 documented tools with no collisions", async () => {
+  it("registers exactly the 57 documented tools with no collisions", async () => {
     const tools = await bootClientAndListTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([...EXPECTED_TOOLS].sort());
     // No duplicate names by construction (sort + toEqual), but also verify
-    // the count matches the design's "48 unique tools" promise.
-    expect(names).toHaveLength(48);
+    // the count matches the design's "57 unique tools" promise.
+    expect(names).toHaveLength(57);
   });
 
   it("exposes a non-empty description for each tool", async () => {
@@ -463,5 +485,97 @@ describe("mutation tools — guard + dispatch", () => {
     expect(result.content[0].text).toBe("An unexpected error occurred");
     expect(JSON.stringify(result)).not.toContain("postgres");
     expect(JSON.stringify(result)).not.toContain("RLS violation");
+  });
+});
+
+describe("travel agent tools", () => {
+  it("list_travel_agents dispatches to getTravelAgents", async () => {
+    mockDataFns.getTravelAgents.mockResolvedValueOnce([
+      { id: "a-1", name: "Ana", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
+    ]);
+    const result = await callTool("list_travel_agents", {});
+    expect(mockDataFns.getTravelAgents).toHaveBeenCalled();
+    expect(parseToolText(result)).toEqual([
+      expect.objectContaining({ id: "a-1", name: "Ana" }),
+    ]);
+  });
+
+  it("get_travel_agent returns NOT_FOUND for a missing id", async () => {
+    mockDataFns.getTravelAgentById.mockResolvedValueOnce(null);
+    const result = await callTool("get_travel_agent", { id: "missing" });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe("NOT_FOUND: travel agent missing");
+  });
+
+  it("create_travel_agent dispatches the name and optional fields", async () => {
+    mockDataFns.createTravelAgent.mockResolvedValueOnce({ id: "a-2", name: "Luis" });
+    const result = await callTool("create_travel_agent", {
+      name: "Luis",
+      email: "luis@example.com",
+    });
+    expect(mockDataFns.createTravelAgent).toHaveBeenCalledWith({
+      name: "Luis",
+      email: "luis@example.com",
+    });
+    expect(parseToolText(result)).toEqual(expect.objectContaining({ id: "a-2" }));
+  });
+});
+
+describe("traveler activity tools", () => {
+  it("create_traveler_activity returns the item on ok", async () => {
+    mockDataFns.createTravelerActivity.mockResolvedValueOnce({
+      ok: true,
+      item: { id: "item-9", title: "Museo" },
+    });
+    const result = await callTool("create_traveler_activity", {
+      tripId: "trip-1",
+      tripDayId: "day-1",
+      clientId: "c-1",
+      title: "Museo",
+    });
+    expect(mockDataFns.createTravelerActivity).toHaveBeenCalledWith({
+      tripId: "trip-1",
+      tripDayId: "day-1",
+      clientId: "c-1",
+      title: "Museo",
+    });
+    expect(parseToolText(result)).toEqual(expect.objectContaining({ id: "item-9" }));
+  });
+
+  it("create_traveler_activity maps unauthorized to an error", async () => {
+    mockDataFns.createTravelerActivity.mockResolvedValueOnce({
+      ok: false,
+      reason: "unauthorized",
+    });
+    const result = await callTool("create_traveler_activity", {
+      tripId: "trip-1",
+      tripDayId: "day-1",
+      clientId: "c-1",
+      title: "Museo",
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe("UNAUTHORIZED: traveler activity rejected");
+  });
+
+  it("delete_traveler_activity returns success on ok", async () => {
+    mockDataFns.deleteTravelerActivity.mockResolvedValueOnce({ ok: true });
+    const result = await callTool("delete_traveler_activity", {
+      tripId: "trip-1",
+      tripDayId: "day-1",
+      clientId: "c-1",
+      itemId: "item-9",
+    });
+    expect(parseToolText(result)).toEqual({ success: true });
+  });
+});
+
+describe("update_trip assignedAgentId", () => {
+  it("passes assignedAgentId through to updateTrip", async () => {
+    mockDataFns.getTripById.mockResolvedValueOnce({ id: "trip-1", title: "Viaje" });
+    mockDataFns.updateTrip.mockResolvedValueOnce({ id: "trip-1" });
+    await callTool("update_trip", { id: "trip-1", assignedAgentId: "agent-1" });
+    expect(mockDataFns.updateTrip).toHaveBeenCalledWith("trip-1", {
+      assignedAgentId: "agent-1",
+    });
   });
 });

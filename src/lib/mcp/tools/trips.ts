@@ -172,6 +172,7 @@ export function registerTripTools(server: McpServer): void {
       showCostsToClient: z.boolean().optional(),
       salePrice: z.number().nullable().optional(),
       commissionRate: z.number().nullable().optional(),
+      assignedAgentId: z.string().nullable().optional(),
     },
     async ({ id, ...input }) => {
       const existing = await data.getTripById(id);
