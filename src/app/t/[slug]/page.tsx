@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { canClientAddActivities, getSiteSettings, getTripWithDetails } from "@/lib/data";
+import {
+  canClientAddActivities,
+  getSiteSettings,
+  getTripWithDetails,
+  hasOwnedServiceRequirements,
+} from "@/lib/data";
 import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
@@ -80,9 +85,13 @@ export default async function PublicTripPage({
   ]);
   if (!trip || !isTravelerTripVisible(trip.status, trip.id, previewToken)) notFound();
   const isDraftPreview = trip.status === "draft";
-  const hasTravelerActivityAssignment = session && trip.status === "published"
-    ? await canClientAddActivities(trip.id, session.clientId)
-    : false;
+  const [hasTravelerActivityAssignment, hasOwnedDocumentRequirements] =
+    session && trip.status === "published"
+      ? await Promise.all([
+          canClientAddActivities(trip.id, session.clientId),
+          hasOwnedServiceRequirements(trip.id, session.clientId),
+        ])
+      : [false, false];
   const canManageTravelerActivities = canRenderTravelerActivityControls({
     tripStatus: trip.status,
     clientId: session?.clientId,
@@ -461,6 +470,23 @@ export default async function PublicTripPage({
 
           {trip.packingItems.length > 0 && (
             <PackingListManager items={trip.packingItems} readOnly title={t.packingList} />
+          )}
+
+          {hasOwnedDocumentRequirements && (
+            <section className="rounded-xl border border-blue-100 bg-blue-50/80 p-4 shadow-sm dark:border-blue-950 dark:bg-blue-950/20">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Documentos pendientes
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Tenés documentos pendientes por subir para este viaje.
+              </p>
+              <a
+                href={`/client/trips/${trip.id}/documents`}
+                className="mt-3 inline-flex text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Subir documentos
+              </a>
+            </section>
           )}
 
           {tripEnded && (

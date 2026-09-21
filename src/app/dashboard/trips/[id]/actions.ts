@@ -44,11 +44,13 @@ import {
   reorderChecklistItems,
   markUploadProcessed,
   requestReUpload,
-  getServiceWithChecklist,
   getServicesForTrip,
+  getServiceChecklistForTrip,
+  addChecklistItemToTripServices,
 } from "@/lib/data";
 import { ItemType, TripCurrency } from "@/types";
 import { validateItemMetadata } from "@/lib/item-metadata-schemas";
+import { requireRole } from "@/lib/auth/roles";
 
 const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
@@ -90,6 +92,33 @@ async function assertTripEditable(tripId: string) {
   if (trip.status === "published") {
     throw new Error("El viaje publicado está bloqueado. Pásalo a borrador para editarlo.");
   }
+}
+
+async function assertServiceDocumentMutableTrip(tripId: string) {
+  await requireRole("admin", "agent");
+  const trip = await getTripById(tripId);
+  if (!trip) throw new Error("Viaje no encontrado.");
+  if (trip.status === "archived") {
+    throw new Error("El viaje archivado es de solo lectura");
+  }
+}
+
+async function getChecklistItemForTrip(tripId: string, checklistItemId: string) {
+  const services = await getServicesForTrip(tripId);
+  for (const service of services) {
+    const checklist = await getServiceChecklistForTrip(tripId, service.id);
+    if (checklist.items.some((item) => item.id === checklistItemId)) return checklist;
+  }
+  throw new Error("El item del checklist no pertenece al viaje");
+}
+
+async function getUploadForTrip(tripId: string, uploadId: string) {
+  const services = await getServicesForTrip(tripId);
+  for (const service of services) {
+    const checklist = await getServiceChecklistForTrip(tripId, service.id);
+    if (checklist.items.some((item) => item.upload?.id === uploadId)) return checklist;
+  }
+  throw new Error("El upload no pertenece al viaje");
 }
 
 export async function addDayAction(tripId: string, formData: FormData) {
@@ -487,7 +516,8 @@ export async function addChecklistItemAction(
   serviceId: string,
   formData: FormData
 ) {
-  await assertTripEditable(tripId);
+  await assertServiceDocumentMutableTrip(tripId);
+  await getServiceChecklistForTrip(tripId, serviceId);
   const label = String(formData.get("label") ?? "").trim();
   if (!label) return;
   const required =
@@ -501,7 +531,8 @@ export async function updateChecklistItemAction(
   checklistItemId: string,
   formData: FormData
 ) {
-  await assertTripEditable(tripId);
+  await assertServiceDocumentMutableTrip(tripId);
+  await getChecklistItemForTrip(tripId, checklistItemId);
   const label = String(formData.get("label") ?? "").trim();
   const required =
     formData.get("required") === "on" || formData.get("required") === "true";
@@ -513,7 +544,8 @@ export async function deleteChecklistItemAction(
   tripId: string,
   checklistItemId: string
 ) {
-  await assertTripEditable(tripId);
+  await assertServiceDocumentMutableTrip(tripId);
+  await getChecklistItemForTrip(tripId, checklistItemId);
   await deleteChecklistItem(checklistItemId);
   revalidateTrip(tripId);
 }
@@ -523,7 +555,11 @@ export async function reorderChecklistItemsAction(
   serviceId: string,
   orderedIds: string[]
 ) {
-  await assertTripEditable(tripId);
+  await assertServiceDocumentMutableTrip(tripId);
+  const checklist = await getServiceChecklistForTrip(tripId, serviceId);
+  if (!orderedIds.every((id) => checklist.items.some((item) => item.id === id))) {
+    throw new Error("El item del checklist no pertenece al viaje");
+  }
   await reorderChecklistItems(serviceId, orderedIds);
   revalidateTrip(tripId);
 }
@@ -532,7 +568,8 @@ export async function markUploadProcessedAction(
   tripId: string,
   uploadId: string
 ) {
-  await assertTripEditable(tripId);
+  await assertServiceDocumentMutableTrip(tripId);
+  await getUploadForTrip(tripId, uploadId);
   await markUploadProcessed(uploadId);
   revalidateTrip(tripId);
 }
@@ -542,15 +579,31 @@ export async function requestReUploadAction(
   uploadId: string,
   formData: FormData
 ) {
-  await assertTripEditable(tripId);
+  await assertServiceDocumentMutableTrip(tripId);
+  await getUploadForTrip(tripId, uploadId);
   const comment = String(formData.get("comment") ?? "").trim();
   await requestReUpload(uploadId, comment);
   revalidateTrip(tripId);
 }
 
 export async function getServicesWithChecklistsForTripAction(tripId: string) {
+  await requireRole("admin", "agent");
   const services = await getServicesForTrip(tripId);
-  return Promise.all(services.map((s) => getServiceWithChecklist(s.id)));
+  return Promise.all(services.map((service) => getServiceChecklistForTrip(tripId, service.id)));
+}
+
+export async function getServiceChecklistForTripAction(tripId: string, serviceId: string) {
+  await requireRole("admin", "agent");
+  return getServiceChecklistForTrip(tripId, serviceId);
+}
+
+export async function addChecklistItemToTripServicesAction(tripId: string, formData: FormData) {
+  await assertServiceDocumentMutableTrip(tripId);
+  const label = String(formData.get("label") ?? "").trim();
+  const required =
+    formData.get("required") === "on" || formData.get("required") === "true";
+  await addChecklistItemToTripServices(tripId, { label, required });
+  revalidateTrip(tripId);
 }
 
 // Clona un viaje completo (días + items, sin documentos) en un nuevo viaje en

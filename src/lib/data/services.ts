@@ -2,6 +2,7 @@ import {
   Service,
   ServiceChecklistItem,
   ServiceChecklistItemWithUpload,
+  ServiceDocumentSummary,
   ServiceType,
   ServiceUpload,
   ServiceUploadStatus,
@@ -172,6 +173,104 @@ export async function getServicesForTrip(tripId: string): Promise<Service[]> {
   return (data ?? []).map(rowToService);
 }
 
+export async function getServiceDocumentSummariesForTrip(
+  tripId: string
+): Promise<ServiceDocumentSummary[]> {
+  if (!isSupabaseConfigured()) {
+    return mockServices
+      .filter(
+        (service) =>
+          service.tripId === tripId && service.serviceType === DEFAULT_SERVICE_TYPE
+      )
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((service) => {
+        const items = mockServiceChecklistItems.filter(
+          (item) => item.serviceId === service.id
+        );
+        const uploads = mockServiceUploads.filter(
+          (upload) => upload.serviceId === service.id
+        );
+        return {
+          serviceId: service.id,
+          clientId: service.clientId,
+          processed: uploads.filter((upload) => upload.status === "processed").length,
+          total: items.length,
+          awaitingReview: uploads.filter((upload) => upload.status === "uploaded").length,
+        };
+      });
+  }
+
+  const supabase = await getServiceClient();
+  const { data: serviceRows, error: servicesError } = await supabase
+    .from("services")
+    .select("id, client_id")
+    .eq("trip_id", tripId)
+    .eq("service_type", DEFAULT_SERVICE_TYPE)
+    .order("created_at", { ascending: true });
+  if (servicesError) throw servicesError;
+
+  const services = serviceRows ?? [];
+  const serviceIds = services.map((service) => service.id as string);
+  if (serviceIds.length === 0) return [];
+
+  const [{ data: itemRows, error: itemsError }, { data: uploadRows, error: uploadsError }] =
+    await Promise.all([
+      supabase.from("service_checklist_items").select("service_id").in("service_id", serviceIds),
+      supabase.from("service_uploads").select("service_id, status").in("service_id", serviceIds),
+    ]);
+  if (itemsError) throw itemsError;
+  if (uploadsError) throw uploadsError;
+
+  const totals = new Map<string, number>();
+  const processed = new Map<string, number>();
+  const awaitingReview = new Map<string, number>();
+  for (const item of itemRows ?? []) {
+    const serviceId = item.service_id as string;
+    totals.set(serviceId, (totals.get(serviceId) ?? 0) + 1);
+  }
+  for (const upload of uploadRows ?? []) {
+    const serviceId = upload.service_id as string;
+    if (upload.status === "processed") {
+      processed.set(serviceId, (processed.get(serviceId) ?? 0) + 1);
+    }
+    if (upload.status === "uploaded") {
+      awaitingReview.set(serviceId, (awaitingReview.get(serviceId) ?? 0) + 1);
+    }
+  }
+
+  return services.map((service) => {
+    const serviceId = service.id as string;
+    return {
+      serviceId,
+      clientId: service.client_id as string,
+      processed: processed.get(serviceId) ?? 0,
+      total: totals.get(serviceId) ?? 0,
+      awaitingReview: awaitingReview.get(serviceId) ?? 0,
+    };
+  });
+}
+
+export async function hasOwnedServiceRequirements(
+  tripId: string,
+  clientId: string
+): Promise<boolean> {
+  const service = await getServiceForClientTrip(clientId, tripId);
+  if (!service) return false;
+
+  if (!isSupabaseConfigured()) {
+    return mockServiceChecklistItems.some((item) => item.serviceId === service.id);
+  }
+
+  const supabase = await getServiceClient();
+  const { data, error } = await supabase
+    .from("service_checklist_items")
+    .select("id")
+    .eq("service_id", service.id)
+    .limit(1);
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
 async function nextSortOrder(serviceId: string): Promise<number> {
   if (!isSupabaseConfigured()) {
     const items = mockServiceChecklistItems.filter(
@@ -197,9 +296,9 @@ export async function addChecklistItem(
   serviceId: string,
   input: { label: string; required?: boolean }
 ): Promise<ServiceChecklistItem> {
-  const sortOrder = await nextSortOrder(serviceId);
   const label = input.label.trim();
   if (!label) throw new Error("El label del checklist no puede estar vacío");
+  const sortOrder = await nextSortOrder(serviceId);
 
   if (!isSupabaseConfigured()) {
     const item: ServiceChecklistItem = {
@@ -228,6 +327,84 @@ export async function addChecklistItem(
     .single();
   if (error) throw error;
   return rowToServiceChecklistItem(data);
+}
+
+export async function addChecklistItemToTripServices(
+  tripId: string,
+  input: { label: string; required?: boolean }
+): Promise<ServiceChecklistItem[]> {
+  const label = input.label.trim();
+  if (!label) throw new Error("El label del checklist no puede estar vacío");
+
+  if (!isSupabaseConfigured()) {
+    const services = mockServices.filter(
+      (service) =>
+        service.tripId === tripId && service.serviceType === DEFAULT_SERVICE_TYPE
+    );
+    if (services.length === 0) throw new Error("El viaje no tiene servicios disponibles");
+    if (services.some((service) => service.status !== "active")) {
+      throw new Error("No todos los servicios del viaje están disponibles");
+    }
+
+    const items = services.map((service) => {
+      const existingItems = mockServiceChecklistItems.filter(
+        (item) => item.serviceId === service.id
+      );
+      const sortOrder =
+        existingItems.length === 0
+          ? 0
+          : Math.max(...existingItems.map((item) => item.sortOrder)) + 1;
+      return {
+        id: uid(),
+        serviceId: service.id,
+        label,
+        required: input.required ?? true,
+        sortOrder,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      } satisfies ServiceChecklistItem;
+    });
+    mockServiceChecklistItems.push(...items);
+    return items;
+  }
+
+  const supabase = await getServiceClient();
+  const { data: serviceRows, error: servicesError } = await supabase
+    .from("services")
+    .select("id, status")
+    .eq("trip_id", tripId)
+    .eq("service_type", DEFAULT_SERVICE_TYPE);
+  if (servicesError) throw servicesError;
+  const services = serviceRows ?? [];
+  if (services.length === 0) throw new Error("El viaje no tiene servicios disponibles");
+  if (services.some((service) => service.status !== "active")) {
+    throw new Error("No todos los servicios del viaje están disponibles");
+  }
+
+  const serviceIds = services.map((service) => service.id as string);
+  const { data: existingRows, error: existingError } = await supabase
+    .from("service_checklist_items")
+    .select("service_id, sort_order")
+    .in("service_id", serviceIds);
+  if (existingError) throw existingError;
+
+  const nextOrders = new Map<string, number>();
+  for (const row of existingRows ?? []) {
+    const serviceId = row.service_id as string;
+    nextOrders.set(serviceId, Math.max(nextOrders.get(serviceId) ?? 0, (row.sort_order as number) + 1));
+  }
+  const rows = services.map((service) => ({
+    service_id: service.id as string,
+    label,
+    required: input.required ?? true,
+    sort_order: nextOrders.get(service.id as string) ?? 0,
+  }));
+  const { data, error } = await supabase
+    .from("service_checklist_items")
+    .insert(rows)
+    .select();
+  if (error) throw error;
+  return (data ?? []).map(rowToServiceChecklistItem);
 }
 
 export async function updateChecklistItem(
@@ -381,6 +558,34 @@ export async function getServiceWithChecklist(
   return { ...rowToService(serviceRow), items };
 }
 
+export async function getServiceChecklistForTrip(
+  tripId: string,
+  serviceId: string
+): Promise<ServiceWithChecklist> {
+  if (!isSupabaseConfigured()) {
+    const service = mockServices.find(
+      (candidate) =>
+        candidate.id === serviceId &&
+        candidate.tripId === tripId &&
+        candidate.serviceType === DEFAULT_SERVICE_TYPE
+    );
+    if (!service) throw new Error("El servicio no pertenece al viaje");
+    return getServiceWithChecklist(service.id);
+  }
+
+  const supabase = await getServiceClient();
+  const { data, error } = await supabase
+    .from("services")
+    .select("id")
+    .eq("id", serviceId)
+    .eq("trip_id", tripId)
+    .eq("service_type", DEFAULT_SERVICE_TYPE)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("El servicio no pertenece al viaje");
+  return getServiceWithChecklist(serviceId);
+}
+
 export async function uploadServiceDocument(
   serviceId: string,
   checklistItemId: string,
@@ -478,9 +683,10 @@ export async function markUploadProcessed(id: string): Promise<void> {
     .eq("id", id)
     .maybeSingle();
   if (upload?.file_path) {
-    await supabase.storage
+    const { error: removeError } = await supabase.storage
       .from(DOCUMENTS_BUCKET)
       .remove([upload.file_path as string]);
+    if (removeError) throw removeError;
   }
   const { error } = await supabase
     .from("service_uploads")
