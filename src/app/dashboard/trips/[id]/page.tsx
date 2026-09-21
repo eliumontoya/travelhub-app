@@ -113,7 +113,6 @@ import {
   markUploadProcessedAction,
   requestReUploadAction,
   getServiceChecklistForTripAction,
-  addChecklistItemToTripServicesAction,
 } from "./actions";
 
 const documentsEnabled = Boolean(
@@ -778,7 +777,6 @@ export default async function TripEditorPage({
               clientNameById={clientNameById}
               isArchived={trip.status === "archived"}
               getServiceChecklistAction={getServiceChecklistForTripAction.bind(null, trip.id)}
-              addChecklistItemToTripServicesAction={addChecklistItemToTripServicesAction.bind(null, trip.id)}
               addChecklistItemAction={addChecklistItemAction.bind(null, trip.id)}
               updateChecklistItemAction={updateChecklistItemAction.bind(null, trip.id)}
               deleteChecklistItemAction={deleteChecklistItemAction.bind(null, trip.id)}
