@@ -29,9 +29,6 @@ type RequestReUploadAction = (
 type GetServiceChecklistAction = (
   serviceId: string,
 ) => Promise<ServiceWithChecklist>;
-type AddChecklistItemToTripServicesAction = (
-  formData: FormData,
-) => Promise<void>;
 
 function statusLabel(item: ServiceChecklistItemWithUpload) {
   const status = item.upload?.status;
@@ -52,7 +49,6 @@ export function ServiceChecklistManager({
   clientNameById,
   isArchived,
   getServiceChecklistAction,
-  addChecklistItemToTripServicesAction,
   addChecklistItemAction,
   updateChecklistItemAction,
   deleteChecklistItemAction,
@@ -65,7 +61,6 @@ export function ServiceChecklistManager({
   clientNameById: Record<string, string>;
   isArchived: boolean;
   getServiceChecklistAction: GetServiceChecklistAction;
-  addChecklistItemToTripServicesAction: AddChecklistItemToTripServicesAction;
   addChecklistItemAction: AddChecklistItemAction;
   updateChecklistItemAction: UpdateChecklistItemAction;
   deleteChecklistItemAction: DeleteChecklistItemAction;
@@ -87,11 +82,25 @@ export function ServiceChecklistManager({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [reUploadItemId, setReUploadItemId] = useState<string | null>(null);
 
-  function runAction(action: () => Promise<void>) {
+  async function refreshChecklist(serviceId: string) {
+    setDetailError(null);
+    try {
+      setSelectedChecklist(await getServiceChecklistAction(serviceId));
+    } catch (err) {
+      setDetailError(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron cargar los documentos.",
+      );
+    }
+  }
+
+  function runAction(action: () => Promise<void>, refreshServiceId?: string) {
     setGlobalError(null);
     startTransition(async () => {
       try {
         await action();
+        if (refreshServiceId) await refreshChecklist(refreshServiceId);
         router.refresh();
       } catch (err) {
         setGlobalError(err instanceof Error ? err.message : "Error inesperado");
@@ -100,20 +109,11 @@ export function ServiceChecklistManager({
   }
 
   function openChecklist(serviceId: string) {
-    setDetailError(null);
     setSelectedChecklist(null);
     setSelectedServiceId(serviceId);
     dialogRef.current?.showModal();
-    startTransition(async () => {
-      try {
-        setSelectedChecklist(await getServiceChecklistAction(serviceId));
-      } catch (err) {
-        setDetailError(
-          err instanceof Error
-            ? err.message
-            : "No se pudieron cargar los documentos.",
-        );
-      }
+    startTransition(() => {
+      void refreshChecklist(serviceId);
     });
   }
 
@@ -135,18 +135,12 @@ export function ServiceChecklistManager({
     event: React.FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    runAction(() => addChecklistItemAction(serviceId, formData));
-    event.currentTarget.reset();
-  }
-
-  function handleBulkAssignment(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     runAction(async () => {
-      await addChecklistItemToTripServicesAction(formData);
-      event.currentTarget.reset();
-    });
+      await addChecklistItemAction(serviceId, formData);
+      form.reset();
+    }, serviceId);
   }
 
   function handleUpdateItem(
@@ -238,40 +232,6 @@ export function ServiceChecklistManager({
         >
           {globalError}
         </p>
-      )}
-
-      {!isArchived && (
-        <form
-          onSubmit={handleBulkAssignment}
-          className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-950 dark:bg-blue-950/20 sm:flex-row sm:items-end"
-        >
-          <div className="min-w-0 flex-1">
-            <label
-              htmlFor="all-travelers-document"
-              className="block text-sm font-medium text-gray-900 dark:text-gray-100"
-            >
-              Asignar a todos los viajeros
-            </label>
-            <input
-              id="all-travelers-document"
-              name="label"
-              required
-              placeholder="Ej. Copia de pasaporte"
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
-            />
-          </div>
-          <label className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-            <input name="required" type="checkbox" defaultChecked value="on" />{" "}
-            Obligatorio
-          </label>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            Asignar documento
-          </button>
-        </form>
       )}
 
       <ul className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">

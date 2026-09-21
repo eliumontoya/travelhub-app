@@ -36,7 +36,6 @@ function renderManager(isArchived = false) {
       clientNameById={{ "client-1": "Ana López", "client-2": "Luis Pérez" }}
       isArchived={isArchived}
       getServiceChecklistAction={getChecklist}
-      addChecklistItemToTripServicesAction={noOp}
       addChecklistItemAction={noOp}
       updateChecklistItemAction={noOp}
       deleteChecklistItemAction={noOp}
@@ -59,12 +58,12 @@ describe("ServiceChecklistManager", () => {
     expect(getChecklist).not.toHaveBeenCalled();
   });
 
-  it("provides one accessible dialog and a bulk assignment form", () => {
+  it("provides one accessible dialog without the all-travelers assignment form", () => {
     const html = renderManager();
 
     expect(html.match(/<dialog/g)).toHaveLength(1);
     expect(html).toContain('aria-labelledby="service-checklist-dialog-title"');
-    expect(html).toContain("Asignar a todos los viajeros");
+    expect(html).not.toContain("Asignar a todos los viajeros");
     expect(html).toContain("Documentos");
   });
 
