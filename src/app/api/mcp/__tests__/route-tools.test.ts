@@ -12,6 +12,65 @@ const markUploadReviewed = vi.fn();
 const requestReUpload = vi.fn();
 const assertServiceUploadMutable = vi.fn();
 
+// Agent-action data-layer mocks. The 8 new tool modules call `data.fn()`
+// against the `@/lib/data` barrel. We expose every referenced fn as a
+// vi.fn() so listTools and existing dispatch assertions can run. Each fn
+// returns a sensible default so happy-path tests aren't blocked; tests that
+// exercise a specific path can override via `.mockResolvedValueOnce(...)`.
+const mockDataFns = {
+  // clients
+  getClients: vi.fn(),
+  getClientById: vi.fn(),
+  createClient: vi.fn(),
+  updateClient: vi.fn(),
+  getClientTags: vi.fn(),
+  setClientTags: vi.fn(),
+  getTripsByClientId: vi.fn(),
+  getClientTripSummary: vi.fn(),
+  // suppliers
+  getSuppliers: vi.fn(),
+  getSupplierById: vi.fn(),
+  createSupplier: vi.fn(),
+  updateSupplier: vi.fn(),
+  softDeleteSupplier: vi.fn(),
+  restoreSupplier: vi.fn(),
+  // trips
+  getTripsWithClients: vi.fn(),
+  getTripById: vi.fn(),
+  createTrip: vi.fn(),
+  createTripFromTemplate: vi.fn(),
+  updateTrip: vi.fn(),
+  setTripClients: vi.fn(),
+  setTripTags: vi.fn(),
+  saveTripAsTemplate: vi.fn(),
+  getTemplates: vi.fn(),
+  // trip days
+  createTripDay: vi.fn(),
+  updateTripDay: vi.fn(),
+  deleteTripDay: vi.fn(),
+  restoreTripDay: vi.fn(),
+  generateTripDays: vi.fn(),
+  reorderTripDays: vi.fn(),
+  // items
+  createItem: vi.fn(),
+  updateItem: vi.fn(),
+  deleteItem: vi.fn(),
+  restoreItem: vi.fn(),
+  moveItemToDay: vi.fn(),
+  getItemById: vi.fn(),
+  duplicateItem: vi.fn(),
+  reorderItems: vi.fn(),
+  // packing
+  createPackingItem: vi.fn(),
+  updatePackingItem: vi.fn(),
+  deletePackingItem: vi.fn(),
+  // internal notes
+  getTripInternalNotes: vi.fn(),
+  updateTripInternalNotes: vi.fn(),
+};
+
+vi.mock("@/lib/data", () => mockDataFns);
+
 vi.mock("@/lib/data/services", () => ({
   getServicesForTrip,
   getServiceChecklistForTrip,
@@ -24,6 +83,9 @@ vi.mock("@/lib/data/services", () => ({
 
 vi.mock("@/lib/data/documents", () => ({
   getSignedServiceDocumentDownloadUrl,
+  getSignedServiceDocumentUploadUrl: vi.fn().mockResolvedValue(
+    "https://signed.test/upload/p.pdf?token=t"
+  ),
 }));
 
 const EXPECTED_TOOLS = [
@@ -34,6 +96,48 @@ const EXPECTED_TOOLS = [
   "process_service_upload",
   "mark_service_upload_reviewed",
   "request_service_upload_reupload",
+  // agent-action tools (41):
+  "list_clients",
+  "get_client",
+  "create_client",
+  "update_client",
+  "get_client_tags",
+  "set_client_tags",
+  "get_client_trips",
+  "list_suppliers",
+  "get_supplier",
+  "create_supplier",
+  "update_supplier",
+  "delete_supplier",
+  "restore_supplier",
+  "list_trips",
+  "get_trip",
+  "create_trip",
+  "create_trip_from_template",
+  "update_trip",
+  "set_trip_clients",
+  "set_trip_tags",
+  "save_trip_as_template",
+  "list_templates",
+  "add_trip_day",
+  "update_trip_day",
+  "delete_trip_day",
+  "restore_trip_day",
+  "generate_trip_days",
+  "reorder_trip_days",
+  "add_item",
+  "update_item",
+  "delete_item",
+  "restore_item",
+  "move_item",
+  "duplicate_item",
+  "reorder_items",
+  "add_packing_item",
+  "update_packing_item",
+  "delete_packing_item",
+  "get_trip_internal_notes",
+  "update_trip_internal_notes",
+  "get_document_upload_url",
 ] as const;
 
 interface ToolListEntry {
@@ -86,6 +190,9 @@ function resetMocks() {
   markUploadReviewed.mockReset();
   requestReUpload.mockReset();
   assertServiceUploadMutable.mockReset();
+  for (const fn of Object.values(mockDataFns)) {
+    fn.mockReset();
+  }
 }
 
 beforeEach(() => {
@@ -128,17 +235,25 @@ beforeEach(() => {
   markUploadReviewed.mockResolvedValue(undefined);
   requestReUpload.mockResolvedValue(undefined);
   assertServiceUploadMutable.mockResolvedValue(undefined);
+  // Agent-action defaults — every fn returns a benign empty shape so the
+  // 48-tool registration check passes without crashing on tool startup.
+  for (const fn of Object.values(mockDataFns)) {
+    fn.mockResolvedValue(undefined);
+  }
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("MCP service-document tools — registration", () => {
-  it("registers exactly the seven documented tools", async () => {
+describe("MCP tool registration", () => {
+  it("registers exactly the 48 documented tools with no collisions", async () => {
     const tools = await bootClientAndListTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([...EXPECTED_TOOLS].sort());
+    // No duplicate names by construction (sort + toEqual), but also verify
+    // the count matches the design's "48 unique tools" promise.
+    expect(names).toHaveLength(48);
   });
 
   it("exposes a non-empty description for each tool", async () => {
