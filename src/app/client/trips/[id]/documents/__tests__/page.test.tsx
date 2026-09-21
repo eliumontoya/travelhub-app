@@ -90,7 +90,7 @@ function checklistItem(
   id: string,
   label: string,
   sortOrder: number,
-  status?: "uploaded" | "processed" | "re_upload_requested",
+  status?: "uploaded" | "reviewed" | "processed" | "re_upload_requested",
   agentComment?: string
 ): ServiceChecklistItemWithUpload {
   const item: ServiceChecklistItemWithUpload = {
