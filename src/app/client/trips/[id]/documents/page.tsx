@@ -12,6 +12,7 @@ import { uploadDocument } from "./actions";
 function statusLabel(item: ServiceChecklistItemWithUpload) {
   const status = item.upload?.status;
   if (status === "processed") return { icon: "✅", text: "Procesado" };
+  if (status === "reviewed") return { icon: "✅", text: "Revisado" };
   if (status === "re_upload_requested")
     return { icon: "⚠", text: "Re-subir solicitado" };
   if (status === "uploaded")
@@ -45,7 +46,8 @@ export default async function ClientTripDocumentsPage({
     getTripById(service.tripId),
   ]);
   const completed = checklist.items.filter(
-    (i) => i.upload?.status === "processed",
+    (i) =>
+      i.upload?.status === "reviewed" || i.upload?.status === "processed",
   ).length;
   const total = checklist.items.length;
   const tripHref =
@@ -130,7 +132,7 @@ export default async function ClientTripDocumentsPage({
                         name="file"
                         type="file"
                         required
-                        className="block w-40 text-xs text-gray-700 file:mr-2 file:rounded file:border-0 file:bg-blue-600 file:px-2 file:py-1 file:text-white dark:text-gray-200"
+                        className="block w-40 text-xs text-blue-950 file:mr-2 file:rounded file:border-0 file:bg-blue-600 file:px-2 file:py-1 file:text-white dark:text-blue-100"
                       />
                       <button
                         type="submit"

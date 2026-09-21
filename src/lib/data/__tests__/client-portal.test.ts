@@ -3,7 +3,7 @@ import {
   addChecklistItem,
   ensureServiceForAssignment,
   getServicesProgressForClient,
-  markUploadProcessed,
+  markUploadReviewed,
   uploadServiceDocument,
 } from "@/lib/data/services";
 import {
@@ -51,7 +51,7 @@ describe("client portal data layer (mock mode)", () => {
     expect(progress.get(service.id)).toEqual({ completed: 0, total: 2 });
   });
 
-  it("progress count only treats processed uploads as completed", async () => {
+  it("progress count treats reviewed and processed uploads as completed", async () => {
     const service = await ensureServiceForAssignment("t1", "c1");
     const itemA = await addChecklistItem(service.id, { label: "A", required: true });
     const itemB = await addChecklistItem(service.id, { label: "B", required: true });
@@ -61,10 +61,10 @@ describe("client portal data layer (mock mode)", () => {
     const uploadedFile = new File(["x"], "b.pdf", { type: "application/pdf" });
     const reUploadFile = new File(["x"], "c.pdf", { type: "application/pdf" });
 
-    const processedUpload = await uploadServiceDocument(service.id, itemA.id, processedFile);
+    const reviewedUpload = await uploadServiceDocument(service.id, itemA.id, processedFile);
     await uploadServiceDocument(service.id, itemB.id, uploadedFile);
     const reUploadUpload = await uploadServiceDocument(service.id, itemC.id, reUploadFile);
-    await markUploadProcessed(processedUpload.id);
+    await markUploadReviewed(reviewedUpload.id);
     // Simulate agent requesting re-upload without mutating checklist
     const stored = mockServiceUploads.find((u) => u.id === reUploadUpload.id);
     if (stored) {

@@ -43,6 +43,7 @@ import {
   deleteChecklistItem,
   reorderChecklistItems,
   markUploadProcessed,
+  markUploadReviewed,
   requestReUpload,
   getServicesForTrip,
   getServiceChecklistForTrip,
@@ -561,6 +562,16 @@ export async function reorderChecklistItemsAction(
     throw new Error("El item del checklist no pertenece al viaje");
   }
   await reorderChecklistItems(serviceId, orderedIds);
+  revalidateTrip(tripId);
+}
+
+export async function markUploadReviewedAction(
+  tripId: string,
+  uploadId: string
+) {
+  await assertServiceDocumentMutableTrip(tripId);
+  await getUploadForTrip(tripId, uploadId);
+  await markUploadReviewed(uploadId);
   revalidateTrip(tripId);
 }
 

@@ -177,7 +177,7 @@ export interface TripDocument {
 
 export type ServiceType = "trip_documents";
 
-export type ServiceUploadStatus = "uploaded" | "processed" | "re_upload_requested";
+export type ServiceUploadStatus = "uploaded" | "reviewed" | "processed" | "re_upload_requested";
 
 export interface Service {
   id: string;

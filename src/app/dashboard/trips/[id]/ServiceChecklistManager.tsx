@@ -21,7 +21,7 @@ type ReorderChecklistItemsAction = (
   serviceId: string,
   orderedIds: string[],
 ) => Promise<void>;
-type MarkUploadProcessedAction = (uploadId: string) => Promise<void>;
+type MarkUploadReviewedAction = (uploadId: string) => Promise<void>;
 type RequestReUploadAction = (
   uploadId: string,
   formData: FormData,
@@ -33,6 +33,7 @@ type GetServiceChecklistAction = (
 function statusLabel(item: ServiceChecklistItemWithUpload) {
   const status = item.upload?.status;
   if (status === "processed") return { icon: "✅", text: "Procesado" };
+  if (status === "reviewed") return { icon: "✅", text: "Revisado" };
   if (status === "re_upload_requested")
     return { icon: "⚠️", text: "Re-subir solicitado" };
   if (status === "uploaded")
@@ -53,7 +54,7 @@ export function ServiceChecklistManager({
   updateChecklistItemAction,
   deleteChecklistItemAction,
   reorderChecklistItemsAction,
-  markUploadProcessedAction,
+  markUploadReviewedAction,
   requestReUploadAction,
 }: {
   tripId: string;
@@ -65,7 +66,7 @@ export function ServiceChecklistManager({
   updateChecklistItemAction: UpdateChecklistItemAction;
   deleteChecklistItemAction: DeleteChecklistItemAction;
   reorderChecklistItemsAction: ReorderChecklistItemsAction;
-  markUploadProcessedAction: MarkUploadProcessedAction;
+  markUploadReviewedAction: MarkUploadReviewedAction;
   requestReUploadAction: RequestReUploadAction;
 }) {
   const router = useRouter();
@@ -179,8 +180,8 @@ export function ServiceChecklistManager({
     );
   }
 
-  function handleMarkProcessed(uploadId: string) {
-    runAction(() => markUploadProcessedAction(uploadId));
+  function handleMarkReviewed(uploadId: string) {
+    runAction(() => markUploadReviewedAction(uploadId));
   }
 
   function handleRequestReUpload(
@@ -251,7 +252,7 @@ export function ServiceChecklistManager({
                   {clientName}
                 </h3>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  {summary.processed}/{summary.total} procesados
+                  {summary.processed}/{summary.total} revisados
                   {summary.awaitingReview > 0
                     ? ` · ${summary.awaitingReview} ${reviewLabel}`
                     : ""}
@@ -398,9 +399,21 @@ export function ServiceChecklistManager({
                                   {text}
                                 </p>
                                 {item.upload && (
-                                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    {item.upload.filename}
-                                  </p>
+                                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {item.upload.url && !item.upload.fileRemoved ? (
+                                      <a
+                                        href={item.upload.url}
+                                        download={item.upload.filename}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                      >
+                                        Descargar {item.upload.filename}
+                                      </a>
+                                    ) : (
+                                      item.upload.filename
+                                    )}
+                                  </div>
                                 )}
                                 {item.upload?.status ===
                                   "re_upload_requested" &&
@@ -515,12 +528,12 @@ export function ServiceChecklistManager({
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          handleMarkProcessed(item.upload!.id)
+                                          handleMarkReviewed(item.upload!.id)
                                         }
                                         disabled={isPending}
                                         className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
                                       >
-                                        Marcar procesado
+                                        Marcar como revisado
                                       </button>
                                       <button
                                         type="button"

@@ -14,7 +14,7 @@ import * as clientActions from "@/app/client/trips/[id]/documents/actions";
 
 describe("dashboard trip actions expose agent-only service mutations", () => {
   it("exports status-transition actions on the dashboard surface", () => {
-    expect(typeof dashboardActions.markUploadProcessedAction).toBe("function");
+    expect(typeof dashboardActions.markUploadReviewedAction).toBe("function");
     expect(typeof dashboardActions.requestReUploadAction).toBe("function");
     expect(typeof dashboardActions.addChecklistItemAction).toBe("function");
     expect(typeof dashboardActions.updateChecklistItemAction).toBe("function");
@@ -23,7 +23,7 @@ describe("dashboard trip actions expose agent-only service mutations", () => {
   });
 
   it("client actions do not export status-transition functions", () => {
-    expect("markUploadProcessedAction" in clientActions).toBe(false);
+    expect("markUploadReviewedAction" in clientActions).toBe(false);
     expect("requestReUploadAction" in clientActions).toBe(false);
     expect("addChecklistItemAction" in clientActions).toBe(false);
     expect("updateChecklistItemAction" in clientActions).toBe(false);

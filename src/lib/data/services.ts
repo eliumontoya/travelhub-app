@@ -193,7 +193,7 @@ export async function getServiceDocumentSummariesForTrip(
         return {
           serviceId: service.id,
           clientId: service.clientId,
-          processed: uploads.filter((upload) => upload.status === "processed").length,
+          processed: uploads.filter((upload) => upload.status === "reviewed" || upload.status === "processed").length,
           total: items.length,
           awaitingReview: uploads.filter((upload) => upload.status === "uploaded").length,
         };
@@ -230,7 +230,7 @@ export async function getServiceDocumentSummariesForTrip(
   }
   for (const upload of uploadRows ?? []) {
     const serviceId = upload.service_id as string;
-    if (upload.status === "processed") {
+    if (upload.status === "reviewed" || upload.status === "processed") {
       processed.set(serviceId, (processed.get(serviceId) ?? 0) + 1);
     }
     if (upload.status === "uploaded") {
@@ -666,6 +666,28 @@ export async function uploadServiceDocument(
   return rowToServiceUpload(data);
 }
 
+export async function markUploadReviewed(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const upload = mockServiceUploads.find((u) => u.id === id);
+    if (!upload) throw new Error("Upload no encontrado");
+    upload.status = "reviewed";
+    upload.fileRemoved = false;
+    upload.updatedAt = nowIso();
+    return;
+  }
+
+  const supabase = await getServiceClient();
+  const { error } = await supabase
+    .from("service_uploads")
+    .update({
+      status: "reviewed",
+      file_removed: false,
+      updated_at: nowIso(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function markUploadProcessed(id: string): Promise<void> {
   if (!isSupabaseConfigured()) {
     const upload = mockServiceUploads.find((u) => u.id === id);
@@ -741,7 +763,9 @@ export async function getServicesProgressForClient(
         (i) => i.serviceId === service.id
       );
       const completed = mockServiceUploads.filter(
-        (u) => u.serviceId === service.id && u.status === "processed"
+        (u) =>
+          u.serviceId === service.id &&
+          (u.status === "reviewed" || u.status === "processed")
       ).length;
       result.set(service.id, { completed, total: items.length });
     }
@@ -766,9 +790,9 @@ export async function getServicesProgressForClient(
 
   const { data: uploadRows, error: uploadsError } = await supabase
     .from("service_uploads")
-    .select("service_id")
+    .select("service_id, status")
     .in("service_id", serviceIds)
-    .eq("status", "processed");
+    .in("status", ["reviewed", "processed"]);
   if (uploadsError) throw uploadsError;
 
   const totals = new Map<string, number>();

@@ -10,6 +10,7 @@ import {
   getServicesProgressForClient,
   hasOwnedServiceRequirements,
   markUploadProcessed,
+  markUploadReviewed,
   reorderChecklistItems,
   requestReUpload,
   addChecklistItemToTripServices,
@@ -119,18 +120,18 @@ describe("services data layer (mock mode)", () => {
     expect(mockServiceUploads[0].filePath).toContain("services/");
   });
 
-  it("markUploadProcessed sets status processed and file_removed", async () => {
+  it("markUploadReviewed sets status reviewed without removing the file", async () => {
     const service = await ensureServiceForAssignment("t1", "c1");
     const item = await addChecklistItem(service.id, { label: "Passport", required: true });
     const file = new File(["x"], "passport.pdf", { type: "application/pdf" });
     const upload = await uploadServiceDocument(service.id, item.id, file);
 
-    await markUploadProcessed(upload.id);
+    await markUploadReviewed(upload.id);
 
     const updated = mockServiceUploads.find((u) => u.id === upload.id);
     expect(updated).toBeDefined();
-    expect(updated!.status).toBe("processed");
-    expect(updated!.fileRemoved).toBe(true);
+    expect(updated!.status).toBe("reviewed");
+    expect(updated!.fileRemoved).toBe(false);
   });
 
   it("requestReUpload rejects empty or whitespace-only comments", async () => {
@@ -156,7 +157,7 @@ describe("services data layer (mock mode)", () => {
     expect(updated!.agentComment).toBe("File is blurry");
   });
 
-  it("getServicesProgressForClient counts only processed uploads", async () => {
+  it("getServicesProgressForClient counts reviewed and processed uploads", async () => {
     const service = await ensureServiceForAssignment("t1", "c1");
     const itemA = await addChecklistItem(service.id, { label: "A", required: true });
     const itemB = await addChecklistItem(service.id, { label: "B", required: true });
@@ -166,7 +167,7 @@ describe("services data layer (mock mode)", () => {
     const uploadedFile = new File(["x"], "b.pdf", { type: "application/pdf" });
     const processedUpload = await uploadServiceDocument(service.id, itemA.id, processedFile);
     await uploadServiceDocument(service.id, itemB.id, uploadedFile);
-    await markUploadProcessed(processedUpload.id);
+    await markUploadReviewed(processedUpload.id);
 
     const progress = await getServicesProgressForClient("c1");
 
@@ -194,7 +195,7 @@ describe("services data layer (mock mode)", () => {
       requested.id,
       new File(["x"], "insurance.pdf", { type: "application/pdf" })
     );
-    await markUploadProcessed(processedUpload.id);
+    await markUploadReviewed(processedUpload.id);
     await requestReUpload(requestedUpload.id, "Please upload a clearer scan");
 
     await expect(getServiceDocumentSummariesForTrip("t1")).resolves.toEqual([

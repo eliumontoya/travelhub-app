@@ -110,7 +110,7 @@ import {
   updateChecklistItemAction,
   deleteChecklistItemAction,
   reorderChecklistItemsAction,
-  markUploadProcessedAction,
+  markUploadReviewedAction,
   requestReUploadAction,
   getServiceChecklistForTripAction,
 } from "./actions";
@@ -781,7 +781,7 @@ export default async function TripEditorPage({
               updateChecklistItemAction={updateChecklistItemAction.bind(null, trip.id)}
               deleteChecklistItemAction={deleteChecklistItemAction.bind(null, trip.id)}
               reorderChecklistItemsAction={reorderChecklistItemsAction.bind(null, trip.id)}
-              markUploadProcessedAction={markUploadProcessedAction.bind(null, trip.id)}
+              markUploadReviewedAction={markUploadReviewedAction.bind(null, trip.id)}
               requestReUploadAction={requestReUploadAction.bind(null, trip.id)}
             />
 

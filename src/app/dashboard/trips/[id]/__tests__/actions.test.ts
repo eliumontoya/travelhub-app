@@ -17,6 +17,7 @@ vi.mock("@/lib/data", async (importOriginal) => ({
   getServicesForTrip: vi.fn(),
   getTripById: vi.fn(),
   markUploadProcessed: vi.fn(),
+  markUploadReviewed: vi.fn(),
   requestReUpload: vi.fn(),
 }));
 
@@ -29,12 +30,13 @@ import {
   getServicesForTrip,
   getTripById,
   markUploadProcessed,
+  markUploadReviewed,
   requestReUpload,
 } from "@/lib/data";
 import {
   addChecklistItemToTripServicesAction,
   getServiceChecklistForTripAction,
-  markUploadProcessedAction,
+  markUploadReviewedAction,
   requestReUploadAction,
 } from "../actions";
 
@@ -115,19 +117,19 @@ describe("service document actions", () => {
   });
 
   it("allows published upload review only when the upload belongs to the trip", async () => {
-    await markUploadProcessedAction("trip-1", "upload-1");
+    await markUploadReviewedAction("trip-1", "upload-1");
 
-    expect(markUploadProcessed).toHaveBeenCalledWith("upload-1");
+    expect(markUploadReviewed).toHaveBeenCalledWith("upload-1");
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard/trips/trip-1");
   });
 
   it("does not transition an upload that is outside the trip boundary", async () => {
     vi.mocked(getServiceWithChecklist).mockResolvedValue({ ...service, items: [] });
 
-    await expect(markUploadProcessedAction("trip-1", "foreign-upload")).rejects.toThrow(
+    await expect(markUploadReviewedAction("trip-1", "foreign-upload")).rejects.toThrow(
       "El upload no pertenece al viaje"
     );
-    expect(markUploadProcessed).not.toHaveBeenCalled();
+    expect(markUploadReviewed).not.toHaveBeenCalled();
   });
 
   it("keeps re-upload transitions agent-only and revalidates after the transition", async () => {

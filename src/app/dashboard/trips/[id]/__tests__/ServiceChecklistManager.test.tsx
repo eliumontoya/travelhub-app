@@ -40,7 +40,7 @@ function renderManager(isArchived = false) {
       updateChecklistItemAction={noOp}
       deleteChecklistItemAction={noOp}
       reorderChecklistItemsAction={noOp}
-      markUploadProcessedAction={noOp}
+      markUploadReviewedAction={noOp}
       requestReUploadAction={noOp}
     />,
   );
@@ -51,10 +51,10 @@ describe("ServiceChecklistManager", () => {
     const html = renderManager();
 
     expect(html).toContain("Ana López");
-    expect(html).toContain("2/4 procesados");
+    expect(html).toContain("2/4 revisados");
     expect(html).toContain("1 pendiente de revisión");
     expect(html).toContain("Luis Pérez");
-    expect(html).toContain("0/1 procesados");
+    expect(html).toContain("0/1 revisados");
     expect(getChecklist).not.toHaveBeenCalled();
   });
 
@@ -71,9 +71,9 @@ describe("ServiceChecklistManager", () => {
     const html = renderManager(true);
 
     expect(html).toContain("Ana López");
-    expect(html).toContain("2/4 procesados");
+    expect(html).toContain("2/4 revisados");
     expect(html).not.toContain("Asignar a todos los viajeros");
     expect(html).not.toContain("Agregar documento");
-    expect(html).not.toContain("Marcar procesado");
+    expect(html).not.toContain("Marcar como revisado");
   });
 });
