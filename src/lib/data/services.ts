@@ -657,7 +657,25 @@ export async function uploadServiceDocument(
     )
     .select()
     .single();
-  if (error) throw error;
+  if (error) {
+    let cleanupFailure: unknown;
+
+    try {
+      const { error: removeError } = await supabase.storage.from(DOCUMENTS_BUCKET).remove([path]);
+      cleanupFailure = removeError;
+    } catch (removeError) {
+      cleanupFailure = removeError;
+    }
+
+    if (cleanupFailure) {
+      throw new AggregateError(
+        [error, cleanupFailure],
+        `Persistence failed and cleanup is incomplete; ${path} may remain orphaned.`
+      );
+    }
+
+    throw error;
+  }
 
   if (oldPath) {
     await supabase.storage.from(DOCUMENTS_BUCKET).remove([oldPath]);
