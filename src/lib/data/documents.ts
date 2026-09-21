@@ -99,6 +99,29 @@ export async function getSignedServiceDocumentDownloadUrl(
   return data.signedUrl;
 }
 
+/**
+ * Genera una URL firmada de corta duración para SUBIR un documento de
+ * servicio usando el service-role (bypasea el bucket privado y RLS), espejo
+ * de `getSignedServiceDocumentDownloadUrl` pero con `createSignedUploadUrl`
+ * (PUT firmado). `expiresIn` es solo metadato: el TTL real lo aplica el
+ * servidor de storage de Supabase (`@supabase/storage-js`
+ * `createSignedUploadUrl` no acepta expiry, solo `{ upsert }`). El tool MCP
+ * (`get_document_upload_url`) lo acepta por simetría de firma y lo devuelve
+ * en la respuesta, pero no lo pasa al storage. Lanza si no hay service role
+ * o si el firmado falla; el caller MCP lo mapea a un error seguro.
+ */
+export async function getSignedServiceDocumentUploadUrl(
+  path: string,
+  _expiresIn = 3600
+): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUploadUrl(path, { upsert: false });
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 export async function getItemDocuments(
   itemId: string
 ): Promise<(ItemDocument & { url: string | null })[]> {
