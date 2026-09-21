@@ -86,6 +86,55 @@ export function rowToServiceUpload(row: Record<string, unknown>): ServiceUpload 
   };
 }
 
+/**
+ * Ownership + lifecycle guard for service-upload mutations performed through
+ * a cookie-less surface (e.g. the MCP route).
+ *
+ * Verifies that the upload exists, belongs to the caller-supplied `tripId`
+ * (via service→trip_id), and that the trip is not archived. Has no mock
+ * branch by design: the MCP route enforces a 503 when the service role is
+ * unavailable, so this helper only runs against real Supabase.
+ *
+ * The cross-trip ownership mismatch is mapped to "Upload no encontrado" so
+ * callers cannot probe which trip owns which upload.
+ */
+export async function assertServiceUploadMutable(
+  uploadId: string,
+  tripId: string
+): Promise<void> {
+  const supabase = await getServiceClient();
+
+  const { data: uploadRow, error: uploadError } = await supabase
+    .from("service_uploads")
+    .select("service_id")
+    .eq("id", uploadId)
+    .maybeSingle();
+  if (uploadError) throw uploadError;
+  if (!uploadRow) throw new Error("Upload no encontrado");
+
+  const { data: serviceRow, error: serviceError } = await supabase
+    .from("services")
+    .select("trip_id")
+    .eq("id", uploadRow.service_id as string)
+    .maybeSingle();
+  if (serviceError) throw serviceError;
+  if (!serviceRow) throw new Error("Servicio no encontrado");
+
+  if ((serviceRow.trip_id as string) !== tripId) {
+    throw new Error("Upload no encontrado");
+  }
+
+  const { data: tripRow, error: tripError } = await supabase
+    .from("trips")
+    .select("status")
+    .eq("id", tripId)
+    .maybeSingle();
+  if (tripError) throw tripError;
+  if (tripRow?.status === "archived") {
+    throw new Error("El viaje archivado es de solo lectura");
+  }
+}
+
 export async function ensureServiceForAssignment(
   tripId: string,
   clientId: string
