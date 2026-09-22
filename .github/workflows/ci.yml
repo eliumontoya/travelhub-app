@@ -39,10 +39,39 @@ jobs:
       - name: Unit Tests
         run: npm run test
 
-  e2e:
-    name: E2E Tests (Playwright)
+  e2e-mock:
+    name: E2E Mock (Playwright)
     needs: lint-build-test
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Mock Playwright Tests
+        run: npx playwright test --project=mock
+
+      - name: Upload Playwright Mock Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-mock
+          path: playwright-report/
+          retention-days: 14
+
+  e2e-preview:
+    name: E2E Preview Smoke (Playwright)
+    needs: lint-build-test
+    runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -60,25 +89,27 @@ jobs:
         id: deploy
         run: |
           url=$(npx vercel --token "${{ secrets.VERCEL_TOKEN }}" --cwd . 2>&1 | grep -oE 'https://[^ ]+\.vercel\.app' | head -1)
+          [ -n "$url" ] || { echo "::error::no preview URL captured"; exit 1; }
           echo "preview-url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview deployed at: $url"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Run Playwright Tests
-        run: npx playwright test --project=chromium
+      - name: Run Preview Smoke Playwright Tests
+        if: steps.deploy.outputs.preview-url != ''
+        run: npx playwright test --project=preview
         env:
           BASE_URL: ${{ steps.deploy.outputs.preview-url }}
           VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Upload Playwright Report
+      - name: Upload Playwright Preview Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-preview
           path: playwright-report/
           retention-days: 14
 
