@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=mock",
+    "test:e2e:mock": "playwright test --project=mock",
+    "test:e2e:preview": "playwright test --project=preview",
     "test:e2e:ui": "playwright test --ui",
     "whatsapp:simulate": "node scripts/whatsapp-simulate-inbound.mjs"
   },
