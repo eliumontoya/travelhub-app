@@ -41,8 +41,92 @@ function resetServiceMocks() {
 beforeEach(() => {
   resetServiceMocks();
   vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   vi.clearAllMocks();
 });
+
+type ServiceUploadScenario = {
+  existingPath?: string;
+  persistenceError?: Error;
+  cleanupError?: Error;
+  cleanupThrows?: boolean;
+};
+
+function createServiceUploadClient({
+  existingPath,
+  persistenceError,
+  cleanupError,
+  cleanupThrows,
+}: ServiceUploadScenario) {
+  const events: string[] = [];
+  const paths = { uploaded: "", removed: [] as string[] };
+
+  const client = {
+    from(table: string) {
+      if (table === "service_checklist_items") {
+        const query = {
+          select: () => query,
+          eq: () => query,
+          maybeSingle: async () => ({ data: { id: "item-1", service_id: "service-1" }, error: null }),
+        };
+        return query;
+      }
+
+      const existingUploadQuery = {
+        select: () => existingUploadQuery,
+        eq: () => existingUploadQuery,
+        maybeSingle: async () => ({
+          data: existingPath ? { file_path: existingPath } : null,
+          error: null,
+        }),
+      };
+      const upsertQuery = {
+        select: () => upsertQuery,
+        single: async () => {
+          events.push("upsert");
+          if (persistenceError) return { data: null, error: persistenceError };
+          return {
+            data: {
+              id: "upload-2",
+              service_id: "service-1",
+              checklist_item_id: "item-1",
+              file_path: paths.uploaded,
+              filename: "passport.pdf",
+              mime_type: "application/pdf",
+              status: "uploaded",
+              file_removed: false,
+              uploaded_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-01T00:00:00.000Z",
+            },
+            error: null,
+          };
+        },
+      };
+
+      return {
+        select: () => existingUploadQuery,
+        upsert: () => upsertQuery,
+      };
+    },
+    storage: {
+      from: () => ({
+        upload: async (path: string) => {
+          paths.uploaded = path;
+          events.push(`upload:${path}`);
+          return { error: null };
+        },
+        remove: async (removedPaths: string[]) => {
+          paths.removed.push(...removedPaths);
+          events.push(`remove:${removedPaths.join(",")}`);
+          if (cleanupThrows && cleanupError) throw cleanupError;
+          return { error: cleanupError ?? null };
+        },
+      }),
+    },
+  };
+
+  return { client, events, paths };
+}
 
 describe("services data layer (mock mode)", () => {
   it("ensureServiceForAssignment creates one service and is idempotent", async () => {
@@ -283,6 +367,80 @@ describe("services data layer (mock mode)", () => {
 
     await expect(getServiceWithChecklist("svc1")).rejects.toThrow("ADMIN_CLIENT_USED");
     expect(getSupabaseAdmin).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("uploadServiceDocument (Supabase mode)", () => {
+  function useSupabaseClient(scenario: ServiceUploadScenario) {
+    const harness = createServiceUploadClient(scenario);
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+    vi.mocked(getSupabaseAdmin).mockReturnValue(harness.client as never);
+    return harness;
+  }
+
+  const file = () => new File(["passport"], "passport.pdf", { type: "application/pdf" });
+
+  it("compensates a failed first-upload persistence with only the provisional path", async () => {
+    const persistenceError = new Error("database unavailable");
+    const { paths } = useSupabaseClient({ persistenceError });
+
+    await expect(uploadServiceDocument("service-1", "item-1", file())).rejects.toBe(persistenceError);
+
+    expect(paths.removed).toEqual([paths.uploaded]);
+    expect(paths.removed).toHaveLength(1);
+  });
+
+  it("preserves the existing replacement path when persistence fails", async () => {
+    const persistenceError = new Error("database unavailable");
+    const { paths } = useSupabaseClient({ existingPath: "services/service-1/item-1/old.pdf", persistenceError });
+
+    await expect(uploadServiceDocument("service-1", "item-1", file())).rejects.toBe(persistenceError);
+
+    expect(paths.removed).toEqual([paths.uploaded]);
+    expect(paths.removed).not.toContain("services/service-1/item-1/old.pdf");
+  });
+
+  it("retains both failures when compensation returns an error", async () => {
+    const persistenceError = new Error("database unavailable");
+    const cleanupError = new Error("storage unavailable");
+    const { paths } = useSupabaseClient({ persistenceError, cleanupError });
+
+    await expect(uploadServiceDocument("service-1", "item-1", file())).rejects.toSatisfy((error: unknown) => {
+      return error instanceof AggregateError
+        && error.errors[0] === persistenceError
+        && error.errors[1] === cleanupError
+        && /cleanup is incomplete/i.test(error.message)
+        && /orphaned/i.test(error.message)
+        && error.message.includes(paths.uploaded);
+    });
+  });
+
+  it("retains both failures when compensation throws", async () => {
+    const persistenceError = new Error("database unavailable");
+    const cleanupError = new Error("storage unavailable");
+    const { paths } = useSupabaseClient({ persistenceError, cleanupError, cleanupThrows: true });
+
+    await expect(uploadServiceDocument("service-1", "item-1", file())).rejects.toSatisfy((error: unknown) => {
+      return error instanceof AggregateError
+        && error.errors[0] === persistenceError
+        && error.errors[1] === cleanupError
+        && /cleanup is incomplete/i.test(error.message)
+        && /orphaned/i.test(error.message)
+        && error.message.includes(paths.uploaded);
+    });
+  });
+
+  it("updates the row before removing the old replacement path", async () => {
+    const oldPath = "services/service-1/item-1/old.pdf";
+    const { events, paths } = useSupabaseClient({ existingPath: oldPath });
+
+    const upload = await uploadServiceDocument("service-1", "item-1", file());
+
+    expect(upload.filePath).toBe(paths.uploaded);
+    expect(paths.removed).toEqual([oldPath]);
+    expect(events.indexOf("upsert")).toBeLessThan(events.indexOf(`remove:${oldPath}`));
+    expect(paths.removed).not.toContain(paths.uploaded);
   });
 });
 
