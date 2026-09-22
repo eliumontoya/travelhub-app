@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addChecklistItem,
+  assertServiceUploadMutable,
   deleteChecklistItem,
   ensureServiceForAssignment,
   getServiceChecklistForTrip,
@@ -440,5 +441,107 @@ describe("uploadServiceDocument (Supabase mode)", () => {
     expect(paths.removed).toEqual([oldPath]);
     expect(events.indexOf("upsert")).toBeLessThan(events.indexOf(`remove:${oldPath}`));
     expect(paths.removed).not.toContain(paths.uploaded);
+  });
+});
+
+type TableResponses = Record<string, { data: unknown; error: unknown }>;
+
+function buildSupabaseChain(responses: TableResponses) {
+  const from = vi.fn((table: string) => {
+    const response = responses[table] ?? { data: null, error: null };
+    const maybeSingle = vi.fn(() => Promise.resolve(response));
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    return { select };
+  });
+  return { from };
+}
+
+function setupAdminClient(responses: TableResponses) {
+  vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+  vi.mocked(getSupabaseAdmin).mockReturnValue(buildSupabaseChain(responses) as unknown as ReturnType<typeof getSupabaseAdmin>);
+}
+
+describe("assertServiceUploadMutable (service-role guard)", () => {
+  it("resolves when the upload, service, and trip all line up", async () => {
+    setupAdminClient({
+      service_uploads: { data: { service_id: "svc-1" }, error: null },
+      services: { data: { trip_id: "trip-1" }, error: null },
+      trips: { data: { status: "active" }, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-1", "trip-1")).resolves.toBeUndefined();
+  });
+
+  it("throws 'Upload no encontrado' when the upload row is missing", async () => {
+    setupAdminClient({
+      service_uploads: { data: null, error: null },
+      services: { data: { trip_id: "trip-1" }, error: null },
+      trips: { data: { status: "active" }, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-missing", "trip-1")).rejects.toThrow(
+      "Upload no encontrado"
+    );
+  });
+
+  it("throws 'Servicio no encontrado' when the service row is missing", async () => {
+    setupAdminClient({
+      service_uploads: { data: { service_id: "svc-missing" }, error: null },
+      services: { data: null, error: null },
+      trips: { data: { status: "active" }, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-1", "trip-1")).rejects.toThrow(
+      "Servicio no encontrado"
+    );
+  });
+
+  it("throws 'Upload no encontrado' on cross-trip ownership mismatch", async () => {
+    setupAdminClient({
+      service_uploads: { data: { service_id: "svc-1" }, error: null },
+      services: { data: { trip_id: "trip-other" }, error: null },
+      trips: { data: { status: "active" }, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-1", "trip-1")).rejects.toThrow(
+      "Upload no encontrado"
+    );
+  });
+
+  it("throws 'El viaje archivado es de solo lectura' when the trip is archived", async () => {
+    setupAdminClient({
+      service_uploads: { data: { service_id: "svc-1" }, error: null },
+      services: { data: { trip_id: "trip-1" }, error: null },
+      trips: { data: { status: "archived" }, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-1", "trip-1")).rejects.toThrow(
+      "El viaje archivado es de solo lectura"
+    );
+  });
+
+  it("rethrows raw query errors from the upload lookup", async () => {
+    setupAdminClient({
+      service_uploads: { data: null, error: new Error("db down") },
+      services: { data: { trip_id: "trip-1" }, error: null },
+      trips: { data: { status: "active" }, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-1", "trip-1")).rejects.toThrow("db down");
+  });
+
+  it("resolves when the trip row is missing but not archived", async () => {
+    // No archived status means the guard accepts the absence (matches the
+    // Server-Action behaviour where a missing trip row is treated as a
+    // non-archived trip rather than throwing).
+    setupAdminClient({
+      service_uploads: { data: { service_id: "svc-1" }, error: null },
+      services: { data: { trip_id: "trip-1" }, error: null },
+      trips: { data: null, error: null },
+    });
+
+    await expect(assertServiceUploadMutable("up-1", "trip-1")).resolves.toBeUndefined();
   });
 });

@@ -17,6 +17,7 @@
     "@ai-sdk/openai-compatible": "^3.0.48",
     "@chat-adapter/state-memory": "^4.40.0",
     "@chat-adapter/whatsapp": "^4.40.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.109.0",
     "@types/sanitize-html": "^2.16.1",

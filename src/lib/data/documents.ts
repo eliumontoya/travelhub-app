@@ -1,6 +1,7 @@
 import { ClientDocument, ItemDocument, TripDocument, TripPhoto } from "@/types";
 import { mockClients, mockTripPhotos, mockTrips } from "@/lib/mock-data";
 import { createServerSupabase, isSupabaseConfigured, sanitizeStorageKey, uid } from "@/lib/data/shared";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { updateTrip } from "@/lib/data/trips";
 import { updateClient } from "@/lib/data/clients";
 
@@ -76,6 +77,48 @@ export async function getSignedDocumentUrl(path: string): Promise<string | null>
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, 3600);
   if (error) return null;
+  return data.signedUrl;
+}
+
+/**
+ * Genera una URL firmada de corta duración para descargar un documento de
+ * servicio usando el service-role (bypasea el bucket privado y RLS). Lanza si
+ * no hay service role o si el firmado falla; el tool MCP lo mapea a un error
+ * seguro. Mantener separado de `getSignedDocumentUrl` (cookie/anon) para no
+ * acoplar el flujo MCP al de la UI autenticada.
+ */
+export async function getSignedServiceDocumentDownloadUrl(
+  path: string,
+  expiresIn = 3600
+): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUrl(path, expiresIn);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+/**
+ * Genera una URL firmada de corta duración para SUBIR un documento de
+ * servicio usando el service-role (bypasea el bucket privado y RLS), espejo
+ * de `getSignedServiceDocumentDownloadUrl` pero con `createSignedUploadUrl`
+ * (PUT firmado). `expiresIn` es solo metadato: el TTL real lo aplica el
+ * servidor de storage de Supabase (`@supabase/storage-js`
+ * `createSignedUploadUrl` no acepta expiry, solo `{ upsert }`). El tool MCP
+ * (`get_document_upload_url`) lo acepta por simetría de firma y lo devuelve
+ * en la respuesta, pero no lo pasa al storage. Lanza si no hay service role
+ * o si el firmado falla; el caller MCP lo mapea a un error seguro.
+ */
+export async function getSignedServiceDocumentUploadUrl(
+  path: string,
+  _expiresIn = 3600
+): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUploadUrl(path, { upsert: false });
+  if (error) throw error;
   return data.signedUrl;
 }
 
