@@ -1,7 +1,9 @@
 import { getTravelAgents } from "@/lib/data";
 import { TravelAgentCatalogClient } from "./catalog-client";
+import { requireFeature } from "@/lib/auth/roles";
 
 export default async function TravelAgentsCatalogPage() {
+  await requireFeature("travel-agents");
   const agents = await getTravelAgents();
 
   return (

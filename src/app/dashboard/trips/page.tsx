@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ALL_CLIENTS_PAGE_SIZE, DEFAULT_PAGE_SIZE, getClients, getTags, getTravelAgents, getTripsWithClients } from "@/lib/data";
 import { hasActiveTripFilters } from "@/lib/trip-filters";
+import { requireFeature } from "@/lib/auth/roles";
 import type { TripCurrency, TripFilters, TripStatus } from "@/types";
 import { TripsExplorer } from "./TripsExplorer";
 
@@ -16,6 +17,7 @@ export default async function TripsIndexPage({
 }: {
   searchParams: Promise<TripsPageSearchParams>;
 }) {
+  await requireFeature("trips");
   const params = await searchParams;
   const { filters, page } = parseTripsSearchParams(params);
   const [{ items: trips, totalCount }, { items: clients }, tags, travelAgents] = await Promise.all([
