@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { AccountProfile } from "@/types";
+import type { AccountProfile, Feature } from "@/types";
+import { AVAILABLE_FEATURES } from "@/lib/auth/features";
 import { mockProfiles, currentMockAccountId, setCurrentMockAccountId } from "@/lib/mock-data";
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -53,10 +54,36 @@ describe("role helpers", () => {
       expect(canAccessFeature(admin, "settings")).toBe(true);
     });
 
+    it("lets admins access every catalog feature even with empty features[]", () => {
+      const admin: AccountProfile = { id: "u1", role: "admin", features: [] };
+      for (const feature of AVAILABLE_FEATURES) {
+        expect(canAccessFeature(admin, feature)).toBe(true);
+      }
+    });
+
     it("lets agents access only assigned features", () => {
       const agent: AccountProfile = { id: "u2", role: "agent", features: ["trips"] };
       expect(canAccessFeature(agent, "trips")).toBe(true);
       expect(canAccessFeature(agent, "settings")).toBe(false);
+    });
+
+    it("evaluates the full catalog matrix for an agent with two features", () => {
+      const agent: AccountProfile = {
+        id: "u3",
+        role: "agent",
+        features: ["trips", "clients"],
+      };
+      for (const feature of AVAILABLE_FEATURES) {
+        const expected = feature === "trips" || feature === "clients";
+        expect(canAccessFeature(agent, feature)).toBe(expected);
+      }
+    });
+
+    it("returns false for every catalog feature when the agent has no features assigned", () => {
+      const agent: AccountProfile = { id: "u4", role: "agent", features: [] };
+      for (const feature of AVAILABLE_FEATURES) {
+        expect(canAccessFeature(agent, feature)).toBe(false);
+      }
     });
 
     it("returns false when no profile is provided", () => {

@@ -12,10 +12,18 @@ export type TripCurrency = "MXN" | "USD" | "EUR";
 
 export type AccountRole = "admin" | "agent";
 
+export type Feature =
+  | "trips"
+  | "clients"
+  | "suppliers"
+  | "travel-agents"
+  | "whatsapp"
+  | "settings";
+
 export interface AccountProfile {
   id: string;
   role: AccountRole;
-  features: string[];
+  features: Feature[];
   travelAgentId?: string;
 }
 

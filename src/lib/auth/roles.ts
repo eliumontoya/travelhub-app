@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, createClient } from "@/lib/supabase/server";
 import { currentMockAccountId, mockProfiles } from "@/lib/mock-data";
-import type { AccountProfile, AccountRole } from "@/types";
+import type { AccountProfile, AccountRole, Feature } from "@/types";
 
 export function normalizeRole(value: unknown): AccountRole | null {
   if (value === "admin" || value === "agent") {
@@ -14,7 +14,7 @@ export function hasRole(role: AccountRole | null, allowed: AccountRole[]): boole
   return allowed.includes(role);
 }
 
-export function canAccessFeature(profile: AccountProfile | null, feature: string): boolean {
+export function canAccessFeature(profile: AccountProfile | null, feature: Feature): boolean {
   if (!profile) return false;
   if (profile.role === "admin") return true;
   return profile.features.includes(feature);
