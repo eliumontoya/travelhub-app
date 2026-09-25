@@ -36,6 +36,7 @@ import {
   TravelerActivityAddFormProvider,
 } from "@/components/TravelerActivityAddFormPanel";
 import { canRenderTravelerActivityControls } from "@/lib/traveler-activity-controls";
+import { OperatorSurface } from "@/components/ui/OperatorSurface";
 
 export async function generateMetadata({
   params,
@@ -116,7 +117,7 @@ export default async function PublicTripPage({
   const tripEnded = Boolean(trip.endDate) && trip.endDate < today;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-16 print:bg-white print:pb-0 dark:bg-gray-950">
+    <main className="min-h-screen bg-[var(--operator-canvas)] pb-16 text-[var(--operator-ink)] print:bg-white print:pb-0">
       <div className="fixed right-4 top-4 z-30 flex items-center gap-2 print:hidden">
         <ClientSessionButton returnTo={`/t/${slug}`} />
         <ThemeToggle />
@@ -129,7 +130,7 @@ export default async function PublicTripPage({
       )}
 
       <section
-        className="bg-gray-900 bg-cover bg-center print:hidden"
+        className="bg-[var(--operator-brand-strong)] bg-gradient-to-t from-[var(--operator-brand-strong)] via-[var(--operator-brand)] to-[var(--operator-brand-strong)] bg-cover bg-center print:hidden"
         style={{
           backgroundImage: trip.coverImageUrl
             ? `linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.35)), url("${trip.coverImageUrl}")`
@@ -137,7 +138,7 @@ export default async function PublicTripPage({
         }}
       >
         <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-5 text-white shadow-2xl backdrop-blur-sm sm:p-6">
+          <div className="rounded-[var(--operator-radius-panel)] border border-[var(--operator-accent)]/35 bg-[var(--operator-brand-strong)]/85 p-5 text-white shadow-[var(--operator-shadow-panel)] backdrop-blur-sm sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0">
                 {(contact.logoUrl || contact.agencyName) && (
@@ -193,8 +194,8 @@ export default async function PublicTripPage({
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[220px_minmax(0,1fr)_320px] print:block print:max-w-3xl print:py-0">
         <aside className="hidden lg:block print:hidden">
-          <div className="sticky top-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <div className="sticky top-6 rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">
               {t.daysNav}
             </p>
             <TripDaySidebar days={trip.days} lang={lang} />
@@ -202,12 +203,12 @@ export default async function PublicTripPage({
         </aside>
 
         <section className="order-3 min-w-0 space-y-6 lg:order-none print:space-y-4">
-          <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 shadow-sm print:hidden dark:border-blue-950 dark:bg-blue-950/20">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t.daysNav}</h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <OperatorSurface variant="subtle" className="rounded-[var(--operator-radius-panel)] p-4 shadow-[var(--operator-shadow-card)] print:hidden">
+            <h2 className="text-lg font-semibold text-[var(--operator-ink)]">{t.daysNav}</h2>
+            <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
               Todo el viaje organizado por día, con horarios, ubicaciones y documentos importantes.
             </p>
-          </div>
+          </OperatorSurface>
 
           <TravelerActivityAddFormProvider>
             <div className="space-y-8">
@@ -215,27 +216,27 @@ export default async function PublicTripPage({
                 <article
                   key={day.id}
                   id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none dark:border-gray-800 dark:bg-gray-900"
+                  className="scroll-mt-6 rounded-[var(--operator-radius-panel)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)] sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none"
                 >
-                <header className="mb-4 flex flex-col gap-2 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between print:border-b-0 print:pb-0 dark:border-gray-800">
+                <header className="mb-4 flex flex-col gap-2 border-b border-[var(--operator-border-subtle)] pb-4 sm:flex-row sm:items-center sm:justify-between print:border-b-0 print:pb-0">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">Día {dayIdx + 1}</p>
-                    <h2 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold capitalize text-gray-900 dark:text-gray-100">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)]">Día {dayIdx + 1}</p>
+                    <h2 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold capitalize text-[var(--operator-ink)]">
                       {formatDateLong(day.date, lang)}
                       <WeatherBadge weather={dayWeather[dayIdx]} />
                     </h2>
                   </div>
-                  <span className="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  <span className="w-fit rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 text-xs font-medium text-[var(--operator-ink-muted)]">
                     {day.items.length} {day.items.length === 1 ? "item" : "items"}
                   </span>
                 </header>
 
                 {day.notes && (
-                  <div className="mb-4 rounded-xl border border-dashed border-blue-100 bg-blue-50/50 px-3 py-2 print:border-gray-200 print:bg-white dark:border-blue-950 dark:bg-blue-950/20">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-400">
+                  <div className="mb-4 rounded-[var(--operator-radius-card)] border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-gray-200 print:bg-white">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)] dark:text-blue-400">
                       Nota del día
                     </p>
-                    <NoteHtml html={day.notes} className="text-sm text-gray-600 dark:text-gray-400" />
+                    <NoteHtml html={day.notes} className="text-sm text-[var(--operator-ink-muted)]" />
                   </div>
                 )}
 
@@ -263,7 +264,7 @@ export default async function PublicTripPage({
                     return (
                       <div
                         key={item.id}
-                        className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 print:break-inside-avoid print:border-gray-300 print:bg-white dark:border-gray-800 dark:bg-gray-950/50"
+                        className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border-subtle)] bg-[var(--operator-surface-raised)] p-4 print:break-inside-avoid print:border-gray-300 print:bg-white"
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 items-start gap-3">
@@ -275,12 +276,12 @@ export default async function PublicTripPage({
                             </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
-                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                                <span className="font-medium text-[var(--operator-ink)]">{item.title}</span>
+                                <span className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-brand)]">
                                   {t.itemType[item.type]}
                                 </span>
                                 {item.startTime && (
-                                  <span className="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:ring-gray-800">
+                                  <span className="rounded-full bg-[var(--operator-surface)] px-2 py-0.5 text-xs text-[var(--operator-ink-muted)] ring-1 ring-[var(--operator-border)]">
                                     {item.startTime}
                                     {tzLabel && ` · ${tzLabel}`}
                                   </span>
@@ -290,7 +291,7 @@ export default async function PublicTripPage({
                                 )}
                               </div>
                               {resolvedLocation && (
-                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{resolvedLocation.label}</p>
+                                <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">{resolvedLocation.label}</p>
                               )}
                               {metadataSummary && (
                                 <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
@@ -298,8 +299,8 @@ export default async function PublicTripPage({
                                 </p>
                               )}
                               {hasDetails && (
-                                <details className="group mt-3 rounded-lg border border-gray-200 bg-white/70 p-3 open:bg-white print:border-0 print:bg-white print:p-0 dark:border-gray-800 dark:bg-gray-900/60 dark:open:bg-gray-900">
-                                  <summary className="cursor-pointer list-none text-sm font-medium text-blue-600 hover:text-blue-700 print:hidden dark:text-blue-400 dark:hover:text-blue-300">
+                                <details className="group mt-3 rounded-[var(--operator-radius-control)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-3 open:bg-[var(--operator-surface-raised)] print:border-0 print:bg-white print:p-0">
+                                  <summary className="cursor-pointer list-none text-sm font-medium text-[var(--operator-brand)] hover:text-[var(--operator-brand-strong)] print:hidden">
                                     <span className="group-open:hidden">Ver más detalles</span>
                                     <span className="hidden group-open:inline">Ver menos</span>
                                   </summary>
@@ -307,34 +308,34 @@ export default async function PublicTripPage({
                                     {item.notes && (
                                       <NoteHtml
                                         html={item.notes}
-                                        className="text-sm text-gray-600 dark:text-gray-400"
+                                        className="text-sm text-[var(--operator-ink-muted)]"
                                       />
                                     )}
                                     {(item.confirmationCode || (trip.showCostsToClient && item.cost !== undefined) || detailRows.length > 0) && (
                                       <dl className="grid gap-2 text-sm sm:grid-cols-2">
                                         {item.confirmationCode && (
                                           <div>
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t.confirmationLabel}</dt>
-                                            <dd className="text-gray-700 dark:text-gray-300">{item.confirmationCode}</dd>
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">{t.confirmationLabel}</dt>
+                                            <dd className="text-[var(--operator-ink-muted)]">{item.confirmationCode}</dd>
                                           </div>
                                         )}
                                         {trip.showCostsToClient && item.cost !== undefined && (
                                           <div>
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Costo</dt>
-                                            <dd className="text-gray-700 dark:text-gray-300">{formatCost(item.cost, trip.currency)}</dd>
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">Costo</dt>
+                                            <dd className="text-[var(--operator-ink-muted)]">{formatCost(item.cost, trip.currency)}</dd>
                                           </div>
                                         )}
                                         {detailRows.map((row) => (
                                           <div key={`${item.id}-${row.label}`}>
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">{row.label}</dt>
-                                            <dd className="text-gray-700 dark:text-gray-300">{row.value}</dd>
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">{row.label}</dt>
+                                            <dd className="text-[var(--operator-ink-muted)]">{row.value}</dd>
                                           </div>
                                         ))}
                                       </dl>
                                     )}
                                     {Boolean(item.documents?.length) && (
                                       <div>
-                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Documentos</p>
+                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">Documentos</p>
                                         <ul className="space-y-2">
                                           {item.documents?.map((doc) => (
                                             <li key={doc.id}>
@@ -400,8 +401,8 @@ export default async function PublicTripPage({
         </section>
 
         <aside className="order-2 space-y-4 lg:order-none print:hidden">
-          <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Acciones del viaje</h2>
+          <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+            <h2 className="text-sm font-semibold text-[var(--operator-ink)]">Acciones del viaje</h2>
             <div className="mt-3 grid gap-2">
               <AddTripToCalendarButton trip={trip} lang={lang} />
               <PrintButton />
@@ -409,26 +410,26 @@ export default async function PublicTripPage({
           </section>
 
           {trip.instructions && (
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Instrucciones</h2>
+            <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+              <h2 className="mb-3 text-sm font-semibold text-[var(--operator-ink)]">Instrucciones</h2>
               <NoteHtml
                 html={trip.instructions}
-                className="text-sm text-gray-700 dark:text-gray-300"
+                className="text-sm text-[var(--operator-ink-muted)]"
               />
             </section>
           )}
 
           {trip.showCostsToClient && (
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumen de costos</h2>
-              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCost(totalCost, trip.currency)}</p>
+            <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+              <h2 className="text-sm font-semibold text-[var(--operator-ink)]">Resumen de costos</h2>
+              <p className="mt-1 text-2xl font-bold text-[var(--operator-ink)]">{formatCost(totalCost, trip.currency)}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
             </section>
           )}
 
           {trip.photos.length > 0 && (
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Fotos</h2>
+            <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+              <h2 className="mb-3 text-sm font-semibold text-[var(--operator-ink)]">Fotos</h2>
               <div className="grid grid-cols-2 gap-2">
                 {trip.photos.map((photo) =>
                   photo.url ? (
@@ -447,8 +448,8 @@ export default async function PublicTripPage({
           )}
 
           {trip.documents.length > 0 && (
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Documentos del viaje</h2>
+            <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+              <h2 className="mb-3 text-sm font-semibold text-[var(--operator-ink)]">Documentos del viaje</h2>
               <ul className="space-y-2">
                 {trip.documents.map((doc) =>
                   doc.url ? (
@@ -473,16 +474,16 @@ export default async function PublicTripPage({
           )}
 
           {hasOwnedDocumentRequirements && (
-            <section className="rounded-xl border border-blue-100 bg-blue-50/80 p-4 shadow-sm dark:border-blue-950 dark:bg-blue-950/20">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] p-4 shadow-[var(--operator-shadow-card)]">
+              <h2 className="text-sm font-semibold text-[var(--operator-ink)]">
                 Documentos pendientes
               </h2>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
                 Tenés documentos pendientes por subir para este viaje.
               </p>
               <a
                 href={`/client/trips/${trip.id}/documents`}
-                className="mt-3 inline-flex text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                className="mt-3 inline-flex text-sm font-medium text-[var(--operator-brand)] hover:underline"
               >
                 Subir documentos
               </a>
@@ -490,7 +491,7 @@ export default async function PublicTripPage({
           )}
 
           {tripEnded && (
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
               <TripFeedbackForm onSubmit={submitTripFeedbackAction.bind(null, trip.id, trip.slug)} />
             </section>
           )}

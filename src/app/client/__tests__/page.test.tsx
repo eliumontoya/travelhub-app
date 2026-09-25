@@ -38,6 +38,9 @@ function getText(node: ReactNode): string {
   if (node === null || node === undefined || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (!isValidElement(node)) return "";
+  if (typeof node.type === "function") {
+    return getText((node.type as (props: unknown) => ReactNode)(node.props));
+  }
   const children = (node.props as Record<string, ReactNode>).children;
   if (Array.isArray(children)) return children.map(getText).join("");
   return getText(children);
@@ -47,6 +50,10 @@ function findLinks(node: ReactNode): Array<{ href: string; text: string }> {
   const results: Array<{ href: string; text: string }> = [];
   function walk(n: ReactNode) {
     if (!isValidElement(n)) return;
+    if (typeof n.type === "function") {
+      walk((n.type as (props: unknown) => ReactNode)(n.props));
+      return;
+    }
     const type = n.type;
     const props = n.props as Record<string, unknown>;
     if (type === "a") {
@@ -64,6 +71,10 @@ function findForms(node: ReactNode): Array<{ action?: unknown; text: string }> {
   const results: Array<{ action?: unknown; text: string }> = [];
   function walk(n: ReactNode) {
     if (!isValidElement(n)) return;
+    if (typeof n.type === "function") {
+      walk((n.type as (props: unknown) => ReactNode)(n.props));
+      return;
+    }
     const type = n.type;
     const props = n.props as Record<string, unknown>;
     if (type === "form") {
@@ -75,6 +86,27 @@ function findForms(node: ReactNode): Array<{ action?: unknown; text: string }> {
   }
   walk(node);
   return results;
+}
+
+
+type TestElement = React.ReactElement<Record<string, unknown>>;
+
+function findElements(node: ReactNode, predicate: (element: TestElement) => boolean) {
+  const matches: TestElement[] = [];
+  function walk(current: ReactNode) {
+    if (!isValidElement(current)) return;
+    if (typeof current.type === "function") {
+      walk((current.type as (props: unknown) => ReactNode)(current.props));
+      return;
+    }
+    const element = current as TestElement;
+    if (predicate(element)) matches.push(element);
+    const children = (element.props as Record<string, ReactNode>).children;
+    if (Array.isArray(children)) children.forEach(walk);
+    else walk(children);
+  }
+  walk(node);
+  return matches;
 }
 
 describe("/client home page", () => {
@@ -89,6 +121,27 @@ describe("/client home page", () => {
 
     await expect(ClientHomePage()).rejects.toThrow("NEXT_REDIRECT");
     expect(redirect).toHaveBeenCalledWith("/client/login?redirectTo=/client");
+  });
+
+  it("renders the authenticated account inside the shared traveler corporate surfaces", async () => {
+    vi.mocked(getClientSession).mockResolvedValue({ clientId: "c1", expiresAt: Date.now() + 10000 });
+    vi.mocked(getClientProfileForHome).mockResolvedValue({
+      name: "Ana Pérez",
+      email: "ana@example.com",
+      phone: "",
+      whatsapp: "",
+      birthDate: "",
+      notes: "",
+      referralSource: null,
+    });
+    vi.mocked(getClientHomeTrips).mockResolvedValue([]);
+
+    const { default: ClientHomePage } = await import("../page");
+    const element = await ClientHomePage();
+
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-home-atmosphere")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-profile-surface")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-trips-surface")).toHaveLength(1);
   });
 
   it("renders the read-only profile for an authenticated client", async () => {

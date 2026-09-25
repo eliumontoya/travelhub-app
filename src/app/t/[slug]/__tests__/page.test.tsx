@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { isValidElement, ReactNode } from "react";
 import type { TripWithDetails } from "@/types";
 
@@ -127,5 +128,19 @@ describe("/t/[slug] service-document callout", () => {
 
     expect(hasOwnedServiceRequirements).toHaveBeenCalledWith("trip-1", "client-1");
     expect(getText(element)).not.toContain("Documentos pendientes");
+  });
+});
+
+describe("/t/[slug] corporate traveler presentation", () => {
+  it("uses the shared corporate surface system for the public itinerary and traveler activity controls", () => {
+    const page = readFileSync(new URL("../page.tsx", import.meta.url), "utf8");
+    const activityForm = readFileSync(new URL("../../../../components/TravelerActivityForm.tsx", import.meta.url), "utf8");
+    const activityPanel = readFileSync(new URL("../../../../components/TravelerActivityAddFormPanel.tsx", import.meta.url), "utf8");
+
+    expect(page).toContain("bg-[var(--operator-canvas)]");
+    expect(page).toContain("from-[var(--operator-brand-strong)]");
+    expect(page).toContain("border-[var(--operator-border)]");
+    expect(activityForm).toContain("OperatorButton");
+    expect(activityPanel).toContain("OperatorButton");
   });
 });
