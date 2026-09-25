@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DEFAULT_PAGE_SIZE, getClientsWithTags } from "@/lib/data";
+import { requireFeature } from "@/lib/auth/roles";
 import { ClientsExplorer } from "./ClientsExplorer";
 
 type SearchParamValue = string | string[] | undefined;
@@ -11,6 +12,7 @@ export default async function ClientsIndexPage({
 }: {
   searchParams: Promise<ClientsPageSearchParams>;
 }) {
+  await requireFeature("clients");
   const params = await searchParams;
   const page = parsePageParam(params.page);
   const { items: clients, totalCount } = await getClientsWithTags({ page, pageSize: DEFAULT_PAGE_SIZE });

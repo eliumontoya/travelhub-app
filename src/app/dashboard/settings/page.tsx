@@ -1,7 +1,9 @@
 import { getSiteSettings } from "@/lib/data";
+import { requireFeature } from "@/lib/auth/roles";
 import { SettingsForm } from "./SettingsForm";
 
 export default async function SettingsPage() {
+  await requireFeature("settings");
   const settings = await getSiteSettings();
 
   return (

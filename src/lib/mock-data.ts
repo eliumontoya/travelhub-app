@@ -37,7 +37,7 @@ export const mockProfiles: Record<string, AccountProfile> = {
   "mock-agent": {
     id: "mock-agent",
     role: "agent",
-    features: ["trips"],
+    features: ["trips", "clients"],
     travelAgentId: "a1",
   },
 };
