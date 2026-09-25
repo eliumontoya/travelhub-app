@@ -48,3 +48,9 @@ opencode.json
 
 # codegraph index
 .codegraph/
+.opencode/
+
+# Local Impeccable integrations
+.github/agents/impeccable-*.agent.md
+.github/hooks/impeccable.json
+.github/skills/impeccable/
