@@ -20,7 +20,7 @@ The traveler journey still uses legacy blue/gray styling while the operator expe
 
 ## Tasks
 - [x] TV-001 — Redesign traveler authentication at `/client/login` while preserving every auth contract and rendering behavior. Checks: focused login tests, TypeScript, visual structural assertions. Route: delegated. Evidence: `npm test -- src/app/client/login/__tests__/page.test.tsx src/app/client/login/__tests__/actions.test.ts` (7 passed); `npx tsc --noEmit` (passed); Impeccable detector (no findings).
-- [ ] TV-002 — Redesign authenticated traveler home at `/client` with the shared visual primitives and unchanged account/trip data behavior. Checks: focused page tests, TypeScript, visual structural assertions. Route: delegated.
+- [x] TV-002 — Redesign authenticated traveler home at `/client` with the shared visual primitives and unchanged account/trip data behavior. Checks: focused page tests, TypeScript, visual structural assertions. Route: delegated. Evidence: RED confirmed when corporate-surface markers were absent; GREEN `npm test -- src/app/client/__tests__/page.test.tsx` (6 passed); `npx tsc --noEmit` passed; Impeccable detector returned `[]`.
 - [ ] TV-003 — Redesign public trip consultation at `/t/[slug]` and its traveler activity controls while preserving public, preview, and assigned-traveler behavior. Checks: focused itinerary/component tests, TypeScript, visual structural assertions. Route: delegated.
 
 ## Progress
@@ -34,4 +34,4 @@ The traveler journey still uses legacy blue/gray styling while the operator expe
 - TV-001 Impeccable: `impeccable detect --json src/app/client/login/page.tsx src/app/client/login/__tests__/page.test.tsx` returned `[]`.
 
 ## Next Step
-Implement TV-002 with a delegated writer.
+Implement TV-003 with a delegated writer.
