@@ -5,6 +5,32 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --operator-canvas: #fdf7f3;
+  --operator-surface: #ffffff;
+  --operator-surface-raised: #fffafb;
+  --operator-surface-subtle: #f8e8ef;
+  --operator-surface-hover: #efdfe7;
+  --operator-ink: #40142c;
+  --operator-ink-muted: #76596a;
+  --operator-ink-subtle: #967888;
+  --operator-border: #eadde3;
+  --operator-border-subtle: #eee1e7;
+  --operator-brand: #65003d;
+  --operator-brand-strong: #4e002f;
+  --operator-action: var(--operator-brand);
+  --operator-action-hover: var(--operator-brand-strong);
+  --operator-action-foreground: #ffffff;
+  --operator-accent: #f0bd79;
+  --operator-accent-hover: #ffc54b;
+  --operator-accent-foreground: #3a1529;
+  --operator-focus: var(--operator-brand);
+  --operator-radius-control: 0.75rem;
+  --operator-radius-card: 0.875rem;
+  --operator-radius-panel: 1rem;
+  --operator-shadow-card: 0 8px 20px rgba(74, 9, 47, 0.06);
+  --operator-shadow-panel: 0 12px 28px rgba(74, 9, 47, 0.08);
+  --operator-shadow-action: 0 10px 24px rgba(35, 7, 24, 0.28);
 }
 
 @theme inline {
@@ -17,10 +43,43 @@
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --operator-canvas: #21111c;
+  --operator-surface: #2d1725;
+  --operator-surface-raised: #351b2a;
+  --operator-surface-subtle: #432237;
+  --operator-surface-hover: #593048;
+  --operator-ink: #fff0f6;
+  --operator-ink-muted: #dac4d0;
+  --operator-ink-subtle: #c9adb9;
+  --operator-border: #573044;
+  --operator-border-subtle: #543044;
+  --operator-brand: #a72964;
+  --operator-brand-strong: #8b2356;
+  --operator-accent: #f0bd79;
+  --operator-accent-hover: #ffd983;
+  --operator-accent-foreground: #321426;
+  --operator-focus: #ffd983;
+  --operator-shadow-card: 0 8px 20px rgba(0, 0, 0, 0.18);
+  --operator-shadow-panel: 0 12px 28px rgba(0, 0, 0, 0.22);
+  --operator-shadow-action: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+* {
+  scrollbar-color: var(--operator-brand) var(--operator-surface-subtle);
+}
+
+::selection {
+  background: var(--operator-accent);
+  color: var(--operator-accent-foreground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--operator-focus);
+  outline-offset: 2px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
