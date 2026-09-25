@@ -3,14 +3,16 @@ import type { Feature } from "@/types";
 import { mockProfiles, setCurrentMockAccountId } from "@/lib/mock-data";
 import { filterFeatures } from "@/lib/auth/features";
 
-const { isSupabaseConfigured, createClient } = vi.hoisted(() => ({
+const { isSupabaseConfigured, createClient, getSupabaseAdmin } = vi.hoisted(() => ({
   isSupabaseConfigured: vi.fn(),
   createClient: vi.fn(),
+  getSupabaseAdmin: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
   isSupabaseConfigured,
   createClient,
+  getSupabaseAdmin,
 }));
 
 import { listProfiles, updateProfileFeatures, rowToProfile } from "@/lib/data/profiles";
@@ -76,21 +78,27 @@ describe("profiles data layer", () => {
         id: "mock-admin",
         role: "admin",
         features: [],
+        email: undefined,
+        travelAgentName: undefined,
       });
       expect(agent).toEqual({
         id: "mock-agent",
         role: "agent",
         features: ["trips", "clients"],
         travelAgentId: "a1",
+        email: undefined,
+        travelAgentName: undefined,
       });
     });
   });
 
   describe("listProfiles (supabase mode)", () => {
-    const mockUser = { id: "auth-user-1" };
-
     beforeEach(() => {
       vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+      const listUsers = vi.fn().mockResolvedValue({ data: { users: [] } });
+      vi.mocked(getSupabaseAdmin).mockReturnValue({
+        auth: { admin: { listUsers } },
+      } as unknown as ReturnType<typeof getSupabaseAdmin>);
     });
 
     it("queries the profiles table ordered by created_at", async () => {
@@ -98,9 +106,14 @@ describe("profiles data layer", () => {
         { id: "u1", role: "admin", features: [], travel_agent_id: null },
         { id: "u2", role: "agent", features: ["trips"], travel_agent_id: "a1" },
       ];
+      const inFn = vi.fn().mockResolvedValue({ data: [], error: null });
+      const selectAgents = vi.fn().mockReturnValue({ in: inFn });
       const order = vi.fn().mockResolvedValue({ data: rows, error: null });
       const select = vi.fn().mockReturnValue({ order });
-      const from = vi.fn().mockReturnValue({ select });
+      const from = vi.fn().mockImplementation((table: string) => {
+        if (table === "travel_agents") return { select: selectAgents };
+        return { select };
+      });
       vi.mocked(createClient).mockResolvedValue({
         from,
       } as unknown as Awaited<ReturnType<typeof createClient>>);
@@ -111,8 +124,8 @@ describe("profiles data layer", () => {
       expect(select).toHaveBeenCalledWith("id, role, features, travel_agent_id");
       expect(order).toHaveBeenCalledWith("created_at");
       expect(profiles).toEqual([
-        { id: "u1", role: "admin", features: [], travelAgentId: undefined },
-        { id: "u2", role: "agent", features: ["trips"], travelAgentId: "a1" },
+        { id: "u1", role: "admin", features: [], travelAgentId: undefined, email: undefined, travelAgentName: undefined },
+        { id: "u2", role: "agent", features: ["trips"], travelAgentId: "a1", email: undefined, travelAgentName: undefined },
       ]);
     });
 

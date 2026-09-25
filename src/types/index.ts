@@ -25,6 +25,8 @@ export interface AccountProfile {
   role: AccountRole;
   features: Feature[];
   travelAgentId?: string;
+  email?: string;
+  travelAgentName?: string;
 }
 
 export type TripFilters = {
