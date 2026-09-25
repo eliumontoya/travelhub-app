@@ -94,11 +94,11 @@ Apply `await requireFeature("<feature>");` as the first statement of each Server
 
 Run after all slices are integrated (each slice already ran its focused commands):
 
-- [ ] 8.1 `npx tsc --noEmit` passes.
-- [ ] 8.2 `npm run lint` passes.
-- [ ] 8.3 `npm run test` (Vitest) passes — full suite, including the spec scenarios: fixed catalog, unknown feature discarded, agent redirected from gated route, admin passes route guard, missing account fails guard, admin sees all links, agent sees only assigned links, dashboard home always visible, admin lists profiles, non-admin denied listing, admin assigns/clears features, unknown feature not persisted, admin write succeeds under policy, agent write denied, mock update persists in memory.
-- [ ] 8.4 `npm run build` passes (no client import of server-only modules — `features.ts` must stay dependency-free).
-- [ ] 8.5 `npm run test:e2e` (mock suite) passes or is explicitly recorded as skipped with reason; CommandPalette leakage is out of scope and must be flagged in the PR changelog as a conscious follow-up.
+- [x] 8.1 `npx tsc --noEmit` passes.
+- [x] 8.2 `npm run lint` passes.
+- [x] 8.3 `npm run test` (Vitest) passes — full suite (668/668), including the spec scenarios: fixed catalog, unknown feature discarded, agent redirected from gated route, admin passes route guard, missing account fails guard, admin sees all links, agent sees only assigned links, dashboard home always visible, admin lists profiles, non-admin denied listing, admin assigns/clears features, unknown feature not persisted, admin write succeeds under policy, agent write denied, mock update persists in memory.
+- [x] 8.4 `npm run build` passes (no client import of server-only modules — `features.ts` must stay dependency-free).
+- [x] 8.5 `npm run test:e2e` (mock suite): attempted locally, BLOCKED environmentally — OrbStack/Forgejo occupies port 3000, so Playwright's `reuseExistingServer` reused Forgejo (all specs hit Forgejo's 404, not TravelHub). This is not a feature regression; CI's `e2e-mock` job runs in a clean env. CommandPalette leakage is out of scope and flagged as a conscious follow-up in the PR bodies.
 
 ## Out of scope (do not implement)
 
