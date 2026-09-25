@@ -102,7 +102,7 @@ export function FeatureManagerClient({
             return (
               <tr key={profile.id}>
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                  <div>{profile.id}</div>
+                  <div>{profile.email ?? profile.id}</div>
                   {error ? (
                     <p className="mt-1 text-xs font-normal text-red-600 dark:text-red-400">
                       {error}
@@ -113,7 +113,7 @@ export function FeatureManagerClient({
                   {profile.role === "admin" ? "Admin" : "Agente"}
                 </td>
                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                  {profile.travelAgentId ?? "—"}
+                  {profile.travelAgentName ?? "—"}
                 </td>
                 {FEATURE_DEFINITIONS.map((def) => {
                   const checked = profile.features.includes(def.feature);
