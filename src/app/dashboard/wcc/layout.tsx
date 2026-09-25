@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireFeature } from "@/lib/auth/roles";
 import { WccNavLink } from "./nav-link";
 
 const wccNav = [
@@ -9,7 +10,10 @@ const wccNav = [
   { href: "/dashboard/wcc/knowledge", label: "Knowledge" },
 ];
 
-export default function WccLayout({ children }: { children: React.ReactNode }) {
+export default async function WccLayout({ children }: { children: React.ReactNode }) {
+  // Guard the whole WCC section (and its sub-routes: contacts, conversations,
+  // escalations, knowledge) with one choke point at the nested layout.
+  await requireFeature("whatsapp");
   return (
     <div className="min-h-[calc(100vh-57px)] bg-slate-950 text-slate-100">
       <header className="border-b border-emerald-900/60 bg-slate-950/95">

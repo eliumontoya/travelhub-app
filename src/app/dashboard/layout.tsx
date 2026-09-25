@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { signOutAction } from "@/app/dashboard/settings/actions";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { getCurrentUserRole } from "@/lib/auth/roles";
+import {
+  canAccessFeature,
+  getCurrentAccount,
+  resolveMockAccountId,
+} from "@/lib/auth/roles";
+import { FEATURE_DEFINITIONS } from "@/lib/auth/features";
 import { ALL_CLIENTS_PAGE_SIZE, ALL_TRIPS_PAGE_SIZE, getClients, getTripsWithClients } from "@/lib/data";
 import { getChangelog } from "@/lib/changelog";
-
-const MOCK_ACCOUNT_COOKIE = "x-mock-account-id";
 
 export default async function DashboardLayout({
   children,
@@ -26,10 +28,7 @@ export default async function DashboardLayout({
     email = user?.email ?? null;
   }
 
-  const cookieStore = await cookies();
-  const mockAccountId = cookieStore.get(MOCK_ACCOUNT_COOKIE)?.value;
-  const role = await getCurrentUserRole(mockAccountId);
-  const isAdmin = role === "admin";
+  const account = await getCurrentAccount(await resolveMockAccountId());
 
   const changelog = getChangelog();
 
@@ -47,52 +46,38 @@ export default async function DashboardLayout({
               TravelHub
             </Link>
             <nav className="hidden sm:flex items-center gap-3 text-sm">
+              {/* Dashboard home is unconditional for every authenticated account. */}
               <Link
                 href="/dashboard"
                 className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >
                 Dashboard
               </Link>
-              <Link
-                href="/dashboard/trips"
-                className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                Viajes
-              </Link>
-              <Link
-                href="/dashboard/clients"
-                className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                Clientes
-              </Link>
-              <Link
-                href="/dashboard/suppliers"
-                className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                Proveedores
-              </Link>
-              {isAdmin && (
-                <>
+              {/* Each feature link renders only when the current account can access it. */}
+              {FEATURE_DEFINITIONS.map((def) =>
+                canAccessFeature(account, def.feature) ? (
                   <Link
-                    href="/dashboard/travel-agents"
-                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                    key={def.feature}
+                    href={def.href}
+                    className={
+                      def.feature === "whatsapp"
+                        ? "rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
+                        : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                    }
                   >
-                    Agentes
+                    {def.label}
                   </Link>
-                  <Link
-                    href="/dashboard/wcc"
-                    className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
-                  >
-                    WhatsApp C.C.
-                  </Link>
-                  <Link
-                    href="/dashboard/settings"
-                    className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                  >
-                    Ajustes
-                  </Link>
-                </>
+                ) : null,
               )}
+              {/* Admin-only link: account management edits the feature flags, it is not a flag itself. */}
+              {account?.role === "admin" ? (
+                <Link
+                  href="/dashboard/settings/accounts"
+                  className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  Cuentas
+                </Link>
+              ) : null}
             </nav>
           </div>
           <div className="flex items-center gap-2">

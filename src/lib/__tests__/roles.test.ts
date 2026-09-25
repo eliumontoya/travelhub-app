@@ -1,10 +1,39 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { AccountProfile } from "@/types";
+import type { AccountProfile, Feature } from "@/types";
+import { AVAILABLE_FEATURES } from "@/lib/auth/features";
 import { mockProfiles, currentMockAccountId, setCurrentMockAccountId } from "@/lib/mock-data";
+
+const { redirectMock, cookieStore, cookies } = vi.hoisted(() => {
+  const redirectMock = vi.fn((path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  });
+  const cookieStore: Record<string, string> = {};
+  const cookies = vi.fn(async () => ({
+    get: (name: string) =>
+      cookieStore[name] !== undefined ? { name, value: cookieStore[name] } : undefined,
+    getAll: () =>
+      Object.entries(cookieStore).map(([name, value]) => ({ name, value })),
+    set: (name: string, value: string) => {
+      cookieStore[name] = value;
+    },
+    delete: (name: string) => {
+      delete cookieStore[name];
+    },
+  }));
+  return { redirectMock, cookieStore, cookies };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
   isSupabaseConfigured: vi.fn(),
   createClient: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: redirectMock,
+}));
+
+vi.mock("next/headers", () => ({
+  cookies,
 }));
 
 import { isSupabaseConfigured, createClient } from "@/lib/supabase/server";
@@ -16,6 +45,10 @@ import {
   getCurrentUserRole,
   getCurrentTravelAgentId,
   requireRole,
+  requireFeature,
+  requireAdmin,
+  resolveMockAccountId,
+  MOCK_ACCOUNT_COOKIE,
 } from "@/lib/auth/roles";
 
 describe("role helpers", () => {
@@ -53,10 +86,36 @@ describe("role helpers", () => {
       expect(canAccessFeature(admin, "settings")).toBe(true);
     });
 
+    it("lets admins access every catalog feature even with empty features[]", () => {
+      const admin: AccountProfile = { id: "u1", role: "admin", features: [] };
+      for (const feature of AVAILABLE_FEATURES) {
+        expect(canAccessFeature(admin, feature)).toBe(true);
+      }
+    });
+
     it("lets agents access only assigned features", () => {
       const agent: AccountProfile = { id: "u2", role: "agent", features: ["trips"] };
       expect(canAccessFeature(agent, "trips")).toBe(true);
       expect(canAccessFeature(agent, "settings")).toBe(false);
+    });
+
+    it("evaluates the full catalog matrix for an agent with two features", () => {
+      const agent: AccountProfile = {
+        id: "u3",
+        role: "agent",
+        features: ["trips", "clients"],
+      };
+      for (const feature of AVAILABLE_FEATURES) {
+        const expected = feature === "trips" || feature === "clients";
+        expect(canAccessFeature(agent, feature)).toBe(expected);
+      }
+    });
+
+    it("returns false for every catalog feature when the agent has no features assigned", () => {
+      const agent: AccountProfile = { id: "u4", role: "agent", features: [] };
+      for (const feature of AVAILABLE_FEATURES) {
+        expect(canAccessFeature(agent, feature)).toBe(false);
+      }
     });
 
     it("returns false when no profile is provided", () => {
@@ -200,5 +259,183 @@ describe("dual-mode role facade", () => {
       await expect(requireRole("admin")).rejects.toThrow("Unauthorized");
       setCurrentMockAccountId("mock-admin");
     });
+  });
+
+  describe("resolveMockAccountId", () => {
+    beforeEach(() => {
+      vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+      Object.keys(cookieStore).forEach((k) => delete cookieStore[k]);
+    });
+
+    it("reads the x-mock-account-id cookie when no explicit id is supplied", async () => {
+      cookieStore[MOCK_ACCOUNT_COOKIE] = "mock-agent";
+      expect(await resolveMockAccountId()).toBe("mock-agent");
+    });
+
+    it("prefers an explicit id over the cookie value", async () => {
+      cookieStore[MOCK_ACCOUNT_COOKIE] = "mock-agent";
+      expect(await resolveMockAccountId("mock-admin")).toBe("mock-admin");
+    });
+
+    it("returns undefined when no cookie and no explicit id are present", async () => {
+      expect(await resolveMockAccountId()).toBeUndefined();
+    });
+  });
+
+  describe("defensive feature filtering in getCurrentAccount", () => {
+    beforeEach(() => {
+      vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+    });
+
+    it("drops unknown feature strings from a mock profile in memory", async () => {
+      const original = [...mockProfiles["mock-agent"].features];
+      mockProfiles["mock-agent"].features = ["trips", "bogus", "clients", "another"] as unknown as Feature[];
+      try {
+        const account = await getCurrentAccount("mock-agent");
+        expect(account?.features).toEqual(["trips", "clients"]);
+        expect(account?.features).not.toContain("bogus");
+      } finally {
+        mockProfiles["mock-agent"].features = original;
+      }
+    });
+
+    it("does not mutate the mock profile when filtering", async () => {
+      const original = ["trips", "bogus"];
+      mockProfiles["mock-agent"].features = [...original] as unknown as Feature[];
+      try {
+        await getCurrentAccount("mock-agent");
+        expect(mockProfiles["mock-agent"].features).toEqual(original);
+      } finally {
+        mockProfiles["mock-agent"].features = ["trips", "clients"];
+      }
+    });
+  });
+});
+
+describe("feature-level guards", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    Object.keys(cookieStore).forEach((k) => delete cookieStore[k]);
+    redirectMock.mockClear();
+    redirectMock.mockImplementation((path: string) => {
+      throw new Error(`NEXT_REDIRECT:${path}`);
+    });
+    setCurrentMockAccountId("mock-admin");
+  });
+
+  afterEach(() => {
+    setCurrentMockAccountId("mock-admin");
+  });
+
+  describe("requireFeature (mock mode)", () => {
+    beforeEach(() => {
+      vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+    });
+
+    it("returns the admin account for any feature regardless of assignment", async () => {
+      const account = await requireFeature("settings");
+      expect(account.role).toBe("admin");
+      expect(account.id).toBe("mock-admin");
+      expect(redirectMock).not.toHaveBeenCalled();
+    });
+
+    it("returns the agent account when the feature is assigned", async () => {
+      const account = await requireFeature("trips", "mock-agent");
+      expect(account.role).toBe("agent");
+      expect(account.id).toBe("mock-agent");
+      expect(redirectMock).not.toHaveBeenCalled();
+    });
+
+    it("redirects an agent away from a feature they do not have", async () => {
+      await expect(requireFeature("settings", "mock-agent")).rejects.toThrow(
+        "NEXT_REDIRECT:/dashboard",
+      );
+      expect(redirectMock).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("redirects to /dashboard when no account can be resolved", async () => {
+      await expect(requireFeature("trips", "missing-account")).rejects.toThrow(
+        "NEXT_REDIRECT:/dashboard",
+      );
+      expect(redirectMock).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("evaluates the full catalog: agent mock-agent has access to exactly [trips, clients]", async () => {
+      for (const feature of AVAILABLE_FEATURES) {
+        redirectMock.mockClear();
+        if (feature === "trips" || feature === "clients") {
+          const account = await requireFeature(feature, "mock-agent");
+          expect(account.id).toBe("mock-agent");
+        } else {
+          await expect(requireFeature(feature, "mock-agent")).rejects.toThrow(
+            "NEXT_REDIRECT:/dashboard",
+          );
+        }
+        if (feature === "trips" || feature === "clients") {
+          expect(redirectMock).not.toHaveBeenCalled();
+        } else {
+          expect(redirectMock).toHaveBeenCalledWith("/dashboard");
+        }
+      }
+    });
+  });
+
+  describe("requireAdmin", () => {
+    beforeEach(() => {
+      vi.mocked(isSupabaseConfigured).mockReturnValue(false);
+    });
+
+    it("returns the admin account", async () => {
+      const account = await requireAdmin();
+      expect(account.role).toBe("admin");
+      expect(redirectMock).not.toHaveBeenCalled();
+    });
+
+    it("redirects an agent to /dashboard", async () => {
+      await expect(requireAdmin("mock-agent")).rejects.toThrow(
+        "NEXT_REDIRECT:/dashboard",
+      );
+      expect(redirectMock).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("redirects when no account can be resolved", async () => {
+      await expect(requireAdmin("missing-account")).rejects.toThrow(
+        "NEXT_REDIRECT:/dashboard",
+      );
+      expect(redirectMock).toHaveBeenCalledWith("/dashboard");
+    });
+  });
+});
+
+describe("defensive feature filtering in supabase mode", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    redirectMock.mockClear();
+    redirectMock.mockImplementation((path: string) => {
+      throw new Error(`NEXT_REDIRECT:${path}`);
+    });
+  });
+
+  it("drops unknown feature strings returned from the profiles row", async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    const mockUser = { id: "auth-user-1" };
+    const profileRow = {
+      id: "auth-user-1",
+      role: "agent",
+      features: ["trips", "bogus", "clients"],
+      travel_agent_id: null,
+    };
+    const single = vi.fn().mockResolvedValue({ data: profileRow, error: null });
+    const eq = vi.fn().mockReturnValue({ single });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: mockUser }, error: null }) },
+      from,
+    } as unknown as Awaited<ReturnType<typeof createClient>>);
+
+    const account = await getCurrentAccount();
+    expect(account?.features).toEqual(["trips", "clients"]);
+    expect(account?.features).not.toContain("bogus");
   });
 });

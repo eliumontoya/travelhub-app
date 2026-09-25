@@ -1,12 +1,14 @@
 import { getSuppliers } from "@/lib/data";
 import { SupplierCatalogClient } from "./catalog-client";
 import { SUPPLIER_TYPES } from "@/lib/constants";
+import { requireFeature } from "@/lib/auth/roles";
 
 export default async function SupplierCatalogPage({
   searchParams,
 }: {
   searchParams: Promise<{ query?: string; type?: string; tag?: string; page?: string }>;
 }) {
+  await requireFeature("suppliers");
   const resolvedParams = await searchParams;
   const query = resolvedParams.query || "";
   const type = resolvedParams.type || "";
