@@ -78,12 +78,16 @@ describe("profiles data layer", () => {
         id: "mock-admin",
         role: "admin",
         features: [],
+        email: undefined,
+        travelAgentName: undefined,
       });
       expect(agent).toEqual({
         id: "mock-agent",
         role: "agent",
         features: ["trips", "clients"],
         travelAgentId: "a1",
+        email: undefined,
+        travelAgentName: undefined,
       });
     });
   });
