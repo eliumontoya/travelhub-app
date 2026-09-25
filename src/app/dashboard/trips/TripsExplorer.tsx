@@ -7,6 +7,8 @@ import { formatAssignedClients, formatDateShort, formatTags } from "@/lib/item-m
 import { bulkUpdateTripStatusAction, moveTripStatusAction } from "@/app/dashboard/actions";
 import { TripBoardView } from "@/components/TripBoardView";
 import { DashboardFilters } from "../DashboardFilters";
+import { OperatorButton } from "@/components/ui/OperatorButton";
+import { OperatorSurface } from "@/components/ui/OperatorSurface";
 
 type TripsViewMode = "list" | "board";
 
@@ -76,6 +78,16 @@ export function TripsExplorer({
 
   return (
     <>
+      <OperatorSurface as="section" variant="panel" className="mb-5 overflow-hidden p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-2 border-b border-[var(--operator-border-subtle)] pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">Resumen de viajes</h2>
+            <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">Usa los filtros para enfocar tu operación.</p>
+          </div>
+          <p className="text-sm font-semibold text-[var(--operator-brand)]">
+            {totalCount} viaje{totalCount !== 1 ? "s" : ""} encontrado{totalCount !== 1 ? "s" : ""}
+          </p>
+        </div>
       <DashboardFilters
         key={JSON.stringify(initialFilters)}
         onChange={() => undefined}
@@ -83,61 +95,53 @@ export function TripsExplorer({
         tags={tags}
         travelAgents={travelAgents}
       />
+      </OperatorSurface>
 
       <div className="mb-4 mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <OperatorButton
             onClick={() => setViewMode("list")}
             aria-pressed={viewMode === "list"}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-              viewMode === "list"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            }`}
+            variant={viewMode === "list" ? "primary" : "secondary"}
+            className="min-h-0 px-3 py-1.5"
           >
             Vista de lista
-          </button>
-          <button
-            type="button"
+          </OperatorButton>
+          <OperatorButton
             onClick={() => setViewMode("board")}
             aria-pressed={viewMode === "board"}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-              viewMode === "board"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            }`}
+            variant={viewMode === "board" ? "primary" : "secondary"}
+            className="min-h-0 px-3 py-1.5"
           >
             Vista de tablero
-          </button>
+          </OperatorButton>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {totalCount} viaje{totalCount !== 1 ? "s" : ""} encontrado{totalCount !== 1 ? "s" : ""}
+        <p className="text-sm text-[var(--operator-ink-muted)]">
+          Cambia entre las vistas disponibles
         </p>
       </div>
 
       {viewMode === "list" && selected.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950">
-          <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-4 py-3">
+          <span className="text-sm font-medium text-[var(--operator-brand)]">
             {selected.size} viaje{selected.size === 1 ? "" : "s"} seleccionado
             {selected.size === 1 ? "" : "s"}
           </span>
-          <button
-            type="button"
+          <OperatorButton
             disabled={isPending}
             onClick={() => runBulkAction("published")}
-            className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
+            className="min-h-0 px-3 py-1.5"
           >
             Publicar seleccionados
-          </button>
-          <button
-            type="button"
+          </OperatorButton>
+          <OperatorButton
             disabled={isPending}
             onClick={() => runBulkAction("archived")}
-            className="rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600"
+            variant="secondary"
+            className="min-h-0 px-3 py-1.5"
           >
             Archivar seleccionados
-          </button>
+          </OperatorButton>
         </div>
       )}
 
@@ -146,9 +150,9 @@ export function TripsExplorer({
           {trips.map((trip) => {
             const status = statusMeta[trip.status];
             return (
-              <div
+              <OperatorSurface
                 key={trip.id}
-                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
+                className="flex items-center gap-3 p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--operator-shadow-panel)]"
               >
                 <input
                   type="checkbox"
@@ -163,20 +167,20 @@ export function TripsExplorer({
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-gray-900 dark:text-gray-100">{trip.title}</h2>
+                      <h2 className="font-semibold text-[var(--operator-ink)]">{trip.title}</h2>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                         {status.label}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                    <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">{formatAssignedClients(trip.clients)}</p>
+                    <p className="text-sm text-[var(--operator-ink-subtle)]">
                       {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
                       {" · "}
                       {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
                       {trip.assignedAgentId && travelAgents && (
                         <>
                           {" · "}
-                          <span className="text-blue-600 dark:text-blue-400">
+                          <span className="text-[var(--operator-brand)]">
                             {travelAgents.find((a) => a.id === trip.assignedAgentId)?.name ?? "Agente"}
                           </span>
                         </>
@@ -187,7 +191,7 @@ export function TripsExplorer({
                         {formatTags(trip.tags).map((name) => (
                           <li
                             key={name}
-                            className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                            className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-brand)]"
                           >
                             {name}
                           </li>
@@ -195,15 +199,15 @@ export function TripsExplorer({
                       </ul>
                     )}
                   </div>
-                  <span className="text-gray-300 dark:text-gray-600">→</span>
+                  <span className="text-[var(--operator-ink-subtle)]">→</span>
                 </Link>
-              </div>
+              </OperatorSurface>
             );
           })}
           {trips.length === 0 && (
-            <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+            <OperatorSurface as="p" variant="subtle" className="border-dashed p-5 text-center text-sm text-[var(--operator-ink-muted)]">
               {hasActiveFilters ? "Ningún viaje coincide con la búsqueda o los filtros." : "Todavía no hay viajes."}
-            </p>
+            </OperatorSurface>
           )}
         </div>
       ) : (

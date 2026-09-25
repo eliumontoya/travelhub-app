@@ -228,7 +228,7 @@ export function DashboardFilters({
   }, [travelAgents, agentQuery, filters.agentIds]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="trip-filters">
       {/* Filter controls */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {/* Text search */}
@@ -237,16 +237,16 @@ export function DashboardFilters({
           value={filters.query ?? ""}
           onChange={(e) => updateFilters({ query: e.target.value || undefined }, false)}
           placeholder="Buscar por cliente o título de viaje…"
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          className="rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
         />
 
         {/* Status checkboxes */}
-        <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700">
+        <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[#dbc7d1] bg-[#fffdfd] px-3 py-2 text-sm dark:border-[#603d50] dark:bg-[#24141f]">
           <legend className="sr-only">Estados</legend>
           {STATUS_OPTIONS.map((s) => {
             const checked = filters.status?.includes(s) ?? false;
             return (
-              <label key={s} className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+              <label key={s} className="flex items-center gap-1.5 text-[#604355] dark:text-[#efdce6]">
                 <input
                   type="checkbox"
                   checked={checked}
@@ -255,7 +255,7 @@ export function DashboardFilters({
                     const next = checked ? current.filter((st) => st !== s) : [...current, s];
                     updateFilters({ status: next.length ? next : undefined }, true);
                   }}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600"
+                  className="h-4 w-4 rounded border-[#b997a8] accent-[#65003d] dark:border-[#7c5368]"
                 />
                 {STATUS_LABELS[s]}
               </label>
@@ -282,11 +282,11 @@ export function DashboardFilters({
               clientJustSelected.current = false;
             }}
             placeholder="Filtrar por cliente…"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className="w-full rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
             autoComplete="off"
           />
           {clientOpen && clientResults.length > 0 && (
-            <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-900">
+            <ul className="absolute z-10 mt-1 w-full rounded-xl border border-[#decbd4] bg-white shadow-[0_12px_26px_rgba(74,9,47,0.16)] dark:border-[#603d50] dark:bg-[#24141f]">
               {clientResults.map((c) => (
                 <li key={c.id}>
                   <button
@@ -298,7 +298,7 @@ export function DashboardFilters({
                       setClientOpen(false);
                       updateFilters({ clientIds: [c.id] }, true);
                     }}
-                    className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="block w-full px-3 py-2 text-left text-sm hover:bg-[#fff4f8] dark:hover:bg-[#3a1f30]"
                   >
                     {c.name}
                   </button>
@@ -320,11 +320,11 @@ export function DashboardFilters({
             onFocus={() => setTagOpen(true)}
             onBlur={() => setTimeout(() => setTagOpen(false), 150)}
             placeholder="Filtrar por tags…"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className="w-full rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
             autoComplete="off"
           />
           {tagOpen && tagResults.length > 0 && (
-            <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-900">
+            <ul className="absolute z-10 mt-1 w-full rounded-xl border border-[#decbd4] bg-white shadow-[0_12px_26px_rgba(74,9,47,0.16)] dark:border-[#603d50] dark:bg-[#24141f]">
               {tagResults.map((t) => (
                 <li key={t.id}>
                   <button
@@ -336,7 +336,7 @@ export function DashboardFilters({
                       const next = [...(filters.tagIds ?? []), t.id];
                       updateFilters({ tagIds: next }, true);
                     }}
-                    className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="block w-full px-3 py-2 text-left text-sm hover:bg-[#fff4f8] dark:hover:bg-[#3a1f30]"
                   >
                     {t.name}
                   </button>
@@ -359,11 +359,11 @@ export function DashboardFilters({
               onFocus={() => setAgentOpen(true)}
               onBlur={() => setTimeout(() => setAgentOpen(false), 150)}
               placeholder="Filtrar por agente…"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="w-full rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
               autoComplete="off"
             />
             {agentOpen && agentResults.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-900">
+              <ul className="absolute z-10 mt-1 w-full rounded-xl border border-[#decbd4] bg-white shadow-[0_12px_26px_rgba(74,9,47,0.16)] dark:border-[#603d50] dark:bg-[#24141f]">
                 {agentResults.map((a) => (
                   <li key={a.id}>
                     <button
@@ -375,7 +375,7 @@ export function DashboardFilters({
                         const next = [...(filters.agentIds ?? []), a.id];
                         updateFilters({ agentIds: next }, true);
                       }}
-                      className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-[#fff4f8] dark:hover:bg-[#3a1f30]"
                     >
                       {a.name}
                     </button>
@@ -393,14 +393,14 @@ export function DashboardFilters({
             value={filters.dateFrom ?? ""}
             onChange={(e) => updateFilters({ dateFrom: e.target.value || undefined }, true)}
             placeholder="Desde"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className="w-full rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
           />
           <input
             type="date"
             value={filters.dateTo ?? ""}
             onChange={(e) => updateFilters({ dateTo: e.target.value || undefined }, true)}
             placeholder="Hasta"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className="w-full rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
           />
         </div>
 
@@ -410,7 +410,7 @@ export function DashboardFilters({
           onChange={(e) =>
             updateFilters({ currency: (e.target.value || undefined) as TripCurrency | undefined }, true)
           }
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          className="rounded-xl border border-[#dbc7d1] bg-white px-3 py-2 text-sm text-[#3f1a2f] shadow-[0_2px_8px_rgba(74,9,47,0.03)] outline-none transition placeholder:text-[#927586] focus:border-[#65003d] focus:ring-2 focus:ring-[#65003d]/15 dark:border-[#603d50] dark:bg-[#24141f] dark:text-[#f8eaf0]"
         >
           <option value="">Todas las monedas</option>
           {CURRENCY_OPTIONS.map((c) => (
@@ -427,14 +427,14 @@ export function DashboardFilters({
           {activeBadges.map((badge) => (
             <span
               key={badge.key}
-              className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+              className="inline-flex items-center gap-1 rounded-full bg-[#f8e8ef] px-3 py-1 text-sm text-[#791b4b] dark:bg-[#54243d] dark:text-[#ffd8a4]"
             >
               {badge.label}
               <button
                 type="button"
                 onClick={badge.onRemove}
                 aria-label={`Quitar filtro ${badge.label}`}
-                className="text-blue-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                className="text-[#ad5a7f] hover:text-[#65003d] dark:text-[#efb4cb] dark:hover:text-white"
               >
                 ×
               </button>
@@ -443,7 +443,7 @@ export function DashboardFilters({
           <button
             type="button"
             onClick={clearAll}
-            className="text-sm text-red-600 hover:underline dark:text-red-400"
+            className="text-sm text-[#8b2356] hover:underline dark:text-[#ffbad3]"
           >
             Limpiar filtros
           </button>
