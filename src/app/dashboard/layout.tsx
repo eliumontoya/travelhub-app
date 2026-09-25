@@ -69,6 +69,15 @@ export default async function DashboardLayout({
                   </Link>
                 ) : null,
               )}
+              {/* Admin-only link: account management edits the feature flags, it is not a flag itself. */}
+              {account?.role === "admin" ? (
+                <Link
+                  href="/dashboard/settings/accounts"
+                  className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  Cuentas
+                </Link>
+              ) : null}
             </nav>
           </div>
           <div className="flex items-center gap-2">
