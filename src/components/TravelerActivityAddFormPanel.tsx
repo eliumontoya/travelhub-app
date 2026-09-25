@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { TravelerActivityForm } from "@/components/TravelerActivityForm";
+import { OperatorButton } from "@/components/ui/OperatorButton";
 
 type TravelerActivityAddFormContextValue = {
   expandedDayId: string | null;
@@ -47,16 +48,16 @@ export function TravelerActivityAddFormPanel({
 
   return (
     <section className="mb-4 print:hidden">
-      <button
-        type="button"
+      <OperatorButton
+        variant="secondary"
         aria-expanded={isExpanded}
         onClick={() => context.setExpandedDayId(isExpanded ? null : tripDayId)}
-        className="inline-flex min-h-10 items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
+        className="min-h-10 border border-[var(--operator-border)] text-[var(--operator-brand)]"
       >
         + Agregar actividad a este día
-      </button>
+      </OperatorButton>
       {isExpanded && (
-        <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-950 dark:bg-blue-950/20">
+        <div className="mt-3 rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] p-3">
           <TravelerActivityForm
             tripId={tripId}
             tripDayId={tripDayId}
