@@ -7,6 +7,51 @@ Este archivo alimenta el modal "Qué hay de nuevo" del dashboard. Para agregar n
 Descripción breve enfocada en lo que cambió para el usuario.
 ```
 
+## 2026-09-25 — Rediseño del dashboard
+El login, el workspace de viajes y el editor de itinerarios recibieron un rediseño completo con un nuevo sistema de diseño compartido para el operador.
+
+## 2026-09-25 — Control de features por agente
+El administrador puede activar o desactivar features individuales para cada cuenta de agente desde /dashboard/settings/accounts, permitiendo planes y permisos granulares.
+
+## 2026-09-21 — Herramientas MCP para agentes IA
+TravelHub expone un servidor MCP con 41+ herramientas para que agentes de IA externos gestionen clientes, viajes, items, documentos, servicios, proveedores y actividades del viajero.
+
+## 2026-09-20 — Checklist de documentos de servicio
+El agente puede solicitar documentos al cliente con un checklist por viaje. El cliente sube los archivos desde su portal y el agente revisa, aprueba o solicita corrección.
+
+## 2026-09-19 — Viajeros pueden crear actividades
+Desde la vista pública del viaje, los viajeros pueden agregar sus propias actividades al itinerario sin necesidad de que el agente las cree.
+
+## 2026-09-18 — Portal del cliente con login PIN
+Los clientes pueden autenticarse con email y un PIN personal para ver sus viajes, subir documentos solicitados y consultar el progreso de servicios.
+
+## 2026-09-18 — Import/export Excel para base de conocimiento
+La base de conocimiento del agente WhatsApp puede importarse y exportarse en formato Excel para gestión masiva de preguntas y respuestas.
+
+## 2026-09-16 — Catálogo de agentes de viaje
+Nuevo catálogo de agentes con asignación de viajes por agente y filtro por agente en el dashboard.
+
+## 2026-09-16 — Roles de cuenta y permisos
+Sistema de roles (admin/agente) con permisos diferenciados y navegación condicionada al tipo de cuenta.
+
+## 2026-09-16 — Logo de marca en login
+El login del operador ahora muestra el logo de la marca para una experiencia más personalizada.
+
+## 2026-09-13 — Agente WhatsApp sobre Eve framework
+El agente de WhatsApp migró a Vercel Eve framework, con persistencia de escalamientos en base de datos y mejor aislamiento de clientes Supabase.
+
+## 2026-08-31 — Observabilidad del agente WhatsApp
+Telemetría estructurada y sanitizada para el agente WhatsApp/IA, con eventos typed, métricas operativas y runbook de diagnóstico.
+
+## 2026-08-30 — Recordatorios por email protegidos
+El endpoint de recordatorios automáticos ahora requiere CRON_SECRET en producción para evitar ejecuciones no autorizadas.
+
+## 2026-08-29 — Verificación de webhooks de WhatsApp
+Los webhooks entrantes de WhatsApp ahora verifican firma criptográfica para garantizar que provienen de Meta.
+
+## 2026-08-29 — WhatsApp Control Center (WCC)
+Panel completo en el dashboard para gestionar conversaciones, contactos, escalamientos, base de conocimiento y vinculación de contactos de WhatsApp con clientes del CRM.
+
 ## 2026-08-28 — WhatsApp respeta viajes no publicados
 La automatización de WhatsApp ya no comparte detalles de un viaje hasta que esté publicado; si el viaje sigue en planeación, responde con un mensaje seguro.
 
