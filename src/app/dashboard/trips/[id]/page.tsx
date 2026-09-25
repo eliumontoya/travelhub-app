@@ -122,9 +122,9 @@ const photosEnabled = documentsEnabled;
 const coversEnabled = photosEnabled;
 
 const statusMeta = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
-  published: { label: "Publicado", color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" },
-  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500" },
+  draft: { label: "Borrador", color: "border border-[#f0bd79]/45 bg-[#5c123e] text-[#f7dfbc]" },
+  published: { label: "Publicado", color: "border border-[#f0bd79]/45 bg-[#f0bd79] text-[#4a1834]" },
+  archived: { label: "Archivado", color: "border border-[#f0bd79]/35 bg-[#321426] text-[#f7dfbc]" },
 };
 
 export default async function TripEditorPage({
@@ -169,26 +169,26 @@ export default async function TripEditorPage({
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 print:max-w-3xl print:py-0">
-      <Link href="/dashboard/trips" className="text-sm text-gray-500 hover:underline print:hidden dark:text-gray-400">
+    <main className="mx-auto max-w-7xl bg-[#fdf7f3] px-4 py-6 text-[#321426] selection:bg-[#f0bd79] selection:text-[#321426] print:max-w-3xl print:bg-white print:py-0 dark:bg-[#21111a] dark:text-[#fdf7f3]">
+      <Link href="/dashboard/trips" className="text-sm font-medium text-[#731044] underline-offset-4 hover:text-[#4a1834] hover:underline print:hidden dark:text-[#f0bd79]">
         ← Volver
       </Link>
 
-      <section className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm print:mt-0 print:border-0 print:shadow-none dark:border-gray-800 dark:bg-gray-950">
-        <div className="border-b border-gray-100 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-5 dark:border-gray-800 dark:from-gray-950 dark:via-gray-950 dark:to-blue-950/30">
+      <section className="mt-4 overflow-hidden rounded-2xl border border-[#4a1834]/15 bg-[#fffdfb] shadow-[0_22px_55px_rgba(74,24,52,0.12)] print:mt-0 print:border-0 print:shadow-none dark:border-[#f0bd79]/20 dark:bg-[#2b1520]">
+        <div className="border-b border-[#f0bd79]/35 bg-[#4a1834] p-5 text-[#fffdfb] sm:p-7">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{trip.title}</h1>
+                <h1 className="text-2xl font-bold tracking-[-0.02em] text-[#fffdfb] sm:text-3xl">{trip.title}</h1>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-medium print:hidden ${statusMeta[trip.status].color}`}>
                   {statusMeta[trip.status].label}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              <p className="mt-1 text-sm text-[#f7dfbc]">
                 {formatAssignedClients(trip.clients)} · {trip.travelerCount}{" "}
                 {trip.travelerCount === 1 ? "viajero" : "viajeros"}
               </p>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-500">
+              <p className="mt-1 text-sm text-[#f0bd79]">
                 {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
               </p>
               {trip.tags.length > 0 && (
@@ -196,7 +196,7 @@ export default async function TripEditorPage({
                   {formatTags(trip.tags).map((name) => (
                     <li
                       key={name}
-                      className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      className="rounded-full border border-[#f0bd79]/35 bg-[#5c123e] px-2.5 py-1 text-xs font-medium text-[#f7dfbc]"
                     >
                       {name}
                     </li>
@@ -212,13 +212,13 @@ export default async function TripEditorPage({
               <Link
                 href={travelerHref}
                 target="_blank"
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                className="rounded-lg border border-[#f0bd79]/55 bg-[#fffdfb] px-4 py-2 text-sm font-semibold text-[#4a1834] shadow-[0_8px_18px_rgba(27,8,19,0.18)] transition hover:bg-[#f7dfbc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
               >
                 {trip.status === "draft" ? "Vista previa borrador" : "Vista previa"}
               </Link>
               <Link
                 href={`/dashboard/trips/${trip.id}/quote`}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                className="rounded-lg border border-[#f0bd79]/55 bg-[#fffdfb] px-4 py-2 text-sm font-semibold text-[#4a1834] shadow-[0_8px_18px_rgba(27,8,19,0.18)] transition hover:bg-[#f7dfbc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
               >
                 Cotización
               </Link>
@@ -233,24 +233,24 @@ export default async function TripEditorPage({
         </div>
 
         {isPublished && (
-          <div className="border-b border-green-100 bg-green-50 px-5 py-3 text-sm text-green-800 print:hidden dark:border-green-950 dark:bg-green-950/20 dark:text-green-300">
+          <div className="border-b border-[#f0bd79]/35 bg-[#fff3e5] px-5 py-3 text-sm font-medium text-[#5c123e] print:hidden dark:bg-[#3a1c25] dark:text-[#f7dfbc]">
             Viaje publicado bloqueado. Pásalo a borrador para editar días, itinerario o acciones.
           </div>
         )}
 
-        <div className="grid gap-6 p-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] lg:p-5 print:block print:p-0">
+        <div className="grid gap-6 bg-[#fdf7f3] p-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] lg:p-5 print:block print:bg-white print:p-0 dark:bg-[#21111a]">
           <aside className="print:hidden">
-            <div className="sticky top-4 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
-              <p className="px-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Días del viaje</p>
+            <div className="sticky top-4 rounded-xl border border-[#e7c797] bg-[#fffdfb] p-3 shadow-[0_12px_30px_rgba(74,24,52,0.08)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
+              <p className="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#731044] dark:text-[#f0bd79]">Días del viaje</p>
               <nav className="mt-3 space-y-1">
                 {trip.days.map((day, idx) => (
                   <a
                     key={day.id}
                     href={`#day-${day.id}`}
-                    className="group flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-400 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                    className="group flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-[#5c123e] transition hover:bg-[#f8e7e7] hover:text-[#731044] dark:text-[#f7dfbc] dark:hover:bg-[#5c123e]"
                   >
                     <span className="min-w-0">
-                      <span className="block text-xs font-medium text-gray-400 group-hover:text-blue-500">Día {idx + 1}</span>
+                      <span className="block text-xs font-medium text-[#9b6479] group-hover:text-[#731044]">Día {idx + 1}</span>
                       <span className="block truncate font-medium capitalize">{formatDateLong(day.date)}</span>
                     </span>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${day.items.length === 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
@@ -265,7 +265,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       id={ADD_DAY_TRIGGER_ID}
-                      className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-dashed border-[#b67a91] py-2 text-sm font-semibold text-[#731044] transition hover:bg-[#f8e7e7] dark:border-[#f0bd79]/45 dark:text-[#f0bd79] dark:hover:bg-[#5c123e]"
                     >
                       + Agregar día
                     </button>
@@ -284,10 +284,10 @@ export default async function TripEditorPage({
           </aside>
 
           <section className="min-w-0 space-y-5 print:space-y-3">
-            <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 print:hidden dark:border-blue-950 dark:bg-blue-950/20">
+            <div className="rounded-xl border border-[#e7c797] bg-[#fff3e5] p-4 print:hidden dark:border-[#f0bd79]/25 dark:bg-[#3a1c25]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Itinerario por días</h2>
+                  <h2 className="text-lg font-semibold text-[#4a1834] dark:text-[#fffdfb]">Itinerario por días</h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Configura las fechas e items del viaje desde esta línea de tiempo.
                   </p>
@@ -295,7 +295,7 @@ export default async function TripEditorPage({
                 {trip.days.length > 0 && (
                   <a
                     href={`#day-${trip.days[trip.days.length - 1].id}`}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    className="rounded-lg bg-[#731044] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(92,18,62,0.25)] transition hover:bg-[#5c123e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
                   >
                     Ir al último día
                   </a>
@@ -312,11 +312,11 @@ export default async function TripEditorPage({
                 <div
                   key={day.id}
                   id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none dark:border-gray-800 dark:bg-gray-900"
+                  className="scroll-mt-6 rounded-2xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_12px_30px_rgba(74,24,52,0.08)] sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none dark:border-[#f0bd79]/25 dark:bg-[#2b1520]"
                 >
-                  <div className="mb-4 flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-start sm:justify-between print:border-b-0 print:pb-0 dark:border-gray-800">
+                  <div className="mb-4 flex flex-col gap-3 border-b border-[#f0bd79]/35 pb-4 sm:flex-row sm:items-start sm:justify-between print:border-b-0 print:pb-0">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">Día {dayIdx + 1}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#731044] dark:text-[#f0bd79]">Día {dayIdx + 1}</p>
                       <h3 className="mt-1 flex flex-wrap items-center gap-2 font-semibold capitalize text-gray-900 dark:text-gray-100">
                         {formatDateLong(day.date)}
                         <WeatherBadge weather={dayWeather[dayWeatherIdx]} />
@@ -375,7 +375,7 @@ export default async function TripEditorPage({
                       return (
                         <div
                           key={item.id}
-                          className="group flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition hover:border-blue-100 hover:bg-white sm:flex-row sm:items-start print:break-inside-avoid print:bg-white dark:border-gray-800 dark:bg-gray-950/50 dark:hover:border-blue-950 dark:hover:bg-gray-900"
+                          className="group flex flex-col gap-3 rounded-xl border border-[#f0bd79]/35 bg-[#fff8f1] p-3 transition hover:border-[#b67a91] hover:bg-[#fffdfb] sm:flex-row sm:items-start print:break-inside-avoid print:bg-white dark:border-[#f0bd79]/20 dark:bg-[#321426] dark:hover:border-[#f0bd79]"
                         >
                           <span className={`w-fit rounded-full px-2.5 py-1.5 text-lg ${meta.color}`}>
                             {meta.icon}
@@ -490,7 +490,7 @@ export default async function TripEditorPage({
                       trigger={
                         <button
                           id={isLastDay ? ADD_ITEM_LAST_DAY_TRIGGER_ID : undefined}
-                          className="w-full rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 print:hidden dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                          className="w-full rounded-xl border border-dashed border-[#b67a91] py-3 text-sm font-semibold text-[#731044] transition hover:bg-[#f8e7e7] print:hidden dark:border-[#f0bd79]/45 dark:text-[#f0bd79] dark:hover:bg-[#5c123e]"
                         >
                           + Agregar item a este día
                         </button>
@@ -526,8 +526,8 @@ export default async function TripEditorPage({
           </section>
 
           <aside className="space-y-4 print:hidden">
-            <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Acciones</h2>
+            <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
+              <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Acciones</h2>
               <div className="mt-3 grid grid-cols-1 gap-2">
                 {isEditable ? (
                 <>
@@ -682,8 +682,8 @@ export default async function TripEditorPage({
             </section>
 
 
-            <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Finanzas</h2>
+            <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
+              <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Finanzas</h2>
               {(hasAnyCost || trip.budget !== undefined) ? (
                 <div className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
@@ -718,16 +718,16 @@ export default async function TripEditorPage({
               )}
             </section>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Completitud</h2>
+                <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Completitud</h2>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {completeness.documentPercentage}%
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#f8e7e7] dark:bg-[#5c123e]">
                 <div
-                  className="h-full rounded-full bg-blue-500"
+                  className="h-full rounded-full bg-[#731044]"
                   style={{ width: `${completeness.documentPercentage}%` }}
                 />
               </div>
@@ -786,7 +786,7 @@ export default async function TripEditorPage({
             />
 
             {trip.statusHistory.length > 0 && (
-              <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+              <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
                 <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Historial de estado</h2>
                 <ul className="space-y-1.5">
                   {[...trip.statusHistory].reverse().slice(0, 3).map((entry) => (
@@ -816,7 +816,7 @@ export default async function TripEditorPage({
             )}
 
             {feedback.length > 0 && (
-              <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+              <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
                 <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">Feedback recibido</h3>
                 <div className="space-y-3">
                   {feedback.map((f) => (
@@ -828,7 +828,7 @@ export default async function TripEditorPage({
                         </span>
                         <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(f.createdAt.slice(0, 10))}</span>
                       </div>
-                      {f.comment && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{f.comment}</p>}
+                      {f.comment && <p className="mt-1 text-sm text-[#5c123e] dark:text-[#f7dfbc]">{f.comment}</p>}
                     </div>
                   ))}
                 </div>

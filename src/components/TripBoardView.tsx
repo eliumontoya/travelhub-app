@@ -41,10 +41,10 @@ export function TripBoardView({
       {columns.map((status) => {
         const columnTrips = trips.filter((trip) => trip.status === status);
         return (
-          <div key={status} className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900">
+          <div key={status} className="rounded-2xl bg-[#f8f1f4] p-3 dark:bg-[#2a1823]">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{statusMeta[status].label}</h3>
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500 shadow-sm dark:bg-gray-800 dark:text-gray-400">
+              <h3 className="text-sm font-semibold text-[#5a173c] dark:text-[#ffe6f0]">{statusMeta[status].label}</h3>
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#79596a] shadow-[0_3px_8px_rgba(74,9,47,0.08)] dark:bg-[#442438] dark:text-[#f0dbe5]">
                 {columnTrips.length}
               </span>
             </div>
@@ -53,7 +53,7 @@ export function TripBoardView({
                 <TripCard key={trip.id} trip={trip} travelAgents={travelAgents} onMoveStatus={onMoveStatus} />
               ))}
               {columnTrips.length === 0 && (
-                <p className="rounded-lg border border-dashed border-gray-200 p-3 text-center text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500">
+                <p className="rounded-xl border border-dashed border-[#d8c1cc] p-3 text-center text-xs text-[#947587] dark:border-[#634357] dark:text-[#cbaebb]">
                   Sin viajes
                 </p>
               )}
@@ -78,17 +78,17 @@ function TripCard({
   const otherStatuses = columns.filter((status) => status !== trip.status);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-xl border border-[#eadde3] bg-white p-3 shadow-[0_7px_16px_rgba(74,9,47,0.06)] dark:border-[#573044] dark:bg-[#2d1725]">
       <Link href={`/dashboard/trips/${trip.id}`} className="block hover:underline">
-        <h4 className="font-semibold text-gray-900 dark:text-gray-100">{trip.title}</h4>
+        <h4 className="font-semibold text-[#40142c] dark:text-[#fff0f6]">{trip.title}</h4>
       </Link>
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
-      <p className="text-xs text-gray-400 dark:text-gray-500">
+      <p className="mt-1 text-xs text-[#76596a] dark:text-[#dac4d0]">{formatAssignedClients(trip.clients)}</p>
+      <p className="text-xs text-[#967888] dark:text-[#c9adb9]">
         {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
         {trip.assignedAgentId && travelAgents && (
           <>
             {" · "}
-            <span className="text-blue-600 dark:text-blue-400">
+            <span className="text-[#8b2356] dark:text-[#ffd983]">
               {travelAgents.find((a) => a.id === trip.assignedAgentId)?.name ?? "Agente"}
             </span>
           </>
@@ -99,7 +99,7 @@ function TripCard({
           {formatTags(trip.tags).map((name) => (
             <li
               key={name}
-              className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+              className="rounded-full bg-[#f8e8ef] px-2 py-0.5 text-xs font-medium text-[#791b4b] dark:bg-[#54243d] dark:text-[#ffd8a4]"
             >
               {name}
             </li>
@@ -113,7 +113,7 @@ function TripCard({
             type="button"
             disabled={isPending}
             onClick={() => startTransition(() => onMoveStatus(trip.id, status))}
-            className="rounded-full border border-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+            className="rounded-full border border-[#d9c5cf] px-2 py-0.5 text-xs font-medium text-[#664658] hover:border-[#b87b97] hover:bg-[#fff4f8] disabled:opacity-40 dark:border-[#654154] dark:text-[#ead5df] dark:hover:bg-[#432237]"
           >
             Mover a {statusMeta[status].label}
           </button>
