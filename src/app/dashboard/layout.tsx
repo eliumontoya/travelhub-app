@@ -80,6 +80,12 @@ export default async function DashboardLayout({
                     Agentes
                   </Link>
                   <Link
+                    href="/dashboard/settings/accounts"
+                    className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
+                  >
+                    Cuentas
+                  </Link>
+                  <Link
                     href="/dashboard/wcc"
                     className="rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 font-semibold text-[var(--operator-brand)] transition hover:bg-[var(--operator-surface-hover)]"
                   >
