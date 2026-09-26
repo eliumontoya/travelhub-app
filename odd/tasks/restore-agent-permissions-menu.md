@@ -20,10 +20,10 @@ Restore the administrator navigation entry to the existing per-agent permissions
   - Checks: focused relevant tests; `npm test`; visual/source structural readback.
   - Verification: RED — `npm test -- src/app/dashboard/__tests__/layout.test.tsx` failed because the expected `/dashboard/settings/accounts` link was absent. GREEN — the same command passed (2 tests); `npm test` passed (96 files, 675 tests); `npx tsc --noEmit` passed.
   - Structural readback: `Cuentas` preserves the existing redesigned menu styling and is inside the existing `isAdmin` block; Dashboard, Viajes, Clientes, Proveedores, Agentes, WhatsApp C.C., and Ajustes remain covered by the focused test.
-  - Commit evidence: this work-unit commit (`fix(dashboard): restore agent permissions navigation`).
+  - Commit evidence: `585d525247e913f6af1aef1cbcda875e87a74af7` (`fix(dashboard): restore agent permissions navigation`).
 
 ## Progress
-APM-001 is complete; commit identity will be recorded after the work-unit commit.
+APM-001 is complete; source work-unit commit: `585d525247e913f6af1aef1cbcda875e87a74af7`.
 
 ## Next step
 No remaining implementation tasks.
