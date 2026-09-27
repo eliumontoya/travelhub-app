@@ -76,10 +76,10 @@ export default async function LoginPage({
         <div data-testid="login-hubit-brand" className="mb-8 text-center">
           <div className="flex justify-center">
             <Image
-              src="/logo-transparent.png"
+              src="/hubit-logo-transparent.png"
               alt="HUBit by TravelHub"
-              width={2017}
-              height={780}
+              width={728}
+              height={282}
               priority
               className="h-20 w-auto object-contain sm:h-[5.7rem]"
             />

@@ -51,5 +51,7 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 - 2026-09-27: Completed a repository-wide visual utility sweep for remaining dashboard, WCC, client, traveler, and shared UI components. Replaced old blue/gray/slate/emerald/red utility treatments with HUBit semantic tokens, warm surfaces, plum/gold/coral states, and glyph-friendly components. Verification passed: focused Vitest suite (13 tests), `npx tsc --noEmit`, `npm run build -- --webpack`, and Impeccable detector `[]` across changed TSX targets.
 
+- 2026-09-27: Replaced internal/login HUBit logo asset with the designer-provided transparent logo source from `/Users/eliumontoya/Downloads/HUBit-mock-site-source/logotransparente.png`, processed to remove the white matte, published as `/hubit-logo-transparent.png`, and pointed dashboard, agent login, and client login to that same asset. Verification passed: focused Vitest suite (13 tests), `npx tsc --noEmit`, Impeccable detector `[]`, `npm run build -- --webpack`, and visual screenshot inspection of `/login` on port 3333.
+
 ## Next step
-Capture representative pages on port 3333 where auth/data permits, inspect for any remaining visual mismatches, and complete HMS-005/HMS-006 before declaring the full goal done.
+Capture representative protected dashboard pages on port 3333 with an authenticated session or equivalent fixture, inspect for any remaining visual mismatches, and complete HMS-005/HMS-006 before declaring the full goal done.

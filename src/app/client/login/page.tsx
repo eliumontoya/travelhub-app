@@ -68,7 +68,7 @@ export default async function ClientLoginPage({
       >
         <div className="mb-8 text-center">
           <div className="flex justify-center">
-            <Image src="/logo-transparent.png" alt="HUBit by TravelHub" width={2017} height={780} priority className="h-20 w-auto object-contain sm:h-[5.7rem]" />
+            <Image src="/hubit-logo-transparent.png" alt="HUBit by TravelHub" width={728} height={282} priority className="h-20 w-auto object-contain sm:h-[5.7rem]" />
           </div>
           <h1 id="client-login-title" className="mt-5 font-serif text-4xl font-medium tracking-[-0.035em] text-[#4a1c35] sm:text-[2.75rem]">Bienvenido</h1>
           <p className="mt-3 text-[0.66rem] font-semibold uppercase tracking-[0.34em] text-[#7b6070]">Tu viaje. Más cerca.</p>

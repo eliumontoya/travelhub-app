@@ -43,7 +43,7 @@ export default async function DashboardLayout({
     <div data-testid="dashboard-hubit-shell" className="min-h-screen bg-[#f8f7fa] text-[var(--operator-ink)] lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
       <aside className="hidden bg-[linear-gradient(180deg,#610039,#360024)] px-4 py-7 text-white lg:flex lg:min-h-screen lg:flex-col">
         <Link href="/dashboard" className="mb-9 flex items-center" aria-label="HUBit dashboard">
-          <Image src="/logo-transparent.png" alt="HUBit by TravelHub" width={2017} height={780} className="h-12 w-auto object-contain" />
+          <Image src="/hubit-logo-transparent.png" alt="HUBit by TravelHub" width={728} height={282} className="h-12 w-auto object-contain" />
         </Link>
         <nav className="space-y-2 text-sm font-semibold">
           <Link href="/dashboard" className="flex items-center gap-3 rounded-xl bg-white/12 px-4 py-3.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition hover:bg-white/18"><span aria-hidden="true">⌂</span>Inicio</Link>
@@ -64,7 +64,7 @@ export default async function DashboardLayout({
         <header className="border-b border-[var(--operator-border)] bg-white/88 backdrop-blur">
           <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-7">
             <Link href="/dashboard" className="flex items-center lg:hidden" aria-label="HUBit dashboard">
-              <Image src="/logo-transparent.png" alt="HUBit by TravelHub" width={2017} height={780} className="h-8 w-auto object-contain" />
+              <Image src="/hubit-logo-transparent.png" alt="HUBit by TravelHub" width={728} height={282} className="h-8 w-auto object-contain" />
             </Link>
             <nav className="hidden items-center gap-3 text-sm sm:flex lg:hidden">
               <Link href="/dashboard" className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]">Dashboard</Link>
