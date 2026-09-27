@@ -1,7 +1,33 @@
 import Image from "next/image";
-import { OperatorButton } from "@/components/ui/OperatorButton";
-import { OperatorSurface } from "@/components/ui/OperatorSurface";
 import { clientSignIn } from "./actions";
+
+function MailIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </svg>
+  );
+}
+
+function LockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      <path d="M12 14v2" />
+    </svg>
+  );
+}
+
+function PlaneIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M21 16 3 21l4-9-4-9 18 5-9 4 9 4Z" />
+      <path d="M7 12h5" />
+    </svg>
+  );
+}
 
 export default async function ClientLoginPage({
   searchParams,
@@ -19,162 +45,70 @@ export default async function ClientLoginPage({
   const isPositiveStatus = status === "success" || status === "loggedOut";
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--operator-canvas)] px-4 py-8 text-[var(--operator-ink)] sm:px-6">
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-72 bg-[var(--operator-brand)]"
-        data-testid="client-login-atmosphere"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -top-24 right-[-8rem] h-72 w-72 rounded-full bg-[var(--operator-accent)] opacity-35 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute bottom-[-10rem] left-[-6rem] h-72 w-72 rounded-full bg-[var(--operator-surface-subtle)] blur-3xl"
-      />
+    <main
+      className="relative isolate grid min-h-screen overflow-hidden bg-[#1f1017] px-5 py-8 text-[#40142c] lg:grid-cols-[minmax(16rem,1fr)_minmax(27rem,34rem)_minmax(16rem,1fr)] lg:px-12"
+      style={{
+        backgroundImage:
+          "linear-gradient(90deg, color-mix(in srgb, var(--operator-brand-strong) 48%, transparent), color-mix(in srgb, var(--operator-brand-strong) 6%, transparent) 48%, color-mix(in srgb, var(--operator-brand-strong) 10%, transparent)), url('/hubit-login-office.png')",
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+      }}
+      data-testid="client-login-atmosphere"
+    >
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(18,8,13,0.04),rgba(18,8,13,0.36))]" />
+      <div aria-hidden="true" className="relative z-10 hidden self-center text-white lg:block">
+        <p className="max-w-32 text-xs font-medium uppercase leading-8 tracking-[0.36em] text-white/78">People<br />Places<br />Possibilities</p>
+        <div className="mt-8 h-px w-12 bg-white/70" />
+      </div>
 
-      <OperatorSurface
-        as="section"
-        variant="panel"
+      <section
         data-testid="client-login-panel"
-        className="relative w-full max-w-md overflow-hidden p-6 sm:p-8"
+        className="relative z-10 my-auto w-full rounded-[1.7rem] border border-white/60 bg-[#fffaf4]/70 px-7 py-9 shadow-[0_30px_90px_rgba(19,7,13,0.36)] backdrop-blur-md sm:px-10 sm:py-11"
         aria-labelledby="client-login-title"
       >
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="rounded-[var(--operator-radius-card)] bg-[var(--operator-surface)] px-5 py-3 shadow-[var(--operator-shadow-card)]">
-            <Image
-              src="/logo.jpeg"
-              alt="HUBit by TravelHub"
-              width={182}
-              height={128}
-              priority
-              className="h-20 w-auto object-contain sm:h-24"
-            />
+        <div className="mb-8 text-center">
+          <div className="flex justify-center">
+            <Image src="/logo-transparent.png" alt="HUBit by TravelHub" width={2017} height={780} priority className="h-20 w-auto object-contain sm:h-[5.7rem]" />
           </div>
-          <h1 id="client-login-title" className="mt-6 text-3xl font-semibold tracking-[-0.03em] text-[var(--operator-ink)]">
-            Acceso para clientes
-          </h1>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-[var(--operator-ink-muted)]">
-            Consulta los detalles de tu viaje con los datos que te compartió tu agente.
-          </p>
+          <h1 id="client-login-title" className="mt-5 font-serif text-4xl font-medium tracking-[-0.035em] text-[#4a1c35] sm:text-[2.75rem]">Bienvenido</h1>
+          <p className="mt-3 text-[0.66rem] font-semibold uppercase tracking-[0.34em] text-[#7b6070]">Tu viaje. Más cerca.</p>
         </div>
 
         {status && statusMessages[status] && (
-          <p
-            role="status"
-            aria-live="polite"
-            className={`mb-5 rounded-[var(--operator-radius-control)] px-4 py-3 text-sm leading-5 ${
-              isPositiveStatus
-                ? "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink)]"
-                : "bg-[var(--operator-brand)] text-[var(--operator-action-foreground)]"
-            }`}
-          >
+          <p role="status" aria-live="polite" className={`mb-5 rounded-xl px-4 py-3 text-sm leading-5 ${isPositiveStatus ? "border border-emerald-200 bg-emerald-50/90 text-emerald-800" : "border border-red-200 bg-red-50/90 text-red-800"}`}>
             {statusMessages[status]}
           </p>
         )}
 
-        <form action={clientSignIn} className="space-y-5">
+        <form action={clientSignIn} className="space-y-4">
           <input type="hidden" name="redirectTo" value={redirectTo ?? "/client"} />
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-[var(--operator-ink)]">
-              Email
-            </label>
-            <div
-              data-impeccable-variants="710e89a6"
-              data-impeccable-variant-count="3"
-              style={{ display: "contents" }}
-            >
-              {/* impeccable-variants-start 710e89a6 */}
-              <div data-impeccable-variant="1">
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  required
-                  autoComplete="email"
-                  placeholder="Correo Electrónico"
-                  className="email-live-variant email-live-variant-1 mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
-                />
-              </div>
-              <div data-impeccable-variant="2" style={{ display: "none" }}>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  required
-                  autoComplete="email"
-                  placeholder="Correo Electrónico"
-                  className="email-live-variant email-live-variant-2 mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
-                />
-              </div>
-              <div data-impeccable-variant="3" style={{ display: "none" }}>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  required
-                  autoComplete="email"
-                  placeholder="Correo Electrónico"
-                  className="email-live-variant email-live-variant-3 mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
-                />
-              </div>
-              {/* impeccable-variants-end 710e89a6 */}
+            <label htmlFor="email" className="sr-only">Email</label>
+            <div className="relative">
+              <MailIcon aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5c5965]" />
+              <input id="email" type="email" name="email" required autoComplete="email" placeholder="Correo electrónico" className="h-14 w-full rounded-lg border border-[#ddd8dc] bg-white/92 pl-12 pr-4 text-sm text-[#2b2431] outline-none transition placeholder:text-[#8f8a93] focus:border-[#7e105b] focus:ring-2 focus:ring-[#7e105b]/20" />
             </div>
-            <style data-impeccable-css="710e89a6">{`
-              @scope ([data-impeccable-variant="1"]) {
-                :scope > .email-live-variant {
-                  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2376596a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") no-repeat 0.875rem center / 1.125rem;
-                  padding-left: 2.75rem;
-                }
-                :scope > .email-live-variant-1 {
-                  border: 1px solid var(--operator-border);
-                }
-              }
-              @scope ([data-impeccable-variant="2"]) {
-                :scope > .email-live-variant {
-                  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2365003d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") no-repeat 0.875rem center / 1.125rem;
-                  border: 1px solid var(--operator-brand);
-                  box-shadow: inset 0 0 0 1px rgb(101 0 61 / 0.08);
-                  padding-left: 2.75rem;
-                }
-              }
-              @scope ([data-impeccable-variant="3"]) {
-                :scope > .email-live-variant {
-                  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2376596a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") no-repeat 0.875rem center / 1.125rem;
-                  border: 1px solid var(--operator-border);
-                  border-bottom-color: var(--operator-brand);
-                  border-bottom-width: 2px;
-                  padding-left: 2.75rem;
-                }
-              }
-            `}</style>
           </div>
           <div>
-            <label htmlFor="pin" className="block text-sm font-semibold text-[var(--operator-ink)]">
-              PIN
-            </label>
-            <input
-              id="pin"
-              type="password"
-              name="pin"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              minLength={4}
-              maxLength={6}
-              required
-              autoComplete="current-password"
-              className="mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] border border-[var(--operator-border)] bg-[var(--operator-surface)] px-3 text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
-            />
-            <p className="mt-2 text-xs leading-5 text-[var(--operator-ink-muted)]">
-              Ingresa el PIN de 4 a 6 dígitos que te proporcionó tu agente.
-            </p>
+            <label htmlFor="pin" className="sr-only">PIN</label>
+            <div className="relative">
+              <LockIcon aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5c5965]" />
+              <input id="pin" type="password" name="pin" inputMode="numeric" pattern="[0-9]*" minLength={4} maxLength={6} required autoComplete="current-password" placeholder="PIN" className="h-14 w-full rounded-lg border border-[#ddd8dc] bg-white/92 pl-12 pr-4 text-sm text-[#2b2431] outline-none transition placeholder:text-[#8f8a93] focus:border-[#7e105b] focus:ring-2 focus:ring-[#7e105b]/20" />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-[#6d6070]">Ingresa el PIN de 4 a 6 dígitos que te proporcionó tu agente.</p>
           </div>
-          <OperatorButton type="submit" className="w-full">
-            Entrar
-          </OperatorButton>
+          <button type="submit" className="mt-1 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-[#72004b] px-4 text-base font-medium text-white shadow-[0_18px_28px_rgba(67,0,43,0.23)] transition hover:bg-[#59003a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffad18]">
+            Entrar <span aria-hidden="true" className="text-2xl leading-none">→</span>
+          </button>
         </form>
-      </OperatorSurface>
+
+        <div aria-hidden="true" className="mt-8 flex items-center gap-4 text-[#72004b]">
+          <span className="h-px flex-1 bg-[#d8d0d4]" />
+          <PlaneIcon className="h-5 w-5 rotate-[-18deg]" />
+          <span className="h-px flex-1 bg-[#d8d0d4]" />
+        </div>
+        <div className="mt-4 text-center text-[0.64rem] font-semibold uppercase tracking-[0.28em] text-[#7b6070]">Plan | Manage | Travel | Together</div>
+      </section>
     </main>
   );
 }
