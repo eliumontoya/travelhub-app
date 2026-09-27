@@ -470,7 +470,7 @@ export default async function PublicTripPage({
                 Documentos pendientes
               </h2>
               <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
-                Tenés documentos pendientes por subir para este viaje.
+                Tienes documentos pendientes por subir para este viaje.
               </p>
               <a
                 href={`/client/trips/${trip.id}/documents`}
