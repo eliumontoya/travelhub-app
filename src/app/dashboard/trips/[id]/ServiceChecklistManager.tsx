@@ -32,13 +32,13 @@ type GetServiceChecklistAction = (
 
 function statusLabel(item: ServiceChecklistItemWithUpload) {
   const status = item.upload?.status;
-  if (status === "processed") return { icon: "✅", text: "Procesado" };
-  if (status === "reviewed") return { icon: "✅", text: "Revisado" };
+  if (status === "processed") return { icon: "✓", text: "Procesado" };
+  if (status === "reviewed") return { icon: "✓", text: "Revisado" };
   if (status === "re_upload_requested")
-    return { icon: "⚠️", text: "Re-subir solicitado" };
+    return { icon: "!", text: "Re-subir solicitado" };
   if (status === "uploaded")
-    return { icon: "🔄", text: "Pendiente de revisión" };
-  return { icon: "⬜", text: "Pendiente" };
+    return { icon: "↻", text: "Pendiente de revisión" };
+  return { icon: "□", text: "Pendiente" };
 }
 
 function itemHasReviewableUpload(item: ServiceChecklistItemWithUpload) {

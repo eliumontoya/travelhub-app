@@ -43,6 +43,8 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 - 2026-09-27: Started a broad dashboard/client visual sweep in `globals.css` so legacy subpages that still use old gray/blue/slate/emerald utility classes inherit HUBit plum, warm surfaces, rounded cards, and border treatment while their components keep working.
 - 2026-09-27: Started traveler route alignment with the mock trip hero/timeline and warm itinerary card system.
 - 2026-09-27: Verification so far: `npm test -- src/app/login/__tests__/page.test.tsx src/app/dashboard/__tests__/layout.test.tsx`, `npx tsc --noEmit`, and `npm run build -- --webpack` pass.
+- 2026-09-27: Rebuilt client login and client document upload pages into the HUBit login/traveler world, restyled settings/suppliers pages, and replaced document/checklist emojis with glyph marks. Commit `b802df9`.
+- 2026-09-27: Removed remaining emoji-style travel/status/weather/flight icons from shared item metadata, weather metadata, flight status badge, theme toggle, dashboard updates, and service checklist status helpers. Replaced them with HUBit glyph/letter marks and palette tokens. Verification passed: relevant tests, TypeScript, Webpack build, and Impeccable detector `[]`.
 
 ## Next step
 Continue extending the HUBit visual system across remaining dashboard/client/traveler subpages, capture representative pages on port 3333, run Impeccable detector, then commit the verified work unit.

@@ -66,8 +66,8 @@ export function FlightStatusBadge({ flightNumber: initialFlightNumber }: { fligh
 
   if (!explicitFlightNumber) {
     return (
-      <span className="w-fit rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-400 dark:bg-gray-900 dark:text-gray-500">
-        ✈ sin número de vuelo
+      <span className="w-fit rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-ink-muted)]">
+        AV sin número de vuelo
       </span>
     );
   }
@@ -97,14 +97,14 @@ export function FlightStatusBadge({ flightNumber: initialFlightNumber }: { fligh
   if (flightNumber && !status) {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <span className="w-fit rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-          ✈ {flightNumber} · sin consultar
+        <span className="w-fit rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-ink-muted)]">
+          AV {flightNumber} · sin consultar
         </span>
         <button
           type="button"
           onClick={fetchStatus}
           disabled={loading}
-          className="text-[10px] text-gray-400 underline decoration-dotted hover:text-sky-600 disabled:opacity-50 dark:text-gray-500 dark:hover:text-sky-400"
+          className="text-[10px] text-[var(--operator-brand)] underline decoration-dotted hover:text-[var(--operator-brand-strong)] disabled:opacity-50"
           title="Consultar estado del vuelo"
         >
           {loading ? "consultando…" : "consultar"}
@@ -116,14 +116,14 @@ export function FlightStatusBadge({ flightNumber: initialFlightNumber }: { fligh
   if (status) {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <span className="w-fit rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-          ✈ {flightNumber && `${flightNumber} · `}{status}
+        <span className="w-fit rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-brand)]">
+          AV {flightNumber && `${flightNumber} · `}{status}
         </span>
         <button
           type="button"
           onClick={fetchStatus}
           disabled={loading}
-          className="text-[10px] text-gray-400 underline decoration-dotted hover:text-sky-600 disabled:opacity-50 dark:text-gray-500 dark:hover:text-sky-400"
+          className="text-[10px] text-[var(--operator-brand)] underline decoration-dotted hover:text-[var(--operator-brand-strong)] disabled:opacity-50"
           title="Actualizar estado del vuelo"
         >
           {loading ? "actualizando…" : "actualizar"}

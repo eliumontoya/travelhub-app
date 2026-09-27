@@ -17,7 +17,7 @@ import { hasSettingsSavedFlash, type DashboardFlashSearchParams } from "@/lib/da
 import { tripStatusLabel } from "@/lib/data/dashboard";
 
 const activityMeta = {
-  trip: { icon: "✈", label: "viaje" },
+  trip: { icon: "AV", label: "viaje" },
   client: { icon: "◎", label: "cliente" },
 };
 
