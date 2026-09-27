@@ -19,7 +19,7 @@ export function CopyTripSummaryButtonClient({ trip }: { trip: TripWithDetails })
     <button
       type="button"
       onClick={handleCopy}
-      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+      className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
     >
       {copied ? "¡Copiado!" : "Copiar resumen"}
     </button>

@@ -30,7 +30,7 @@ export default async function TripQuotePage({
       <div className="mb-6 flex items-center justify-between gap-2 print:hidden">
         <Link
           href={`/dashboard/trips/${trip.id}`}
-          className="text-sm text-gray-500 hover:underline"
+          className="text-sm text-[var(--operator-ink-muted)] hover:underline"
         >
           ← Volver al viaje
         </Link>
@@ -38,10 +38,10 @@ export default async function TripQuotePage({
       </div>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Cotización — {trip.title}</h1>
-        <p className="text-sm text-gray-500">{formatAssignedClients(trip.clients)}</p>
+        <h1 className="text-2xl font-bold text-[var(--operator-brand)]">Cotización — {trip.title}</h1>
+        <p className="text-sm text-[var(--operator-ink-muted)]">{formatAssignedClients(trip.clients)}</p>
         {trip.startDate && trip.endDate && (
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
             {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
           </p>
         )}
@@ -51,14 +51,14 @@ export default async function TripQuotePage({
         {days.map((day) => (
           <div
             key={day.id}
-            className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:break-inside-avoid print:shadow-none print:border-gray-300"
+            className="rounded-xl border border-[var(--operator-border)] bg-white p-4 sm:p-5 print:break-inside-avoid print:shadow-none print:border-[var(--operator-border)]"
           >
-            <h3 className="mb-3 font-semibold capitalize text-gray-900">
+            <h3 className="mb-3 font-semibold capitalize text-[var(--operator-brand)]">
               {formatDateLong(day.date)}
             </h3>
 
             {day.items.length === 0 ? (
-              <p className="text-sm text-gray-400">Sin items este día.</p>
+              <p className="text-sm text-[var(--operator-ink-subtle)]">Sin items este día.</p>
             ) : (
               <div className="space-y-2">
                 {day.items.map((item) => {
@@ -66,23 +66,23 @@ export default async function TripQuotePage({
                   return (
                     <div
                       key={item.id}
-                      className="flex items-start justify-between gap-3 rounded-lg border border-gray-100 p-3 print:break-inside-avoid"
+                      className="flex items-start justify-between gap-3 rounded-lg border border-[var(--operator-border)] p-3 print:break-inside-avoid"
                     >
                       <div className="flex items-start gap-2">
                         <span className={`w-fit rounded-full px-2 py-1 text-lg ${meta.color}`}>
                           {meta.icon}
                         </span>
                         <div>
-                          <p className="font-medium text-gray-900">{item.title}</p>
+                          <p className="font-medium text-[var(--operator-brand)]">{item.title}</p>
                           {item.location && (
-                            <p className="text-sm text-gray-500">{item.location}</p>
+                            <p className="text-sm text-[var(--operator-ink-muted)]">{item.location}</p>
                           )}
                           {formatItemMetadataSummary(item) && (
-                            <p className="text-xs text-gray-400">{formatItemMetadataSummary(item)}</p>
+                            <p className="text-xs text-[var(--operator-ink-subtle)]">{formatItemMetadataSummary(item)}</p>
                           )}
                         </div>
                       </div>
-                      <span className="shrink-0 font-medium text-gray-900">
+                      <span className="shrink-0 font-medium text-[var(--operator-brand)]">
                         {formatCost(item.cost ?? 0, trip.currency)}
                       </span>
                     </div>
@@ -91,14 +91,14 @@ export default async function TripQuotePage({
               </div>
             )}
 
-            <div className="mt-3 flex justify-end border-t border-gray-100 pt-2 text-sm font-semibold text-gray-700">
+            <div className="mt-3 flex justify-end border-t border-[var(--operator-border)] pt-2 text-sm font-semibold text-[var(--operator-ink)]">
               Subtotal del día: {formatCost(day.subtotal, trip.currency)}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 flex justify-end border-t-2 border-gray-300 pt-4 text-lg font-bold text-gray-900">
+      <div className="mt-6 flex justify-end border-t-2 border-[var(--operator-border)] pt-4 text-lg font-bold text-[var(--operator-brand)]">
         Total del viaje: {formatCost(grandTotal, trip.currency)}
       </div>
     </main>

@@ -56,9 +56,9 @@ export function KnowledgeImportExport({ totalCount }: { totalCount: number }) {
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-5">
-      <h3 className="text-lg font-semibold text-white">Importar / Exportar Excel</h3>
-      <p className="mt-1 text-sm text-slate-400">
+    <section className="mt-6 rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
+      <h3 className="text-lg font-semibold text-[var(--operator-brand)]">Importar / Exportar Excel</h3>
+      <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
         Exporta toda la knowledge base ({totalCount} registros) a Excel para que el cliente la actualice, o importa un archivo actualizado.
       </p>
 
@@ -67,7 +67,7 @@ export function KnowledgeImportExport({ totalCount }: { totalCount: number }) {
           <button
             type="button"
             onClick={handleExport}
-            className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-400/20"
+            className="rounded-xl border border-[var(--operator-gold)]/40 bg-[var(--operator-gold)]/10 px-4 py-2 text-sm font-semibold text-[var(--operator-gold)] hover:bg-[var(--operator-gold)]/20"
           >
             Descargar Excel
           </button>
@@ -78,12 +78,12 @@ export function KnowledgeImportExport({ totalCount }: { totalCount: number }) {
             ref={fileRef}
             type="file"
             accept=".xlsx,.xls"
-            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-200"
+            className="rounded-xl border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 text-sm text-[var(--operator-ink-muted)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--operator-surface-subtle)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[var(--operator-brand)]"
           />
           <button
             type="submit"
             disabled={importing}
-            className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+            className="rounded-xl bg-[var(--operator-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
           >
             {importing ? "Importando..." : "Importar Excel"}
           </button>
@@ -91,20 +91,20 @@ export function KnowledgeImportExport({ totalCount }: { totalCount: number }) {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-400/40 bg-red-400/10 p-3 text-sm text-red-200">
+        <div className="mt-4 rounded-xl border border-[var(--operator-coral)]/40 bg-[var(--operator-coral)]/10 p-3 text-sm text-[var(--operator-coral)]">
           {error}
         </div>
       )}
 
       {result && (
-        <div className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+        <div className="mt-4 rounded-xl border border-[var(--operator-gold)]/40 bg-[var(--operator-gold)]/10 p-3 text-sm text-[var(--operator-gold)]">
           <p className="font-semibold">Importación completada</p>
           <p className="mt-1">
             Creadas: {result.created} | Actualizadas: {result.updated}
-            {result.errors > 0 && <span className="text-red-300"> | Errores: {result.errors}</span>}
+            {result.errors > 0 && <span className="text-[var(--operator-coral)]"> | Errores: {result.errors}</span>}
           </p>
           {result.errorDetails && result.errorDetails.length > 0 && (
-            <ul className="mt-2 list-inside list-disc text-xs text-red-300">
+            <ul className="mt-2 list-inside list-disc text-xs text-[var(--operator-coral)]">
               {result.errorDetails.map((e, i) => (
                 <li key={i}>Fila {e.row}: {e.error}</li>
               ))}
@@ -114,10 +114,10 @@ export function KnowledgeImportExport({ totalCount }: { totalCount: number }) {
       )}
 
       <details className="mt-4">
-        <summary className="cursor-pointer text-sm font-medium text-slate-400 hover:text-slate-200">
+        <summary className="cursor-pointer text-sm font-medium text-[var(--operator-ink-muted)] hover:text-[var(--operator-brand)]">
           Formato del archivo Excel
         </summary>
-        <div className="mt-2 text-xs text-slate-500">
+        <div className="mt-2 text-xs text-[var(--operator-ink-subtle)]">
           <p className="mb-2">Columnas requeridas:</p>
           <ul className="list-inside list-disc space-y-1">
             <li><strong>topic</strong> — Tema (máx 120 caracteres)</li>

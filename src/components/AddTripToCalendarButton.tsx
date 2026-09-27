@@ -14,7 +14,7 @@ export function AddTripToCalendarButton({
   return (
     <button
       onClick={() => downloadIcs(buildIcsForTrip(trip), `${trip.slug}.ics`)}
-      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+      className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)]"
     >
       {dictionary[lang].addTripToCalendar}
     </button>

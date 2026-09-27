@@ -28,7 +28,7 @@ export function DeleteClientButton({
       <input ref={confirmationRef} type="hidden" name="confirmationName" />
       <button
         type="submit"
-        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
+        className="rounded-lg border border-[var(--operator-coral)]/40 px-3 py-1.5 text-xs font-medium text-[var(--operator-coral)] hover:bg-[var(--operator-coral)]/10 dark:border-[var(--operator-coral)]/40 dark:text-[var(--operator-coral)] dark:hover:bg-[var(--operator-coral)]/10"
         aria-label={`Eliminar cliente ${clientName}`}
       >
         Eliminar

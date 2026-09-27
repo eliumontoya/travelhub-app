@@ -253,7 +253,7 @@ export default async function TripEditorPage({
                       <span className="block text-xs font-medium text-[#9b6479] group-hover:text-[#731044]">Día {idx + 1}</span>
                       <span className="block truncate font-medium capitalize">{formatDateLong(day.date)}</span>
                     </span>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${day.items.length === 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${day.items.length === 0 ? "bg-[var(--operator-gold)]/15 text-[var(--operator-brand)] dark:bg-[var(--operator-gold)]/15 dark:text-[var(--operator-brand)]" : "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)]"}`}>
                       {day.items.length}
                     </span>
                   </a>
@@ -288,7 +288,7 @@ export default async function TripEditorPage({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-[#4a1834] dark:text-[#fffdfb]">Itinerario por días</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
                     Configura las fechas e items del viaje desde esta línea de tiempo.
                   </p>
                 </div>
@@ -312,16 +312,16 @@ export default async function TripEditorPage({
                 <div
                   key={day.id}
                   id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-2xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_12px_30px_rgba(74,24,52,0.08)] sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none dark:border-[#f0bd79]/25 dark:bg-[#2b1520]"
+                  className="scroll-mt-6 rounded-2xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_12px_30px_rgba(74,24,52,0.08)] sm:p-5 print:break-inside-avoid print:border-[var(--operator-border)] print:shadow-none dark:border-[#f0bd79]/25 dark:bg-[#2b1520]"
                 >
                   <div className="mb-4 flex flex-col gap-3 border-b border-[#f0bd79]/35 pb-4 sm:flex-row sm:items-start sm:justify-between print:border-b-0 print:pb-0">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#731044] dark:text-[#f0bd79]">Día {dayIdx + 1}</p>
-                      <h3 className="mt-1 flex flex-wrap items-center gap-2 font-semibold capitalize text-gray-900 dark:text-gray-100">
+                      <h3 className="mt-1 flex flex-wrap items-center gap-2 font-semibold capitalize text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
                         {formatDateLong(day.date)}
                         <WeatherBadge weather={dayWeather[dayWeatherIdx]} />
                       </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <p className="mt-1 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
                         {day.items.length === 0
                           ? "Sin items todavía"
                           : `${day.items.length} ${day.items.length === 1 ? "item configurado" : "items configurados"}`}
@@ -338,7 +338,7 @@ export default async function TripEditorPage({
                       <DayFormDialog
                         day={day}
                         trigger={
-                          <button className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200">
+                          <button className="rounded-lg border border-[var(--operator-border)] px-2.5 py-1.5 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)] hover:text-[var(--operator-ink)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)] dark:hover:text-[var(--operator-brand)]">
                             ✏️ Editar día
                           </button>
                         }
@@ -351,17 +351,17 @@ export default async function TripEditorPage({
                   </div>
 
                   {day.notes && (
-                    <div className="mb-4 rounded-xl border border-dashed border-blue-100 bg-blue-50/50 px-3 py-2 print:border-gray-200 print:bg-white dark:border-blue-950 dark:bg-blue-950/20">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-400">
+                    <div className="mb-4 rounded-xl border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-[var(--operator-border)] print:bg-white dark:border-[var(--operator-border)] dark:bg-[var(--operator-surface-subtle)]/20">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-gold)] dark:text-[var(--operator-gold)]">
                         Nota del día
                       </p>
-                      <NoteHtml html={day.notes} className="text-sm text-gray-600 dark:text-gray-400" />
+                      <NoteHtml html={day.notes} className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]" />
                     </div>
                   )}
 
                   <div className="space-y-3">
                     {day.items.length === 0 && (
-                      <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800 print:hidden dark:border-amber-950 dark:bg-amber-950/20 dark:text-amber-300">
+                      <div className="rounded-xl border border-dashed border-[var(--operator-gold)]/50 bg-[var(--operator-gold)]/15/70 p-4 text-sm text-[var(--operator-brand)] print:hidden dark:border-[var(--operator-gold)]/50 dark:bg-[var(--operator-gold)]/15/20 dark:text-[var(--operator-brand)]">
 {isEditable ? "Este día está vacío. Agrega vuelos, hoteles, actividades o notas para completar el itinerario." : "Este día no tiene items."}
                       </div>
                     )}
@@ -382,9 +382,9 @@ export default async function TripEditorPage({
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium text-gray-900 dark:text-gray-100">{item.title}</span>
+                              <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{item.title}</span>
                               {item.startTime && (
-                                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:ring-gray-800">
+                                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-[var(--operator-ink-muted)] ring-1 ring-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-ink-subtle)] dark:ring-[var(--operator-border)]">
                                   {item.startTime}
                                   {tzLabel && ` · ${tzLabel}`}
                                 </span>
@@ -394,20 +394,20 @@ export default async function TripEditorPage({
                               )}
                             </div>
                             {resolvedLocation && (
-                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{resolvedLocation.label}</p>
+                              <p className="mt-1 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">{resolvedLocation.label}</p>
                             )}
                             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
                               {item.cost !== undefined && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500">Costo: {formatCost(item.cost, trip.currency)}</p>
+                                <p className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">Costo: {formatCost(item.cost, trip.currency)}</p>
                               )}
                               {item.confirmationCode && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                <p className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">
                                   Confirmación: {item.confirmationCode}
                                 </p>
                               )}
                             </div>
                             {formatItemMetadataSummary(item) && (
-                              <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                              <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-[var(--operator-brand)] dark:text-[var(--operator-gold)]" : "text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]"}`}>
                                 {formatItemMetadataSummary(item)}
                               </p>
                             )}
@@ -439,7 +439,7 @@ export default async function TripEditorPage({
                               trigger={
                                 <button
                                   type="button"
-                                  className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                  className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]"
                                   aria-label="Mover a otro día"
                                   title="Mover a otro día"
                                 >
@@ -451,7 +451,7 @@ export default async function TripEditorPage({
                               item={item}
                               allSuppliers={allSuppliers}
                               trigger={
-                                <button className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                                <button className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]">
                                   ✏️
                                 </button>
                               }
@@ -472,7 +472,7 @@ export default async function TripEditorPage({
                                 <button
                                   type="button"
                                   title="Duplicar en otro día"
-                                  className="text-sm text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                  className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]"
                                 >
                                   ⧉
                                 </button>
@@ -508,7 +508,7 @@ export default async function TripEditorPage({
               <DayFormDialog
                 trigger={
                   <button
-                    className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                    className="w-full rounded-lg border border-dashed border-[var(--operator-border)] py-3 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                   >
                     + Agregar día
                   </button>
@@ -534,7 +534,7 @@ export default async function TripEditorPage({
                 <form action={setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient)}>
                   <button
                     type="submit"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                   >
                     {trip.showCostsToClient ? "Ocultar costos al cliente" : "Mostrar costos al cliente"}
                   </button>
@@ -545,7 +545,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Gestionar clientes
                     </button>
@@ -558,7 +558,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Gestionar tags
                     </button>
@@ -566,7 +566,7 @@ export default async function TripEditorPage({
                   onSubmit={setTripTagsAction.bind(null, trip.id)}
                 />
                 <form action={updateTripAssignedAgentAction.bind(null, trip.id)} className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">
                     Agente asignado
                   </label>
                   <TravelAgentCombobox
@@ -576,7 +576,7 @@ export default async function TripEditorPage({
                   />
                   <button
                     type="submit"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                   >
                     Guardar agente
                   </button>
@@ -586,7 +586,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Instrucciones
                     </button>
@@ -598,7 +598,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Notas internas
                     </button>
@@ -610,7 +610,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Moneda ({trip.currency})
                     </button>
@@ -622,7 +622,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       # Viajeros
                     </button>
@@ -634,7 +634,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Presupuesto
                     </button>
@@ -646,7 +646,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Comisión
                     </button>
@@ -667,7 +667,7 @@ export default async function TripEditorPage({
                   trigger={
                     <button
                       type="button"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
                     >
                       Guardar como plantilla
                     </button>
@@ -687,23 +687,23 @@ export default async function TripEditorPage({
               {(hasAnyCost || trip.budget !== undefined) ? (
                 <div className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-500 dark:text-gray-400">Costo total</span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCost(totalCost, trip.currency)}</span>
+                    <span className="text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">Costo total</span>
+                    <span className="font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{formatCost(totalCost, trip.currency)}</span>
                   </div>
                   {trip.budget !== undefined && (
                     <>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-gray-500 dark:text-gray-400">Presupuesto</span>
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCost(trip.budget, trip.currency)}</span>
+                        <span className="text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">Presupuesto</span>
+                        <span className="font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{formatCost(trip.budget, trip.currency)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
                           {budgetDiff !== undefined && budgetDiff < 0 ? "Excedido" : "Disponible"}
                         </span>
                         <span
                           className={`font-semibold ${
                             budgetDiff !== undefined && budgetDiff < 0
-                              ? "text-red-600 dark:text-red-400"
+                              ? "text-[var(--operator-coral)] dark:text-[var(--operator-coral)]"
                               : "text-green-700 dark:text-green-400"
                           }`}
                         >
@@ -714,14 +714,14 @@ export default async function TripEditorPage({
                   )}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-gray-400">Sin costos registrados.</p>
+                <p className="mt-3 text-sm text-[var(--operator-ink-subtle)]">Sin costos registrados.</p>
               )}
             </section>
 
             <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Completitud</h2>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">
                   {completeness.documentPercentage}%
                 </span>
               </div>
@@ -731,11 +731,11 @@ export default async function TripEditorPage({
                   style={{ width: `${completeness.documentPercentage}%` }}
                 />
               </div>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-xs text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
                 {completeness.itemsWithDocuments} de {completeness.totalItems} items tienen documentos.
               </p>
               {completeness.emptyDays.length > 0 && (
-                <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                <p className="mt-2 text-xs font-medium text-[var(--operator-brand)] dark:text-[var(--operator-gold)]">
                   {completeness.emptyDays.length === 1
                     ? `1 día sin items: ${formatDateLong(completeness.emptyDays[0].date)}`
                     : `${completeness.emptyDays.length} días sin items`}
@@ -787,23 +787,23 @@ export default async function TripEditorPage({
 
             {trip.statusHistory.length > 0 && (
               <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-                <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Historial de estado</h2>
+                <h2 className="mb-2 text-sm font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Historial de estado</h2>
                 <ul className="space-y-1.5">
                   {[...trip.statusHistory].reverse().slice(0, 3).map((entry) => (
-                    <li key={entry.id} className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="block text-xs text-gray-400 dark:text-gray-500">{formatDateTime(entry.changedAt)}</span>
+                    <li key={entry.id} className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
+                      <span className="block text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{formatDateTime(entry.changedAt)}</span>
                       <span>
                         {entry.fromStatus ? (
                           <>
                             {statusMeta[entry.fromStatus].label} →{" "}
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                            <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
                               {statusMeta[entry.toStatus].label}
                             </span>
                           </>
                         ) : (
                           <>
                             Creado como{" "}
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                            <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
                               {statusMeta[entry.toStatus].label}
                             </span>
                           </>
@@ -817,16 +817,16 @@ export default async function TripEditorPage({
 
             {feedback.length > 0 && (
               <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-                <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">Feedback recibido</h3>
+                <h3 className="mb-4 font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Feedback recibido</h3>
                 <div className="space-y-3">
                   {feedback.map((f) => (
-                    <div key={f.id} className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+                    <div key={f.id} className="rounded-lg border border-[var(--operator-border)] p-3 dark:border-[var(--operator-border)]">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-amber-400">
+                        <span className="text-[var(--operator-gold)]">
                           {"★".repeat(f.rating)}
-                          <span className="text-gray-300 dark:text-gray-600">{"★".repeat(5 - f.rating)}</span>
+                          <span className="text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{"★".repeat(5 - f.rating)}</span>
                         </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(f.createdAt.slice(0, 10))}</span>
+                        <span className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{formatDateLong(f.createdAt.slice(0, 10))}</span>
                       </div>
                       {f.comment && <p className="mt-1 text-sm text-[#5c123e] dark:text-[#f7dfbc]">{f.comment}</p>}
                     </div>
@@ -844,9 +844,9 @@ export default async function TripEditorPage({
             />
             )}
 
-            <section className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-950 dark:bg-red-950/10">
-              <h2 className="text-sm font-semibold text-red-800 dark:text-red-300">Zona de peligro</h2>
-              <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+            <section className="rounded-xl border border-[var(--operator-coral)]/40 bg-[var(--operator-coral)]/10/60 p-4 dark:border-[var(--operator-coral)]/40 dark:bg-[var(--operator-coral)]/10/10">
+              <h2 className="text-sm font-semibold text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">Zona de peligro</h2>
+              <p className="mt-2 text-sm text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">
                 Borra definitivamente este viaje y sus datos relacionados.
               </p>
               <div className="mt-3">

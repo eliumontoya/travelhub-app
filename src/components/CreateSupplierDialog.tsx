@@ -84,15 +84,15 @@ export function CreateSupplierDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="w-full max-w-md rounded-xl border border-gray-200 p-0 backdrop:bg-black/40"
+      className="w-full max-w-md rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
     >
       <form onSubmit={handleSubmit} className="space-y-4 p-5">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-[var(--operator-brand)]">
           {isEditing ? "Editar proveedor" : "Crear proveedor"}
         </h3>
 
         <div>
-          <label htmlFor="supplier-name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-name" className="block text-sm font-medium text-[var(--operator-ink)]">
             Nombre *
           </label>
           <input
@@ -102,20 +102,20 @@ export function CreateSupplierDialog({
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="Nombre del proveedor"
           />
         </div>
 
         <div>
-          <label htmlFor="supplier-type" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-type" className="block text-sm font-medium text-[var(--operator-ink)]">
             Tipo
           </label>
           <select
             id="supplier-type"
             name="type"
             defaultValue={supplier?.type ?? "hotel"}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           >
             {SUPPLIER_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -128,7 +128,7 @@ export function CreateSupplierDialog({
         <SupplierPlaceAutocomplete onPlaceSelect={handlePlaceSelect} />
 
         <div>
-          <label htmlFor="supplier-phone" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-phone" className="block text-sm font-medium text-[var(--operator-ink)]">
             Teléfono
           </label>
           <input
@@ -136,13 +136,13 @@ export function CreateSupplierDialog({
             name="contactPhone"
             type="tel"
             defaultValue={supplier?.contactPhone}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="+54 11 1234-5678"
           />
         </div>
 
         <div>
-          <label htmlFor="supplier-email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-email" className="block text-sm font-medium text-[var(--operator-ink)]">
             Email
           </label>
           <input
@@ -150,13 +150,13 @@ export function CreateSupplierDialog({
             name="contactEmail"
             type="email"
             defaultValue={supplier?.contactEmail}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="email@ejemplo.com"
           />
         </div>
 
         <div>
-          <label htmlFor="supplier-website" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-website" className="block text-sm font-medium text-[var(--operator-ink)]">
             Sitio web
           </label>
           <input
@@ -164,13 +164,13 @@ export function CreateSupplierDialog({
             name="website"
             type="url"
             defaultValue={supplier?.website}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="https://ejemplo.com"
           />
         </div>
 
         <div>
-          <label htmlFor="supplier-address" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-address" className="block text-sm font-medium text-[var(--operator-ink)]">
             Dirección
           </label>
           <input
@@ -179,14 +179,14 @@ export function CreateSupplierDialog({
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="Calle y número, Ciudad"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="supplier-lat" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="supplier-lat" className="block text-sm font-medium text-[var(--operator-ink)]">
               Latitud
             </label>
             <input
@@ -196,12 +196,12 @@ export function CreateSupplierDialog({
               step="any"
               value={lat}
               onChange={(e) => setLat(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               placeholder="19.432608"
             />
           </div>
           <div>
-            <label htmlFor="supplier-lng" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="supplier-lng" className="block text-sm font-medium text-[var(--operator-ink)]">
               Longitud
             </label>
             <input
@@ -211,18 +211,18 @@ export function CreateSupplierDialog({
               step="any"
               value={lng}
               onChange={(e) => setLng(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               placeholder="-99.133209"
             />
           </div>
         </div>
         <input type="hidden" name="googlePlaceId" value={googlePlaceId} readOnly />
         {googlePlaceId && (
-          <p className="text-xs text-gray-500">Google Place ID capturado para futuras actualizaciones.</p>
+          <p className="text-xs text-[var(--operator-ink-muted)]">Google Place ID capturado para futuras actualizaciones.</p>
         )}
 
         <div>
-          <label htmlFor="supplier-tags" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-tags" className="block text-sm font-medium text-[var(--operator-ink)]">
             Tags
           </label>
           <input
@@ -230,14 +230,14 @@ export function CreateSupplierDialog({
             name="tags"
             type="text"
             defaultValue={supplier?.tags.join(", ")}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="playa, 5 estrellas, familiar"
           />
-          <p className="mt-1 text-xs text-gray-500">Separados por coma.</p>
+          <p className="mt-1 text-xs text-[var(--operator-ink-muted)]">Separados por coma.</p>
         </div>
 
         <div>
-          <label htmlFor="supplier-notes" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="supplier-notes" className="block text-sm font-medium text-[var(--operator-ink)]">
             Notas
           </label>
           <RichTextEditor
@@ -247,20 +247,20 @@ export function CreateSupplierDialog({
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}
 
         <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="button"
             onClick={close}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
           >
             {isPending ? "Guardando…" : isEditing ? "Guardar" : "Crear"}
           </button>

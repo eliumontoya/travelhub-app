@@ -9,9 +9,9 @@ import { WccEmptyState, WccNotice } from "../components";
 import type { WhatsAppKnowledgeStatus } from "@/types";
 
 function statusClasses(status: WhatsAppKnowledgeStatus) {
-  if (status === "approved") return "border-emerald-400/40 bg-emerald-400/10 text-emerald-200";
-  if (status === "archived") return "border-slate-600 bg-slate-800 text-slate-300";
-  return "border-amber-400/40 bg-amber-400/10 text-amber-200";
+  if (status === "approved") return "border-[var(--operator-gold)]/40 bg-[var(--operator-gold)]/10 text-[var(--operator-gold)]";
+  if (status === "archived") return "border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]";
+  return "border-[var(--operator-gold)]/40 bg-[var(--operator-gold)]/10 text-[var(--operator-brand)]";
 }
 
 function pageHref(page: number, status?: string) {
@@ -30,10 +30,10 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <section className="rounded-3xl border border-emerald-400/20 bg-slate-900 p-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Knowledge base</p>
-        <h2 className="mt-2 text-3xl font-bold text-white">Respuestas controladas para WhatsApp</h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+      <section className="rounded-3xl border border-white/15 bg-white/94 p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--operator-gold)]">Knowledge base</p>
+        <h2 className="mt-2 text-3xl font-bold text-[var(--operator-brand)]">Respuestas controladas para WhatsApp</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--operator-ink-muted)]">
           Crea, aprueba y archiva conocimiento estático. Solo las entradas approved pueden ser usadas por el agente inbound.
         </p>
       </section>
@@ -45,7 +45,7 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
       )}
 
       <section className="mt-6">
-        <h3 className="text-lg font-semibold text-white">Crear knowledge</h3>
+        <h3 className="text-lg font-semibold text-[var(--operator-brand)]">Crear knowledge</h3>
         <div className="mt-3">
           <KnowledgeForm action={createKnowledgeAction} submitLabel="Crear knowledge" />
         </div>
@@ -53,39 +53,39 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
 
       <KnowledgeImportExport totalCount={list.totalCount} />
 
-      <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+      <section className="mt-8 rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Entradas</h3>
-            <p className="mt-1 text-sm text-slate-400">{list.totalCount} entrada(s) encontradas</p>
+            <h3 className="text-lg font-semibold text-[var(--operator-brand)]">Entradas</h3>
+            <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">{list.totalCount} entrada(s) encontradas</p>
           </div>
           <div className="flex flex-wrap gap-2 text-sm">
-            <Link href="/dashboard/wcc/knowledge" className={!list.status ? "rounded-full bg-emerald-400 px-3 py-1.5 font-semibold text-slate-950" : "rounded-full border border-slate-700 px-3 py-1.5 text-slate-300 hover:border-emerald-400"}>Todas</Link>
+            <Link href="/dashboard/wcc/knowledge" className={!list.status ? "rounded-full bg-[var(--operator-gold)] px-3 py-1.5 font-semibold text-[var(--operator-brand)]" : "rounded-full border border-[var(--operator-border)] px-3 py-1.5 text-[var(--operator-ink-muted)] hover:border-[var(--operator-gold)]"}>Todas</Link>
             {wccKnowledgeStatuses.map((status) => (
-              <Link key={status} href={pageHref(1, status)} className={list.status === status ? "rounded-full bg-emerald-400 px-3 py-1.5 font-semibold text-slate-950" : "rounded-full border border-slate-700 px-3 py-1.5 text-slate-300 hover:border-emerald-400"}>{status}</Link>
+              <Link key={status} href={pageHref(1, status)} className={list.status === status ? "rounded-full bg-[var(--operator-gold)] px-3 py-1.5 font-semibold text-[var(--operator-brand)]" : "rounded-full border border-[var(--operator-border)] px-3 py-1.5 text-[var(--operator-ink-muted)] hover:border-[var(--operator-gold)]"}>{status}</Link>
             ))}
           </div>
         </div>
 
         <div className="mt-5 space-y-4">
           {list.entries.length ? list.entries.map((entry) => (
-            <article key={entry.id} className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+            <article key={entry.id} className="rounded-2xl border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] p-5">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClasses(entry.status)}`}>{entry.status}</span>
-                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-300">{entry.topic}</p>
+                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--operator-gold)]">{entry.topic}</p>
                   </div>
-                  <h4 className="mt-3 text-lg font-semibold text-white">{entry.question}</h4>
-                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-300">{entry.answer}</p>
+                  <h4 className="mt-3 text-lg font-semibold text-[var(--operator-brand)]">{entry.question}</h4>
+                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-[var(--operator-ink-muted)]">{entry.answer}</p>
                 </div>
-                <Link href={`/dashboard/wcc/knowledge/${entry.id}`} className="shrink-0 rounded-xl border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-100 hover:border-emerald-400 hover:text-emerald-200">Editar</Link>
+                <Link href={`/dashboard/wcc/knowledge/${entry.id}`} className="shrink-0 rounded-xl border border-[var(--operator-border)] px-3 py-2 text-sm font-semibold text-[var(--operator-ink)] hover:border-[var(--operator-gold)] hover:text-[var(--operator-gold)]">Editar</Link>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {entry.tags.map((tag) => <span key={tag} className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300">#{tag}</span>)}
-                {entry.source && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-400">Fuente: {entry.source}</span>}
+                {entry.tags.map((tag) => <span key={tag} className="rounded-full bg-[var(--operator-surface-subtle)] px-2.5 py-1 text-xs text-[var(--operator-ink-muted)]">#{tag}</span>)}
+                {entry.source && <span className="rounded-full border border-[var(--operator-border)] px-2.5 py-1 text-xs text-[var(--operator-ink-muted)]">Fuente: {entry.source}</span>}
               </div>
-              <div className="mt-4 grid gap-3 text-xs text-slate-500 md:grid-cols-3">
+              <div className="mt-4 grid gap-3 text-xs text-[var(--operator-ink-subtle)] md:grid-cols-3">
                 <span>Actualizado: {formatRelativeTime(entry.updatedAt)}</span>
                 <span>Aprobado: {entry.approvedAt ? formatRelativeTime(entry.approvedAt) : "no aprobado"}</span>
                 <KnowledgeStatusForm entryId={entry.id} currentStatus={entry.status} />
@@ -97,10 +97,10 @@ export default async function WccKnowledgePage({ searchParams }: { searchParams:
         </div>
 
         {list.totalPages > 1 && (
-          <div className="mt-6 flex flex-col gap-3 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
-            <Link aria-disabled={list.page <= 1} href={pageHref(Math.max(1, list.page - 1), list.status)} className="rounded-xl border border-slate-700 px-3 py-2 aria-disabled:pointer-events-none aria-disabled:opacity-40">Anterior</Link>
+          <div className="mt-6 flex flex-col gap-3 text-sm text-[var(--operator-ink-muted)] sm:flex-row sm:items-center sm:justify-between">
+            <Link aria-disabled={list.page <= 1} href={pageHref(Math.max(1, list.page - 1), list.status)} className="rounded-xl border border-[var(--operator-border)] px-3 py-2 aria-disabled:pointer-events-none aria-disabled:opacity-40">Anterior</Link>
             <span>Página {list.page} de {list.totalPages}</span>
-            <Link aria-disabled={list.page >= list.totalPages} href={pageHref(Math.min(list.totalPages, list.page + 1), list.status)} className="rounded-xl border border-slate-700 px-3 py-2 aria-disabled:pointer-events-none aria-disabled:opacity-40">Siguiente</Link>
+            <Link aria-disabled={list.page >= list.totalPages} href={pageHref(Math.min(list.totalPages, list.page + 1), list.status)} className="rounded-xl border border-[var(--operator-border)] px-3 py-2 aria-disabled:pointer-events-none aria-disabled:opacity-40">Siguiente</Link>
           </div>
         )}
       </section>

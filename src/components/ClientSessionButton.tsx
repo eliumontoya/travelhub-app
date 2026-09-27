@@ -23,7 +23,7 @@ export async function ClientSessionButton({
         href={loginHref}
         aria-label="Iniciar sesión"
         title="Iniciar sesión"
-        className={`flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 ${className}`}
+        className={`flex h-9 w-9 items-center justify-center rounded-full bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)] ${className}`}
       >
         🔐
       </Link>
@@ -35,7 +35,7 @@ export async function ClientSessionButton({
       href="/client"
       aria-label="Ir a mi cuenta"
       title="Ir a mi cuenta"
-      className={`flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 ${className}`}
+      className={`flex h-9 w-9 items-center justify-center rounded-full bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)] ${className}`}
     >
       🔐
     </Link>

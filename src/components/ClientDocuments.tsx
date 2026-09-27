@@ -51,12 +51,12 @@ export function ClientDocuments({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="text-sm font-medium text-gray-700">
+    <div className="rounded-lg border border-[var(--operator-border)] bg-white p-4">
+      <h3 className="text-sm font-medium text-[var(--operator-ink)]">
         Documentos del cliente (pasaporte, identificación, etc.)
       </h3>
       {uploadError && (
-        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 rounded-lg bg-[var(--operator-coral)]/10 px-3 py-2 text-sm text-[var(--operator-coral)]">
           {uploadError}
         </p>
       )}
@@ -69,18 +69,18 @@ export function ClientDocuments({
                   href={doc.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="truncate text-blue-600 hover:underline"
+                  className="truncate text-[var(--operator-brand)] hover:underline"
                 >
                   {doc.filename}
                 </a>
               ) : (
-                <span className="truncate text-gray-700">{doc.filename}</span>
+                <span className="truncate text-[var(--operator-ink)]">{doc.filename}</span>
               )}
               <button
                 type="button"
                 onClick={() => handleDelete(doc.id)}
                 disabled={isPending}
-                className="shrink-0 text-xs text-red-600 hover:underline"
+                className="shrink-0 text-xs text-[var(--operator-coral)] hover:underline"
               >
                 Eliminar
               </button>
@@ -88,7 +88,7 @@ export function ClientDocuments({
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-gray-400">Sin documentos.</p>
+        <p className="mt-2 text-sm text-[var(--operator-ink-subtle)]">Sin documentos.</p>
       )}
       {documentsEnabled ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -97,13 +97,13 @@ export function ClientDocuments({
             type="button"
             onClick={handleUpload}
             disabled={isPending}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
           >
             Subir
           </button>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-gray-400">Configura Supabase para subir documentos.</p>
+        <p className="mt-2 text-sm text-[var(--operator-ink-subtle)]">Configura Supabase para subir documentos.</p>
       )}
     </div>
   );

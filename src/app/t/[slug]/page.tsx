@@ -124,7 +124,7 @@ export default async function PublicTripPage({
       </div>
 
       {isDraftPreview && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-800 print:hidden dark:border-amber-950 dark:bg-amber-950/30 dark:text-amber-300">
+        <div className="border-b border-[var(--operator-gold)]/50 bg-[var(--operator-gold)]/15 px-4 py-2 text-center text-sm font-medium text-[var(--operator-brand)] print:hidden dark:border-[var(--operator-gold)]/50 dark:bg-[var(--operator-gold)]/15/30 dark:text-[var(--operator-brand)]">
           Vista previa de borrador: esta URL temporal solo sirve para revisión. La URL final se activa al publicar el viaje.
         </div>
       )}
@@ -154,12 +154,12 @@ export default async function PublicTripPage({
               <h1 className="text-4xl font-serif font-semibold tracking-[-0.045em] sm:text-6xl">{trip.title}</h1>
               <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-base text-white/86">
                 <span>{formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}</span>
-                <span className="rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-bold text-emerald-800">● En curso</span>
+                <span className="rounded-full bg-[var(--operator-surface-subtle)] px-4 py-1.5 text-sm font-bold text-[var(--operator-brand)]">● En curso</span>
                 <span>{trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}</span>
               </p>
               <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/75">
-                <a href={`mailto:${contact.email}`} className="hover:text-white hover:underline">{contact.email}</a>
-                <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`} className="hover:text-white hover:underline">{contact.phone}</a>
+                <a href={`mailto:${contact.email}`} className="hover:text-[var(--operator-brand)] hover:underline">{contact.email}</a>
+                <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`} className="hover:text-[var(--operator-brand)] hover:underline">{contact.phone}</a>
               </p>
             </div>
 
@@ -179,8 +179,8 @@ export default async function PublicTripPage({
       </section>
 
       <div className="hidden print:block px-4 pt-4">
-        <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-2xl font-bold text-[var(--operator-brand)]">{trip.title}</h1>
+        <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
           {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
         </p>
       </div>
@@ -209,7 +209,7 @@ export default async function PublicTripPage({
                 <article
                   key={day.id}
                   id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-[1rem] border border-[#ebe5e8] bg-white/96 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)] print:break-inside-avoid print:border-gray-300 print:shadow-none"
+                  className="scroll-mt-6 rounded-[1rem] border border-[#ebe5e8] bg-white/96 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)] print:break-inside-avoid print:border-[var(--operator-border)] print:shadow-none"
                 >
                 <header className="mb-4 flex flex-col gap-2 border-b border-[var(--operator-border-subtle)] pb-4 sm:flex-row sm:items-center sm:justify-between print:border-b-0 print:pb-0">
                   <div>
@@ -225,8 +225,8 @@ export default async function PublicTripPage({
                 </header>
 
                 {day.notes && (
-                  <div className="mb-4 rounded-[var(--operator-radius-card)] border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-gray-200 print:bg-white">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)] dark:text-blue-400">
+                  <div className="mb-4 rounded-[var(--operator-radius-card)] border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-[var(--operator-border)] print:bg-white">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)] dark:text-[var(--operator-gold)]">
                       Nota del día
                     </p>
                     <NoteHtml html={day.notes} className="text-sm text-[var(--operator-ink-muted)]" />
@@ -257,7 +257,7 @@ export default async function PublicTripPage({
                     return (
                       <div
                         key={item.id}
-                        className="rounded-[1rem] border border-[#ebe5e8] bg-white p-4 shadow-[0_6px_18px_rgba(81,0,52,0.04)] print:break-inside-avoid print:border-gray-300 print:bg-white"
+                        className="rounded-[1rem] border border-[#ebe5e8] bg-white p-4 shadow-[0_6px_18px_rgba(81,0,52,0.04)] print:break-inside-avoid print:border-[var(--operator-border)] print:bg-white"
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 items-start gap-3">
@@ -287,7 +287,7 @@ export default async function PublicTripPage({
                                 <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">{resolvedLocation.label}</p>
                               )}
                               {metadataSummary && (
-                                <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                                <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-[var(--operator-brand)] dark:text-[var(--operator-gold)]" : "text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]"}`}>
                                   {metadataSummary}
                                 </p>
                               )}
@@ -337,13 +337,13 @@ export default async function PublicTripPage({
                                                   href={doc.url}
                                                   target="_blank"
                                                   rel="noreferrer"
-                                                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:underline dark:border-gray-800 dark:bg-gray-950 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[var(--operator-border)] bg-white px-3 py-2 text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)] hover:underline dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-gold)] dark:hover:bg-[var(--operator-surface-subtle)]"
                                                 >
                                                   <span>□</span>
                                                   <span className="truncate">{doc.fileName}</span>
                                                 </a>
                                               ) : (
-                                                <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                                                <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm text-[var(--operator-ink-muted)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)]">
                                                   <span>□</span>
                                                   <span className="truncate">{doc.fileName}</span>
                                                 </span>
@@ -416,7 +416,7 @@ export default async function PublicTripPage({
             <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
               <h2 className="text-sm font-semibold text-[var(--operator-ink)]">Resumen de costos</h2>
               <p className="mt-1 text-2xl font-bold text-[var(--operator-ink)]">{formatCost(totalCost, trip.currency)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
+              <p className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">Total estimado del viaje</p>
             </section>
           )}
 
@@ -451,7 +451,7 @@ export default async function PublicTripPage({
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block truncate rounded-lg border border-gray-100 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:underline dark:border-gray-800 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                        className="block truncate rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)] hover:underline dark:border-[var(--operator-border)] dark:text-[var(--operator-gold)] dark:hover:bg-[var(--operator-surface-subtle)]"
                       >
                         {doc.filename}
                       </a>

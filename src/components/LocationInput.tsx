@@ -117,7 +117,7 @@ export function LocationInput({
         value={inputValue}
         onChange={(e) => updateValue(e.target.value)}
         placeholder={apiKey ? "Buscar ubicación…" : undefined}
-        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
       />
       <input type="hidden" name="lat" value={lat ?? ""} readOnly />
       <input type="hidden" name="lng" value={lng ?? ""} readOnly />

@@ -30,7 +30,7 @@ export function ProfileMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Menú de cuenta"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)]"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -47,21 +47,21 @@ export function ProfileMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-          <p className="truncate px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400">
+        <div className="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-[var(--operator-border)] bg-white p-2 shadow-lg dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand)]">
+          <p className="truncate px-2 py-1.5 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
             {email ?? "Sesión sin autenticar"}
           </p>
           <Link
             href="/dashboard/settings"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+            className="block rounded-lg px-2 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:text-[var(--operator-brand)] dark:hover:bg-[var(--operator-brand-strong)]"
           >
             Configuración
           </Link>
           <form action={signOutAction}>
             <button
               type="submit"
-              className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+              className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-[var(--operator-coral)] hover:bg-[var(--operator-coral)]/10 dark:text-[var(--operator-coral)] dark:hover:bg-[var(--operator-coral)]/10"
             >
               Cerrar sesión
             </button>

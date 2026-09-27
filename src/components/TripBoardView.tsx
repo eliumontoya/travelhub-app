@@ -17,12 +17,12 @@ type TripWithMeta = {
 };
 
 const statusMeta: Record<TripStatus, { label: string; color: string }> = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
+  draft: { label: "Borrador", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)]" },
   published: {
     label: "Publicado",
     color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
   },
-  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500" },
+  archived: { label: "Archivado", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-subtle)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-muted)]" },
 };
 
 const columns: TripStatus[] = ["draft", "published", "archived"];

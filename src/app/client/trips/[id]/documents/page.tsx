@@ -59,14 +59,14 @@ export default async function ClientTripDocumentsPage({
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <Link
             href="/client"
-            className="text-white/82 hover:text-white hover:underline"
+            className="text-white/82 hover:text-[var(--operator-brand)] hover:underline"
           >
             ← Volver a mis viajes
           </Link>
           {trip && (
             <Link
               href={tripHref}
-              className="font-medium text-white/82 hover:text-white hover:underline"
+              className="font-medium text-white/82 hover:text-[var(--operator-brand)] hover:underline"
             >
               {tripLinkLabel}
             </Link>
@@ -102,7 +102,7 @@ export default async function ClientTripDocumentsPage({
                         {item.label}
                       </span>
                       {item.required && (
-                        <span className="text-xs text-red-600 dark:text-red-400">
+                        <span className="text-xs text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">
                           *
                         </span>
                       )}

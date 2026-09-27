@@ -38,18 +38,18 @@ export function TripPhotoGallery({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
-      <h3 className="mb-3 font-semibold text-gray-900">Galería de fotos</h3>
+    <div className="rounded-xl border border-[var(--operator-border)] bg-white p-4 sm:p-5">
+      <h3 className="mb-3 font-semibold text-[var(--operator-brand)]">Galería de fotos</h3>
 
       {photos.length > 0 && (
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {photos.map((photo) => (
-            <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg border border-gray-100">
+            <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg border border-[var(--operator-border)]">
               {photo.url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={photo.url} alt={photo.fileName} className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                <div className="flex h-full w-full items-center justify-center bg-[var(--operator-surface-subtle)] text-xs text-[var(--operator-ink-subtle)]">
                   {photo.fileName}
                 </div>
               )}
@@ -73,13 +73,13 @@ export function TripPhotoGallery({
             type="button"
             onClick={handleUpload}
             disabled={isPending}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
           >
             Subir foto
           </button>
         </div>
       ) : (
-        <p className="text-sm text-gray-400">Configura Supabase para subir fotos.</p>
+        <p className="text-sm text-[var(--operator-ink-subtle)]">Configura Supabase para subir fotos.</p>
       )}
     </div>
   );

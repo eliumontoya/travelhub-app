@@ -51,11 +51,11 @@ export function TripDocuments({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 print:hidden dark:border-gray-800 dark:bg-gray-900">
-      <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">Documentos del viaje</h3>
+    <div className="rounded-xl border border-[var(--operator-border)] bg-white p-4 sm:p-5 print:hidden dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)]">
+      <h3 className="mb-3 font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Documentos del viaje</h3>
 
       {uploadError && (
-        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
+        <p className="mb-3 rounded-lg bg-[var(--operator-coral)]/10 px-3 py-2 text-sm text-[var(--operator-coral)] dark:bg-[var(--operator-coral)]/10 dark:text-[var(--operator-coral)]">
           {uploadError}
         </p>
       )}
@@ -69,18 +69,18 @@ export function TripDocuments({
                   href={doc.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="truncate text-blue-600 hover:underline dark:text-blue-400"
+                  className="truncate text-[var(--operator-brand)] hover:underline dark:text-[var(--operator-gold)]"
                 >
                   {doc.filename}
                 </a>
               ) : (
-                <span className="truncate text-gray-700 dark:text-gray-300">{doc.filename}</span>
+                <span className="truncate text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">{doc.filename}</span>
               )}
               <button
                 type="button"
                 onClick={() => handleDelete(doc.id)}
                 disabled={isPending}
-                className="shrink-0 text-xs text-red-600 hover:underline"
+                className="shrink-0 text-xs text-[var(--operator-coral)] hover:underline"
               >
                 Eliminar
               </button>
@@ -88,7 +88,7 @@ export function TripDocuments({
           ))}
         </ul>
       ) : (
-        <p className="mb-4 text-sm text-gray-400">Sin documentos.</p>
+        <p className="mb-4 text-sm text-[var(--operator-ink-subtle)]">Sin documentos.</p>
       )}
 
       {documentsEnabled ? (
@@ -98,13 +98,13 @@ export function TripDocuments({
             type="button"
             onClick={handleUpload}
             disabled={isPending}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
           >
             Subir documento
           </button>
         </div>
       ) : (
-        <p className="text-sm text-gray-400">Configura Supabase para subir documentos.</p>
+        <p className="text-sm text-[var(--operator-ink-subtle)]">Configura Supabase para subir documentos.</p>
       )}
     </div>
   );

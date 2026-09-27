@@ -23,8 +23,8 @@ export function TripFeedbackForm({
 
   if (sent) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-        <p className="text-sm text-gray-700">¡Gracias por tu comentario!</p>
+      <div className="rounded-xl border border-[var(--operator-border)] bg-white p-4 text-center shadow-sm">
+        <p className="text-sm text-[var(--operator-ink)]">¡Gracias por tu comentario!</p>
       </div>
     );
   }
@@ -32,9 +32,9 @@ export function TripFeedbackForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+      className="space-y-3 rounded-xl border border-[var(--operator-border)] bg-white p-4 shadow-sm"
     >
-      <h3 className="text-sm font-semibold text-gray-900">¿Cómo estuvo tu viaje?</h3>
+      <h3 className="text-sm font-semibold text-[var(--operator-brand)]">¿Cómo estuvo tu viaje?</h3>
       <input type="hidden" name="rating" value={rating} />
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((value) => (
@@ -43,7 +43,7 @@ export function TripFeedbackForm({
             type="button"
             onClick={() => setRating(value)}
             aria-label={`Calificar ${value} de 5`}
-            className={`text-2xl leading-none ${value <= rating ? "text-amber-400" : "text-gray-300"}`}
+            className={`text-2xl leading-none ${value <= rating ? "text-[var(--operator-gold)]" : "text-[var(--operator-ink-subtle)]"}`}
           >
             ★
           </button>
@@ -53,12 +53,12 @@ export function TripFeedbackForm({
         name="comment"
         rows={3}
         placeholder="Cuéntanos algo más (opcional)"
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
       />
       <button
         type="submit"
         disabled={isPending || rating === 0}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
       >
         Enviar
       </button>

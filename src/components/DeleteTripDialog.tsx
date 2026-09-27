@@ -18,18 +18,18 @@ export function DeleteTripDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-lg border border-red-200 px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-950 dark:text-red-300 dark:hover:bg-red-950/30"
+        className="w-full rounded-lg border border-[var(--operator-coral)]/40 px-3 py-2 text-left text-sm font-medium text-[var(--operator-coral)] hover:bg-[var(--operator-coral)]/10 dark:border-[var(--operator-coral)]/40 dark:text-[var(--operator-coral)] dark:hover:bg-[var(--operator-coral)]/10/30"
       >
         Eliminar viaje
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-950">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Eliminar viaje</h3>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-[var(--operator-brand-strong)]">
+            <h3 className="text-lg font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Eliminar viaje</h3>
+            <p className="mt-2 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
               Esta acción borrará permanentemente el viaje y sus datos relacionados. Para confirmar, escribe el nombre exacto:
             </p>
-            <p className="mt-3 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+            <p className="mt-3 rounded-lg bg-[var(--operator-surface-subtle)] px-3 py-2 text-sm font-medium text-[var(--operator-brand)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-brand)]">
               {tripTitle}
             </p>
             <form
@@ -45,21 +45,21 @@ export function DeleteTripDialog({
                 name="confirmTitle"
                 value={confirmTitle}
                 onChange={(event) => setConfirmTitle(event.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                className="w-full rounded-lg border border-[var(--operator-border)] bg-white px-3 py-2 text-sm text-[var(--operator-brand)] dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-brand)]"
                 autoComplete="off"
               />
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+                  className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={!matches}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-[var(--operator-coral)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-coral)]/80 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Borrar definitivamente
                 </button>

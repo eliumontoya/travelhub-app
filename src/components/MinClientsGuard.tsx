@@ -31,5 +31,5 @@ export function MinClientsGuard({ fieldName }: { fieldName: string }) {
     return () => form.removeEventListener("submit", handleSubmit);
   }, [fieldName]);
 
-  return <div ref={markerRef}>{error && <p className="text-sm text-red-600">{error}</p>}</div>;
+  return <div ref={markerRef}>{error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}</div>;
 }

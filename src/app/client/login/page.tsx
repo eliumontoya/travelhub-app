@@ -75,7 +75,7 @@ export default async function ClientLoginPage({
         </div>
 
         {status && statusMessages[status] && (
-          <p role="status" aria-live="polite" className={`mb-5 rounded-xl px-4 py-3 text-sm leading-5 ${isPositiveStatus ? "border border-emerald-200 bg-emerald-50/90 text-emerald-800" : "border border-red-200 bg-red-50/90 text-red-800"}`}>
+          <p role="status" aria-live="polite" className={`mb-5 rounded-xl px-4 py-3 text-sm leading-5 ${isPositiveStatus ? "border border-[var(--operator-gold)]/40 bg-[var(--operator-surface-subtle)]/90 text-[var(--operator-brand)]" : "border border-[var(--operator-coral)]/40 bg-[var(--operator-coral)]/10/90 text-[var(--operator-coral)]"}`}>
             {statusMessages[status]}
           </p>
         )}

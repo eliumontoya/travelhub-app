@@ -67,15 +67,15 @@ export function TravelAgentCombobox({
         onFocus={() => setIsOpen(true)}
         onBlur={() => setTimeout(() => setIsOpen(false), 150)}
         placeholder="Buscar agente…"
-        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
         autoComplete="off"
       />
       <input type="hidden" name={name} value={selectedId} />
 
       {isOpen && (
-        <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
+        <ul className="absolute z-10 mt-1 w-full rounded-lg border border-[var(--operator-border)] bg-white shadow-md">
           {results.length === 0 && query.trim() && (
-            <li className="px-3 py-2 text-sm text-gray-400">Sin resultados</li>
+            <li className="px-3 py-2 text-sm text-[var(--operator-ink-subtle)]">Sin resultados</li>
           )}
           {results.map((a) => (
             <li key={a.id}>
@@ -83,21 +83,21 @@ export function TravelAgentCombobox({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(a)}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--operator-canvas)]"
               >
                 <span className="font-medium">{a.name}</span>
-                {a.email && <span className="ml-2 text-xs text-gray-400">{a.email}</span>}
+                {a.email && <span className="ml-2 text-xs text-[var(--operator-ink-subtle)]">{a.email}</span>}
               </button>
             </li>
           ))}
-          <li className="border-t border-gray-100">
+          <li className="border-t border-[var(--operator-border)]">
             <button
               type="button"
               onMouseDown={(e) => {
                 e.preventDefault();
                 setShowCreateDialog(true);
               }}
-              className="block w-full px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50"
+              className="block w-full px-3 py-2 text-left text-sm font-medium text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)]"
             >
               + Crear nuevo agente
             </button>
@@ -106,7 +106,7 @@ export function TravelAgentCombobox({
       )}
 
       {selectedAgent && !isOpen && (
-        <div className="mt-1 text-xs text-gray-500">
+        <div className="mt-1 text-xs text-[var(--operator-ink-muted)]">
           {selectedAgent.email && <p>{selectedAgent.email}</p>}
           {selectedAgent.phone && <p>{selectedAgent.phone}</p>}
         </div>

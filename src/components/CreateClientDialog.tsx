@@ -50,13 +50,13 @@ export function CreateClientDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="w-full max-w-md rounded-xl border border-gray-200 p-0 backdrop:bg-black/40"
+      className="w-full max-w-md rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
     >
       <form onSubmit={handleSubmit} className="space-y-4 p-5">
-        <h3 className="text-lg font-semibold text-gray-900">Crear cliente</h3>
+        <h3 className="text-lg font-semibold text-[var(--operator-brand)]">Crear cliente</h3>
 
         <div>
-          <label htmlFor="client-name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="client-name" className="block text-sm font-medium text-[var(--operator-ink)]">
             Nombre *
           </label>
           <input
@@ -64,46 +64,46 @@ export function CreateClientDialog({
             name="name"
             type="text"
             required
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="Nombre del cliente"
           />
         </div>
 
         <div>
-          <label htmlFor="client-email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="client-email" className="block text-sm font-medium text-[var(--operator-ink)]">
             Email
           </label>
           <input
             id="client-email"
             name="email"
             type="email"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="email@ejemplo.com"
           />
         </div>
 
         <div>
-          <label htmlFor="client-phone" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="client-phone" className="block text-sm font-medium text-[var(--operator-ink)]">
             Teléfono
           </label>
           <input
             id="client-phone"
             name="phone"
             type="tel"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             placeholder="+54 11 1234-5678"
           />
         </div>
 
         <div>
-          <label htmlFor="client-referral-source" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="client-referral-source" className="block text-sm font-medium text-[var(--operator-ink)]">
             Cómo llegó el cliente
           </label>
           <select
             id="client-referral-source"
             name="referralSource"
             defaultValue=""
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           >
             <option value="">Sin especificar</option>
             {REFERRAL_SOURCE_OPTIONS.map((option) => (
@@ -115,31 +115,31 @@ export function CreateClientDialog({
         </div>
 
         <div>
-          <label htmlFor="client-birth-date" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="client-birth-date" className="block text-sm font-medium text-[var(--operator-ink)]">
             Fecha de nacimiento
           </label>
           <input
             id="client-birth-date"
             name="birthDate"
             type="date"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}
 
         <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="button"
             onClick={close}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
           >
             {isPending ? "Creando…" : "Crear"}
           </button>

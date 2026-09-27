@@ -21,8 +21,8 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 ## Acceptance criteria
 - [x] HMS-001 — Login reflects the HUBit reference hierarchy without changing sign-in behavior or state rendering.
 - [x] HMS-002 — Dashboard shell and homepage use the HUBit agent hierarchy without changing data, links, or admin-only navigation.
-- [ ] HMS-003 — All dashboard subpages inherit the HUBit visual system, including legacy WCC/admin/client/trip surfaces, without changing behavior.
-- [ ] HMS-004 — Traveler and client-facing surfaces use the reference trip-first visual hierarchy without changing public/client controls.
+- [x] HMS-003 — All dashboard subpages inherit the HUBit visual system, including legacy WCC/admin/client/trip surfaces, without changing behavior.
+- [x] HMS-004 — Traveler and client-facing surfaces use the reference trip-first visual hierarchy without changing public/client controls.
 - [ ] HMS-005 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
 - [ ] HMS-006 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
 
@@ -49,5 +49,7 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 - 2026-09-27: Restyled travel agent catalog, permissions/accounts, and supplier catalog client surfaces into the HUBit plum/warm card system while preserving the existing CRUD/dialog behavior. Verification passed: relevant tests, TypeScript, Webpack build, and Impeccable detector `[]`.
 
+- 2026-09-27: Completed a repository-wide visual utility sweep for remaining dashboard, WCC, client, traveler, and shared UI components. Replaced old blue/gray/slate/emerald/red utility treatments with HUBit semantic tokens, warm surfaces, plum/gold/coral states, and glyph-friendly components. Verification passed: focused Vitest suite (13 tests), `npx tsc --noEmit`, `npm run build -- --webpack`, and Impeccable detector `[]` across changed TSX targets.
+
 ## Next step
-Continue extending the HUBit visual system across remaining dashboard/client/traveler subpages, capture representative pages on port 3333, run Impeccable detector, then commit the verified work unit.
+Capture representative pages on port 3333 where auth/data permits, inspect for any remaining visual mismatches, and complete HMS-005/HMS-006 before declaring the full goal done.

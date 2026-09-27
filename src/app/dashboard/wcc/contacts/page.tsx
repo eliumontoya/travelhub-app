@@ -22,11 +22,11 @@ export default async function WccContactsPage({
     <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Contactos WhatsApp</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">Quién escribió por WhatsApp</h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate-400">Lista operativa solo lectura, ordenada por actividad reciente y enlazada a la ficha de cada contacto.</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--operator-gold)]">Contactos WhatsApp</p>
+          <h2 className="mt-2 text-3xl font-bold text-[var(--operator-brand)]">Quién escribió por WhatsApp</h2>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--operator-ink-muted)]">Lista operativa solo lectura, ordenada por actividad reciente y enlazada a la ficha de cada contacto.</p>
         </div>
-        <Link href="/dashboard/wcc" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-400 hover:text-emerald-200">← Dashboard WCC</Link>
+        <Link href="/dashboard/wcc" className="rounded-xl border border-[var(--operator-border)] px-4 py-2 text-sm font-semibold text-[var(--operator-brand)] hover:border-[var(--operator-gold)] hover:text-[var(--operator-gold)]">← Dashboard WCC</Link>
       </div>
 
       {(!list.isSupabaseConfigured || list.isConfiguredButUnavailable) && (
@@ -35,25 +35,25 @@ export default async function WccContactsPage({
         </WccNotice>
       )}
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-        <div className="hidden grid-cols-5 gap-4 border-b border-slate-800 px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 sm:grid">
+      <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--operator-border)] bg-white/94">
+        <div className="hidden grid-cols-5 gap-4 border-b border-[var(--operator-border)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--operator-ink-subtle)] sm:grid">
           <span className="col-span-2">Contacto</span>
           <span>Cliente vinculado</span>
           <span>Opt-in</span>
           <span>Última actividad</span>
         </div>
         {list.contacts.length ? (
-          <ul className="divide-y divide-slate-800">
+          <ul className="divide-y divide-[var(--operator-border)]">
             {list.contacts.map((contact) => (
               <li key={contact.id}>
-                <Link href={`/dashboard/wcc/contacts/${contact.id}`} className="grid grid-cols-1 gap-3 px-5 py-4 text-sm transition hover:bg-slate-800/70 sm:grid-cols-5 sm:gap-4">
+                <Link href={`/dashboard/wcc/contacts/${contact.id}`} className="grid grid-cols-1 gap-3 px-5 py-4 text-sm transition hover:bg-[var(--operator-surface-subtle)]/70 sm:grid-cols-5 sm:gap-4">
                   <span className="sm:col-span-2">
-                    <span className="block font-semibold text-white">{contactName(contact)}</span>
-                    <span className="text-slate-400">{contact.phoneE164}</span>
+                    <span className="block font-semibold text-[var(--operator-brand)]">{contactName(contact)}</span>
+                    <span className="text-[var(--operator-ink-muted)]">{contact.phoneE164}</span>
                   </span>
-                  <span className="text-slate-300">{contact.linkedClient ? contact.linkedClient.name : "Sin vincular"}</span>
-                  <span className="text-slate-300">{contact.optInStatus}</span>
-                  <span className="text-slate-400">{contact.lastMessageAt ? formatRelativeTime(contact.lastMessageAt) : "sin mensajes"}</span>
+                  <span className="text-[var(--operator-ink-muted)]">{contact.linkedClient ? contact.linkedClient.name : "Sin vincular"}</span>
+                  <span className="text-[var(--operator-ink-muted)]">{contact.optInStatus}</span>
+                  <span className="text-[var(--operator-ink-muted)]">{contact.lastMessageAt ? formatRelativeTime(contact.lastMessageAt) : "sin mensajes"}</span>
                 </Link>
               </li>
             ))}
@@ -63,11 +63,11 @@ export default async function WccContactsPage({
         )}
       </section>
 
-      <div className="mt-5 flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-5 flex flex-col gap-3 text-sm text-[var(--operator-ink-muted)] sm:flex-row sm:items-center sm:justify-between">
         <span>{list.totalCount ? `Página ${list.page} de ${list.totalPages} · ${list.totalCount} contactos` : "Sin contactos"}</span>
         <div className="flex gap-2">
-          {hasPrevious ? <Link className="rounded-lg border border-slate-700 px-3 py-2 hover:border-slate-500" href={`/dashboard/wcc/contacts?page=${list.page - 1}`}>Anterior</Link> : <span className="rounded-lg border border-slate-800 px-3 py-2 text-slate-600">Anterior</span>}
-          {hasNext ? <Link className="rounded-lg border border-slate-700 px-3 py-2 hover:border-slate-500" href={`/dashboard/wcc/contacts?page=${list.page + 1}`}>Siguiente</Link> : <span className="rounded-lg border border-slate-800 px-3 py-2 text-slate-600">Siguiente</span>}
+          {hasPrevious ? <Link className="rounded-lg border border-[var(--operator-border)] px-3 py-2 hover:border-[var(--operator-brand)]" href={`/dashboard/wcc/contacts?page=${list.page - 1}`}>Anterior</Link> : <span className="rounded-lg border border-[var(--operator-border)] px-3 py-2 text-[var(--operator-ink-subtle)]">Anterior</span>}
+          {hasNext ? <Link className="rounded-lg border border-[var(--operator-border)] px-3 py-2 hover:border-[var(--operator-brand)]" href={`/dashboard/wcc/contacts?page=${list.page + 1}`}>Siguiente</Link> : <span className="rounded-lg border border-[var(--operator-border)] px-3 py-2 text-[var(--operator-ink-subtle)]">Siguiente</span>}
         </div>
       </div>
     </main>

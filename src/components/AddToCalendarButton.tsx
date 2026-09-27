@@ -16,7 +16,7 @@ export function AddToCalendarButton({
   return (
     <button
       onClick={() => downloadIcs(buildIcsForItem(item, date), `${item.title}.ics`)}
-      className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+      className="rounded-md border border-[var(--operator-border)] px-2 py-1 text-xs text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)]"
     >
       {dictionary[lang].calendarButton}
     </button>

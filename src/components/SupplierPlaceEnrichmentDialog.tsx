@@ -153,14 +153,14 @@ export function SupplierPlaceEnrichmentDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="w-full max-w-3xl rounded-xl border border-gray-200 p-0 backdrop:bg-black/40 dark:border-gray-800 dark:bg-gray-950"
+      className="w-full max-w-3xl rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40 dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)]"
     >
       <div className="space-y-4 p-5">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
             Completar desde Google
           </h3>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-1 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
             Busca coincidencias para {supplier.name} y confirma antes de actualizar el proveedor.
           </p>
         </div>
@@ -170,36 +170,36 @@ export function SupplierPlaceEnrichmentDialog({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             disabled={!googleMapsApiKey || status === "loading"}
-            className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className="min-w-0 flex-1 rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-brand)]"
             placeholder="Nombre, tipo, ciudad o dirección"
           />
           <button
             type="button"
             onClick={handleSearch}
             disabled={!googleMapsApiKey || status === "loading" || isPending}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
           >
             {status === "loading" ? "Buscando…" : "Buscar en Google Maps"}
           </button>
         </div>
         {status === "missing-key" && (
-          <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+          <p className="rounded-lg border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] p-3 text-sm text-[var(--operator-brand)]">
             Google Places no está configurado. Puedes editar el proveedor manualmente.
           </p>
         )}
         {status === "no-results" && (
-          <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="rounded-lg border border-[var(--operator-gold)]/40 bg-[var(--operator-gold)]/15 p-3 text-sm text-[var(--operator-brand)]">
             No encontramos coincidencias confiables. Puedes ajustar la búsqueda o editar manualmente.
           </p>
         )}
         {status === "error" && (
-          <p className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="rounded-lg border border-[var(--operator-gold)]/40 bg-[var(--operator-gold)]/15 p-3 text-sm text-[var(--operator-brand)]">
             Google Places no respondió. Intenta de nuevo o edita el proveedor manualmente.
           </p>
         )}
         {candidates.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Candidatos</p>
+            <p className="text-sm font-medium text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">Candidatos</p>
             <div className="grid gap-2">
               {candidates.map((candidate) => (
                 <button
@@ -208,8 +208,8 @@ export function SupplierPlaceEnrichmentDialog({
                   onClick={() => setSelectedPlaceId(candidate.googlePlaceId)}
                   className={`rounded-lg border p-3 text-left text-sm ${
                     selectedPlaceId === candidate.googlePlaceId
-                      ? "border-blue-500 bg-blue-50 text-blue-950"
-                      : "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900"
+                      ? "border-[var(--operator-brand)] bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]"
+                      : "border-[var(--operator-border)] text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)]"
                   }`}
                 >
                   <span className="block font-medium">{candidate.name ?? "Resultado sin nombre"}</span>
@@ -220,21 +220,21 @@ export function SupplierPlaceEnrichmentDialog({
           </div>
         )}
         {selectedCandidate && (
-          <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <div className="rounded-xl border border-[var(--operator-border)] p-4 dark:border-[var(--operator-border)]">
+            <h4 className="text-sm font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
               Comparar antes de aplicar
             </h4>
             <table className="mt-3 w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide">
-                  <th className="py-1 text-gray-500">Campo</th>
-                  <th className="py-1 text-gray-500">Actual</th>
-                  <th className="py-1 text-blue-600">Encontrado en Google</th>
+                  <th className="py-1 text-[var(--operator-ink-muted)]">Campo</th>
+                  <th className="py-1 text-[var(--operator-ink-muted)]">Actual</th>
+                  <th className="py-1 text-[var(--operator-brand)]">Encontrado en Google</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-700 dark:text-gray-300">
+              <tbody className="text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">
                 {comparisonRows.map((row) => (
-                  <tr key={row.label} className="border-t border-gray-100 dark:border-gray-800">
+                  <tr key={row.label} className="border-t border-[var(--operator-border)] dark:border-[var(--operator-border)]">
                     <th className="py-1 pr-2 text-left font-medium">{row.label}</th>
                     <td className="py-1 pr-2">{row.current}</td>
                     <td className="py-1">{row.found}</td>
@@ -244,12 +244,12 @@ export function SupplierPlaceEnrichmentDialog({
             </table>
           </div>
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}
         <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="button"
             onClick={close}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+            className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)]"
           >
             Cancelar
           </button>
@@ -258,7 +258,7 @@ export function SupplierPlaceEnrichmentDialog({
               type="button"
               onClick={handleConfirm}
               disabled={isPending}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
             >
               {isPending ? "Actualizando…" : "Confirmar y actualizar"}
             </button>

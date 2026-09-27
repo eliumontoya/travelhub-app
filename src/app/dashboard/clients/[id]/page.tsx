@@ -31,9 +31,9 @@ const documentsEnabled = Boolean(
 const coversEnabled = documentsEnabled;
 
 const statusMeta = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
+  draft: { label: "Borrador", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]" },
   published: { label: "Publicado", color: "bg-green-100 text-green-700" },
-  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400" },
+  archived: { label: "Archivado", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-subtle)]" },
 };
 
 export default async function ClientDetailPage({
@@ -59,29 +59,29 @@ export default async function ClientDetailPage({
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       {client.coverImageUrl ? (
-        <div className="mb-6 h-40 w-full overflow-hidden rounded-xl border border-gray-200">
+        <div className="mb-6 h-40 w-full overflow-hidden rounded-xl border border-[var(--operator-border)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={client.coverImageUrl} alt="Portada" className="h-full w-full object-cover" />
         </div>
       ) : null}
 
-      <Link href="/dashboard/clients" className="text-sm text-gray-500 hover:underline">
+      <Link href="/dashboard/clients" className="text-sm text-[var(--operator-ink-muted)] hover:underline">
         ← Volver
       </Link>
 
       <div className="mt-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-[var(--operator-brand)]">{client.name}</h1>
+          <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
             {client.email} · {client.phone}
           </p>
           {client.whatsapp && client.whatsapp !== client.phone ? (
-            <p className="mt-1 text-sm text-gray-500">WhatsApp: {client.whatsapp}</p>
+            <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">WhatsApp: {client.whatsapp}</p>
           ) : null}
           {client.notes && (
-            <NoteHtml html={client.notes} className="mt-1 text-sm text-gray-500" />
+            <NoteHtml html={client.notes} className="mt-1 text-sm text-[var(--operator-ink-muted)]" />
           )}
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-[var(--operator-ink-subtle)]">
             Alta: {new Date(client.createdAt).toLocaleDateString("es-MX")}
           </p>
           {clientTags.length > 0 && (
@@ -89,7 +89,7 @@ export default async function ClientDetailPage({
               {formatTags(clientTags).map((name) => (
                 <li
                   key={name}
-                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                  className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-brand)]"
                 >
                   {name}
                 </li>
@@ -104,7 +104,7 @@ export default async function ClientDetailPage({
             trigger={
               <button
                 type="button"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
               >
                 Gestionar tags
               </button>
@@ -113,15 +113,15 @@ export default async function ClientDetailPage({
           />
           <Link
             href={`/dashboard/trips/new?clientId=${client.id}`}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-center text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)]"
           >
             + Nuevo viaje para este cliente
           </Link>
         </div>
       </div>
 
-      <details className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
-        <summary className="cursor-pointer text-sm font-medium text-gray-700">
+      <details className="mb-8 rounded-lg border border-[var(--operator-border)] bg-white p-4">
+        <summary className="cursor-pointer text-sm font-medium text-[var(--operator-ink)]">
           Editar datos del cliente
         </summary>
         <form
@@ -129,62 +129,62 @@ export default async function ClientDetailPage({
           className="mt-4 space-y-3"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Nombre</label>
             <input
               name="name"
               required
               defaultValue={client.name}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Email</label>
               <input
                 name="email"
                 defaultValue={client.email}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Teléfono</label>
               <input
                 name="phone"
                 defaultValue={client.phone}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">WhatsApp</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">WhatsApp</label>
               <input
                 name="whatsapp"
                 defaultValue={client.whatsapp ?? ""}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-[var(--operator-ink-subtle)]">
                 Si lo dejas vacío, se guardará el teléfono como WhatsApp.
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Fecha de nacimiento</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Fecha de nacimiento</label>
               <input
                 name="birthDate"
                 type="date"
                 defaultValue={client.birthDate}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Notas</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Notas</label>
             <RichTextEditor name="notes" defaultValue={client.notes} placeholder="Preferencias, alertas, contexto del cliente…" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Cómo llegó el cliente</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Cómo llegó el cliente</label>
             <select
               name="referralSource"
               defaultValue={client.referralSource ?? ""}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             >
               <option value="">Sin especificar</option>
               {REFERRAL_SOURCE_OPTIONS.map((option) => (
@@ -196,7 +196,7 @@ export default async function ClientDetailPage({
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)]"
           >
             Guardar cambios
           </button>
@@ -204,10 +204,10 @@ export default async function ClientDetailPage({
       </details>
 
       <details
-        className="mb-8 rounded-lg border border-gray-200 bg-white p-4"
+        className="mb-8 rounded-lg border border-[var(--operator-border)] bg-white p-4"
         open={Boolean(pinError || pinSuccess)}
       >
-        <summary className="cursor-pointer text-sm font-medium text-gray-700">
+        <summary className="cursor-pointer text-sm font-medium text-[var(--operator-ink)]">
           PIN de acceso para el cliente
         </summary>
         <form
@@ -215,7 +215,7 @@ export default async function ClientDetailPage({
           className="mt-4 space-y-3"
         >
           {pinError && (
-            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <p className="rounded-lg border border-[var(--operator-coral)]/40 bg-[var(--operator-coral)]/10 p-3 text-sm text-[var(--operator-coral)]">
               {pinError}
             </p>
           )}
@@ -226,7 +226,7 @@ export default async function ClientDetailPage({
           )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nuevo PIN</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Nuevo PIN</label>
               <input
                 name="pin"
                 type="password"
@@ -235,11 +235,11 @@ export default async function ClientDetailPage({
                 minLength={4}
                 maxLength={6}
                 required
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Confirmar PIN</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Confirmar PIN</label>
               <input
                 name="confirmPin"
                 type="password"
@@ -248,17 +248,17 @@ export default async function ClientDetailPage({
                 minLength={4}
                 maxLength={6}
                 required
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--operator-ink-muted)]">
             El PIN debe tener entre 4 y 6 dígitos. Se almacena como un hash; nunca
             se guarda en texto plano.
           </p>
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)]"
           >
             Guardar PIN
           </button>
@@ -266,29 +266,29 @@ export default async function ClientDetailPage({
       </details>
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-          <p className="text-xl font-bold text-gray-900">{summary.totalTrips}</p>
-          <p className="text-xs text-gray-500">Viajes totales</p>
+        <div className="rounded-lg border border-[var(--operator-border)] bg-white p-3 text-center">
+          <p className="text-xl font-bold text-[var(--operator-brand)]">{summary.totalTrips}</p>
+          <p className="text-xs text-[var(--operator-ink-muted)]">Viajes totales</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
+        <div className="rounded-lg border border-[var(--operator-border)] bg-white p-3 text-center">
           <p className="text-xl font-bold text-green-700">{summary.publishedCount}</p>
-          <p className="text-xs text-gray-500">Publicados</p>
+          <p className="text-xs text-[var(--operator-ink-muted)]">Publicados</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-          <p className="text-xl font-bold text-gray-600">{summary.draftCount}</p>
-          <p className="text-xs text-gray-500">Borradores</p>
+        <div className="rounded-lg border border-[var(--operator-border)] bg-white p-3 text-center">
+          <p className="text-xl font-bold text-[var(--operator-ink-muted)]">{summary.draftCount}</p>
+          <p className="text-xs text-[var(--operator-ink-muted)]">Borradores</p>
         </div>
         {summary.totalCost !== null ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-            <p className="text-xl font-bold text-gray-900">
+          <div className="rounded-lg border border-[var(--operator-border)] bg-white p-3 text-center">
+            <p className="text-xl font-bold text-[var(--operator-brand)]">
               {summary.totalCost.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
             </p>
-            <p className="text-xs text-gray-500">Gasto total</p>
+            <p className="text-xs text-[var(--operator-ink-muted)]">Gasto total</p>
           </div>
         ) : (
-          <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-            <p className="text-xl font-bold text-gray-400">{summary.archivedCount}</p>
-            <p className="text-xs text-gray-500">Archivados</p>
+          <div className="rounded-lg border border-[var(--operator-border)] bg-white p-3 text-center">
+            <p className="text-xl font-bold text-[var(--operator-ink-subtle)]">{summary.archivedCount}</p>
+            <p className="text-xs text-[var(--operator-ink-muted)]">Archivados</p>
           </div>
         )}
       </div>
@@ -312,9 +312,9 @@ export default async function ClientDetailPage({
         />
       </div>
 
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Viajes</h2>
+      <h2 className="mb-4 text-lg font-semibold text-[var(--operator-brand)]">Viajes</h2>
       {trips.length === 0 ? (
-        <p className="text-sm text-gray-500">Este cliente aún no tiene viajes.</p>
+        <p className="text-sm text-[var(--operator-ink-muted)]">Este cliente aún no tiene viajes.</p>
       ) : (
         <div className="grid gap-4">
           {trips.map((trip) => {
@@ -323,20 +323,20 @@ export default async function ClientDetailPage({
               <Link
                 key={trip.id}
                 href={`/dashboard/trips/${trip.id}`}
-                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                className="flex items-center justify-between rounded-xl border border-[var(--operator-border)] bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-gray-900">{trip.title}</h3>
+                    <h3 className="font-semibold text-[var(--operator-brand)]">{trip.title}</h3>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                       {status.label}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-[var(--operator-ink-subtle)]">
                     {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
                   </p>
                 </div>
-                <span className="text-gray-300">→</span>
+                <span className="text-[var(--operator-ink-subtle)]">→</span>
               </Link>
             );
           })}

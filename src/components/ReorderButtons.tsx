@@ -21,7 +21,7 @@ export function ReorderButtons({
         type="button"
         disabled={disableUp || isPending}
         onClick={() => startTransition(onMoveUp)}
-        className="px-1 text-xs text-gray-400 hover:text-gray-700 disabled:opacity-25"
+        className="px-1 text-xs text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink)] disabled:opacity-25"
         aria-label="Mover arriba"
       >
         ▲
@@ -30,7 +30,7 @@ export function ReorderButtons({
         type="button"
         disabled={disableDown || isPending}
         onClick={() => startTransition(onMoveDown)}
-        className="px-1 text-xs text-gray-400 hover:text-gray-700 disabled:opacity-25"
+        className="px-1 text-xs text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink)] disabled:opacity-25"
         aria-label="Mover abajo"
       >
         ▼

@@ -13,15 +13,15 @@ export function SupplierInfo({
 }) {
   const mapsUrl = buildGoogleMapsUrl({ address, lat, lng });
   return (
-    <div className="mt-2 rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Proveedor</p>
-      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{name}</p>
+    <div className="mt-2 rounded-lg border border-[var(--operator-border)] bg-[var(--operator-canvas)] p-2 dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)]">
+      <p className="text-xs font-medium text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">Proveedor</p>
+      <p className="text-sm font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{name}</p>
       {address && mapsUrl && (
         <a
           href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+          className="text-xs text-[var(--operator-brand)] hover:underline dark:text-[var(--operator-gold)]"
         >
           {address}
         </a>

@@ -117,7 +117,7 @@ type DocWithUrl = ItemDocument & { url: string | null };
 
 function DocumentPreview({ doc }: { doc: DocWithUrl }) {
   if (!doc.url) {
-    return <span className="truncate text-gray-700">{doc.fileName}</span>;
+    return <span className="truncate text-[var(--operator-ink)]">{doc.fileName}</span>;
   }
 
   if (doc.mimeType?.startsWith("image/")) {
@@ -126,7 +126,7 @@ function DocumentPreview({ doc }: { doc: DocWithUrl }) {
         href={doc.url}
         target="_blank"
         rel="noreferrer"
-        className="flex min-w-0 items-center gap-2 text-blue-600 hover:underline"
+        className="flex min-w-0 items-center gap-2 text-[var(--operator-brand)] hover:underline"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -145,7 +145,7 @@ function DocumentPreview({ doc }: { doc: DocWithUrl }) {
         href={doc.url}
         target="_blank"
         rel="noreferrer"
-        className="flex min-w-0 items-center gap-2 text-blue-600 hover:underline"
+        className="flex min-w-0 items-center gap-2 text-[var(--operator-brand)] hover:underline"
       >
         <span aria-hidden className="shrink-0 text-lg">📄</span>
         <span className="truncate">{doc.fileName}</span>
@@ -158,7 +158,7 @@ function DocumentPreview({ doc }: { doc: DocWithUrl }) {
       href={doc.url}
       target="_blank"
       rel="noreferrer"
-      className="truncate text-blue-600 hover:underline"
+      className="truncate text-[var(--operator-brand)] hover:underline"
     >
       {doc.fileName}
     </a>
@@ -332,15 +332,15 @@ export function ItemFormDialog({
       <span onClick={open}>{trigger}</span>
       <dialog
         ref={dialogRef}
-        className="w-full max-w-md rounded-xl border border-gray-200 p-0 backdrop:bg-black/40"
+        className="w-full max-w-md rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
       >
         <form onSubmit={handleSubmit} className="space-y-4 p-5">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-[var(--operator-brand)]">
             {item ? "Editar item" : "Agregar item"}
           </h3>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Tipo</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Tipo</label>
             <select
               name="type"
               value={selectedType}
@@ -348,7 +348,7 @@ export function ItemFormDialog({
                 setSelectedType(e.target.value as ItemType);
                 setAutoFillType(null);
               }}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             >
               {itemTypes.map((t) => (
                 <option key={t} value={t}>
@@ -360,7 +360,7 @@ export function ItemFormDialog({
 
           {SUPPLIER_ENABLED_TYPES.has(selectedType) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Proveedor</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Proveedor</label>
               <SupplierCombobox
                 suppliers={suppliers}
                 name="supplierId"
@@ -371,39 +371,39 @@ export function ItemFormDialog({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Título</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Título</label>
             <input
               name="title"
               value={titleValue}
               onChange={(e) => setTitleValue(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Hora inicio</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Hora inicio</label>
               <input
                 type="time"
                 name="startTime"
                 defaultValue={item?.startTime}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Hora fin</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Hora fin</label>
               <input
                 type="time"
                 name="endTime"
                 defaultValue={item?.endTime}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Ubicación</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Ubicación</label>
             <LocationInput
               defaultValue={item?.location}
               defaultLat={item?.lat}
@@ -421,17 +421,17 @@ export function ItemFormDialog({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">
                 Código de confirmación
               </label>
               <input
                 name="confirmationCode"
                 defaultValue={item?.confirmationCode}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Costo</label>
+              <label className="block text-sm font-medium text-[var(--operator-ink)]">Costo</label>
               <input
                 type="number"
                 step="0.01"
@@ -439,37 +439,37 @@ export function ItemFormDialog({
                 name="cost"
                 defaultValue={item?.cost}
                 placeholder="Solo visible internamente salvo que actives el resumen de costos"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Notas</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Notas</label>
             <RichTextEditor name="notes" defaultValue={item?.notes} placeholder="Detalles del item (admite negrita, listas, enlaces…)" />
           </div>
 
           {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
-            <div key={`${selectedType}-${metadataAutofillVersion}`} className="border-t border-gray-100 pt-4">
-              <h4 className="mb-3 text-sm font-semibold text-gray-800">
+            <div key={`${selectedType}-${metadataAutofillVersion}`} className="border-t border-[var(--operator-border)] pt-4">
+              <h4 className="mb-3 text-sm font-semibold text-[var(--operator-brand)]">
                 {itemTypeMeta[selectedType].icon} Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}
               </h4>
               <div className="space-y-3">
                 {metadataFieldsByType[selectedType].map((field) => (
                   <div key={field.name}>
-                    <label className="block text-sm font-medium text-gray-700">{field.label}</label>
+                    <label className="block text-sm font-medium text-[var(--operator-ink)]">{field.label}</label>
                     {field.type === "textarea" ? (
                       <textarea
                         name={`metadata_${field.name}`}
                         defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
                         rows={2}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
                       />
                     ) : field.type === "select" && field.options ? (
                       <select
                         name={`metadata_${field.name}`}
                         defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name) ?? ""}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
                       >
                         <option value="">Seleccionar...</option>
                         {field.options.map((opt) => (
@@ -483,7 +483,7 @@ export function ItemFormDialog({
                         type={field.type}
                         name={`metadata_${field.name}`}
                         defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
                       />
                     )}
                   </div>
@@ -493,16 +493,16 @@ export function ItemFormDialog({
           )}
 
           {item && (
-            <div className="border-t border-gray-100 pt-4">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+            <div className="border-t border-[var(--operator-border)] pt-4">
+              <label className="mb-2 block text-sm font-medium text-[var(--operator-ink)]">
                 Documentos adjuntos
               </label>
               {uploadError && (
-                <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p className="mb-2 rounded-lg bg-[var(--operator-coral)]/10 px-3 py-2 text-sm text-[var(--operator-coral)]">
                   {uploadError}
                 </p>
               )}
-              {docsLoading && <p className="text-sm text-gray-400">Cargando…</p>}
+              {docsLoading && <p className="text-sm text-[var(--operator-ink-subtle)]">Cargando…</p>}
               {!docsLoading && docs.length > 0 && (
                 <ul className="mb-3 space-y-1">
                   {docs.map((doc) => (
@@ -511,7 +511,7 @@ export function ItemFormDialog({
                       <button
                         type="button"
                         onClick={() => handleDeleteDocument(doc.id)}
-                        className="shrink-0 text-xs text-red-600 hover:underline"
+                        className="shrink-0 text-xs text-[var(--operator-coral)] hover:underline"
                       >
                         Eliminar
                       </button>
@@ -526,20 +526,20 @@ export function ItemFormDialog({
                     type="button"
                     onClick={handleUpload}
                     disabled={isPending}
-                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                    className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
                   >
                     Subir
                   </button>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-[var(--operator-ink-subtle)]">
                   Configura Supabase para subir documentos.
                 </p>
               )}
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}
 
           <div className="flex items-center justify-between gap-2 pt-2">
             <div>
@@ -548,7 +548,7 @@ export function ItemFormDialog({
                   type="button"
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="text-sm text-red-600 hover:underline"
+                  className="text-sm text-[var(--operator-coral)] hover:underline"
                 >
                   Eliminar
                 </button>
@@ -558,14 +558,14 @@ export function ItemFormDialog({
               <button
                 type="button"
                 onClick={close}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
               >
                 Guardar
               </button>

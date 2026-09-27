@@ -144,33 +144,33 @@ export function SupplierPlaceAutocomplete({
   }, [apiKey, onPlaceSelect]);
 
   return (
-    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
-      <label className="block text-sm font-medium text-blue-950">Buscar en Google Places</label>
+    <div className="rounded-lg border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] p-3">
+      <label className="block text-sm font-medium text-[var(--operator-brand)]">Buscar en Google Places</label>
       {apiKey && status !== "error" ? (
         <div ref={containerRef} className="mt-1 [&_gmp-place-autocomplete]:w-full" />
       ) : (
         <input
           type="text"
           disabled
-          className="mt-1 w-full rounded-lg border border-blue-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
+          className="mt-1 w-full rounded-lg border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 text-sm text-[var(--operator-ink-muted)]"
           placeholder="Configura Google Places para buscar"
         />
       )}
       {status === "missing-key" && (
-        <p className="mt-1 text-xs text-blue-800">
+        <p className="mt-1 text-xs text-[var(--operator-brand)]">
           Google Places no está configurado. Captura el proveedor manualmente.
         </p>
       )}
       {status === "loading" && (
-        <p className="mt-1 text-xs text-blue-800">Cargando búsqueda de lugares…</p>
+        <p className="mt-1 text-xs text-[var(--operator-brand)]">Cargando búsqueda de lugares…</p>
       )}
       {status === "ready" && (
-        <p className="mt-1 text-xs text-blue-800">
+        <p className="mt-1 text-xs text-[var(--operator-brand)]">
           Selecciona un resultado para rellenar nombre, dirección y coordenadas.
         </p>
       )}
       {status === "error" && (
-        <p className="mt-1 text-xs text-blue-800">
+        <p className="mt-1 text-xs text-[var(--operator-brand)]">
           Google Places no está disponible. Verifica que la key permita Maps JavaScript API y Places API (New), o captura el proveedor manualmente.
         </p>
       )}

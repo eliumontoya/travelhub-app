@@ -17,7 +17,7 @@ function KpiCard({ label, value, change, icon, tone }: { label: string; value: n
           <p className="text-sm font-medium text-[#2d2940]">{label}</p>
           <div className="mt-1 flex items-end gap-3">
             <p className="text-3xl font-extrabold leading-none tracking-[-0.04em] text-[var(--operator-brand)]">{value}</p>
-            <span className="text-xs font-semibold text-emerald-600">{change}</span>
+            <span className="text-xs font-semibold text-[var(--operator-brand)]">{change}</span>
           </div>
         </div>
       </div>

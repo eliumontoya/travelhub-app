@@ -17,11 +17,11 @@ export default async function NewTripPage({
 
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
-      <Link href="/dashboard/trips" className="text-sm text-gray-500 hover:underline">
+      <Link href="/dashboard/trips" className="text-sm text-[var(--operator-ink-muted)] hover:underline">
         ← Volver
       </Link>
 
-      <h1 className="mt-4 mb-6 text-2xl font-bold text-gray-900">Nuevo viaje</h1>
+      <h1 className="mt-4 mb-6 text-2xl font-bold text-[var(--operator-brand)]">Nuevo viaje</h1>
 
       <NewTripForm
         clients={clients}

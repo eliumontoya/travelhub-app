@@ -58,13 +58,13 @@ export default async function DashboardPage({
   return (
     <main className="px-4 py-6 sm:px-6 lg:px-7">
       {showSettingsSaved && (
-        <div role="status" className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
+        <div role="status" className="mb-5 rounded-2xl border border-[var(--operator-gold)]/40 bg-[var(--operator-surface-subtle)] p-4 text-sm font-medium text-[var(--operator-brand)]">
           Configuración guardada correctamente.
         </div>
       )}
 
       {upcomingUnpublishedTrips.length > 0 && (
-        <div role="alert" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div role="alert" className="mb-5 rounded-2xl border border-[var(--operator-gold)]/50 bg-[var(--operator-gold)]/15 p-4 text-sm text-[var(--operator-brand)]">
           <p className="font-semibold">
             {upcomingUnpublishedTrips.length === 1
               ? "1 viaje empieza en menos de 7 días y sigue en borrador"
@@ -112,7 +112,7 @@ export default async function DashboardPage({
                   <p className="text-sm text-[var(--operator-ink-muted)]">Operación activa · {primaryTrip ? formatDateTime(primaryTrip.changedAt) : upcomingUnpublishedTrips[0] ? formatDateShort(upcomingUnpublishedTrips[0].startDate) : "12 — 16 de abril, 2025"}</p>
                 </div>
               </div>
-              <span className="w-fit rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-700">● En curso</span>
+              <span className="w-fit rounded-full bg-[var(--operator-surface-subtle)] px-4 py-2 text-xs font-bold text-[var(--operator-brand)]">● En curso</span>
             </div>
             <div className="mt-7 grid grid-cols-4 gap-2 text-center text-xs font-bold text-[#2e2540]">
               <div><span className="mx-auto mb-2 block h-7 w-7 rounded-full bg-[var(--operator-coral)] ring-4 ring-white" />CDMX<br /><span className="font-medium text-[var(--operator-ink-muted)]">Completado</span></div>
@@ -129,7 +129,7 @@ export default async function DashboardPage({
                   <strong className="block text-[#23182f]">{trip!.tripTitle}</strong>
                   <span className="text-[var(--operator-ink-muted)]">{tripStatusLabel(trip!.fromStatus)} → {tripStatusLabel(trip!.toStatus)}</span>
                 </span>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">● En curso</span>
+                <span className="rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 text-xs font-semibold text-[var(--operator-brand)]">● En curso</span>
               </Link>
             ))}
           </div>

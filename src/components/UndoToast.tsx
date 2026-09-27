@@ -52,13 +52,13 @@ export function UndoToastHost() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-gray-900 px-4 py-3 text-sm text-white shadow-lg">
+    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-[var(--operator-brand-strong)] px-4 py-3 text-sm text-white shadow-lg">
       <span>{toast.message}</span>
       <button
         type="button"
         onClick={handleUndo}
         disabled={pending}
-        className="font-semibold text-blue-300 hover:underline disabled:opacity-50"
+        className="font-semibold text-[var(--operator-gold)] hover:underline disabled:opacity-50"
       >
         Deshacer
       </button>
