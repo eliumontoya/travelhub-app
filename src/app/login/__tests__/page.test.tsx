@@ -46,21 +46,22 @@ describe("/login page", () => {
     const inputs = findElements(element, (node) => node.type === "input");
     const labels = findElements(element, (node) => node.type === "label");
 
-    expect(findElements(element, (node) => node.props["data-testid"] === "login-atmosphere")).toHaveLength(1);
-    expect(findElements(element, (node) => node.props["data-testid"] === "login-office-scene")).toHaveLength(1);
-    expect(findElements(element, (node) => node.props["data-testid"] === "login-window-grid")).toHaveLength(1);
-    expect(findElements(element, (node) => node.props["data-testid"] === "login-sunset-skyline")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "login-hubit-hero")).toHaveLength(1);
     expect(findElements(element, (node) => node.props["data-testid"] === "login-panel")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "login-hubit-brand")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "login-airplane-divider")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "login-email-icon")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "login-password-icon")).toHaveLength(1);
     expect(forms).toHaveLength(1);
     expect(forms[0]?.props.action).toBe(signIn);
-    expect(inputs.some((node) => node.props.name === "email" && node.props.type === "email" && node.props.id === "email")).toBe(true);
-    expect(inputs.some((node) => node.props.name === "password" && node.props.type === "password" && node.props.id === "password")).toBe(true);
-    expect(labels.some((node) => textContent(node) === "Email" && node.props.htmlFor === "email")).toBe(true);
+    expect(inputs.some((node) => node.props.name === "email" && node.props.type === "email" && node.props.id === "email" && node.props.placeholder === "Correo electrónico")).toBe(true);
+    expect(inputs.some((node) => node.props.name === "password" && node.props.type === "password" && node.props.id === "password" && node.props.placeholder === "Contraseña")).toBe(true);
+    expect(labels.some((node) => textContent(node) === "Correo electrónico" && node.props.htmlFor === "email")).toBe(true);
     expect(labels.some((node) => textContent(node) === "Contraseña" && node.props.htmlFor === "password")).toBe(true);
     expect(inputs.some((node) => node.props.name === "redirectTo" && node.props.value === "/dashboard")).toBe(true);
-    expect(text).toContain("Email");
+    expect(text).toContain("Correo electrónico");
     expect(text).toContain("Contraseña");
-    expect(text).toContain("Entrar");
+    expect(text).toContain("Iniciar sesión");
   });
 
   it("keeps configuration guidance and server errors visible", async () => {

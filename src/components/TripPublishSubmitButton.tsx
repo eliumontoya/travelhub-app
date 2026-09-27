@@ -13,7 +13,7 @@ export function TripPublishSubmitButton({ isPublished }: { isPublished: boolean 
       disabled={pending}
       aria-disabled={pending}
       aria-busy={pending}
-      className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:opacity-80 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white dark:disabled:bg-gray-300"
+      className="inline-flex items-center gap-2 rounded-lg bg-[var(--operator-brand-strong)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand)] disabled:cursor-not-allowed disabled:bg-[var(--operator-border)] disabled:opacity-80 dark:bg-[var(--operator-surface-subtle)] dark:text-[var(--operator-brand)] dark:hover:bg-white dark:disabled:bg-[var(--operator-border)]"
     >
       {pending && (
         <span

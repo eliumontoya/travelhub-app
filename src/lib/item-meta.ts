@@ -4,12 +4,12 @@ import { DEFAULT_LANG, Lang, localeFor } from "@/lib/i18n";
 // label es fijo en español: se usa en el dashboard interno (fuera del alcance
 // del toggle ES/EN de la vista pública /t/[slug]).
 export const itemTypeMeta: Record<ItemType, { label: string; icon: string; color: string }> = {
-  flight: { label: "Vuelo", icon: "✈️", color: "bg-sky-100 text-sky-700" },
-  hotel: { label: "Hotel", icon: "🏨", color: "bg-purple-100 text-purple-700" },
-  activity: { label: "Actividad", icon: "🎟️", color: "bg-amber-100 text-amber-700" },
-  restaurant: { label: "Restaurante", icon: "🍽️", color: "bg-rose-100 text-rose-700" },
-  transport: { label: "Transporte", icon: "🚗", color: "bg-emerald-100 text-emerald-700" },
-  note: { label: "Nota", icon: "📝", color: "bg-gray-100 text-gray-700" },
+  flight: { label: "Vuelo", icon: "AV", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]" },
+  hotel: { label: "Hotel", icon: "H", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]" },
+  activity: { label: "Actividad", icon: "AC", color: "bg-[#fff8e8] text-[#b76700]" },
+  restaurant: { label: "Restaurante", icon: "R", color: "bg-[#fff0eb] text-[var(--operator-coral)]" },
+  transport: { label: "Transporte", icon: "T", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]" },
+  note: { label: "Nota", icon: "N", color: "bg-white text-[var(--operator-ink-muted)]" },
 };
 
 export const REFERRAL_SOURCE_OPTIONS = [

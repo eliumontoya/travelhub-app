@@ -29,26 +29,28 @@ export function CopyUrlButtonClient({ slug }: { slug: string }) {
   return (
     <div className="relative flex flex-wrap items-center gap-2">
       <button
+        type="button"
         onClick={handleCopy}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        className="rounded-lg border border-[#f0bd79]/55 bg-[#fffdfb] px-4 py-2 text-sm font-semibold text-[#4a1834] shadow-[0_8px_18px_rgba(27,8,19,0.18)] transition hover:bg-[#f7dfbc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
       >
         {copied ? "¡Copiado!" : "Copiar URL"}
       </button>
       <button
+        type="button"
         onClick={handleToggleQr}
-        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        className="rounded-lg border border-white/60 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(27,8,19,0.12)] transition hover:border-[#f0bd79]/70 hover:bg-[#fffdfb] hover:text-[#4a1834] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
       >
         QR
       </button>
 
       {showQr && qrDataUrl && (
-        <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+        <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-xl border border-[var(--operator-border)] bg-white p-4 shadow-lg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrDataUrl} alt="QR del itinerario" width={200} height={200} className="mx-auto" />
           <a
             href={qrDataUrl}
             download={`${slug}-qr.png`}
-            className="mt-2 block text-center text-sm text-blue-600 hover:underline"
+            className="mt-2 block text-center text-sm text-[var(--operator-brand)] hover:underline"
           >
             Descargar PNG
           </a>

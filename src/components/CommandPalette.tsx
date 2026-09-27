@@ -98,7 +98,7 @@ export function CommandPalette({
     <dialog
       ref={dialogRef}
       onClose={() => setOpen(false)}
-      className="w-full max-w-lg rounded-xl border border-gray-200 p-0 backdrop:bg-black/40"
+      className="w-full max-w-lg rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
     >
       <div className="p-3">
         <input
@@ -108,11 +108,11 @@ export function CommandPalette({
           onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
           onKeyDown={handleInputKeyDown}
           placeholder="Buscar cliente o viaje…"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <ul className="mt-2 max-h-80 overflow-y-auto">
           {results.length === 0 && (
-            <li className="px-3 py-4 text-center text-sm text-gray-400">Sin resultados</li>
+            <li className="px-3 py-4 text-center text-sm text-[var(--operator-ink-subtle)]">Sin resultados</li>
           )}
           {results.map((result, index) => (
             <li key={`${result.kind}-${result.id}`}>
@@ -121,11 +121,11 @@ export function CommandPalette({
                 onClick={() => select(result)}
                 onMouseEnter={() => setActiveIndex(index)}
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
-                  index === activeIndex ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                  index === activeIndex ? "bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]" : "text-[var(--operator-ink)]"
                 }`}
               >
                 <span>{result.label}</span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-[var(--operator-ink-subtle)]">
                   {result.kind === "client" ? "Cliente" : "Viaje"}
                 </span>
               </button>

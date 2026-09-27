@@ -29,10 +29,10 @@ export function TripEditorShortcuts() {
   }, []);
 
   return (
-    <p className="mt-3 text-center text-xs text-gray-400">
-      <kbd className="rounded border border-gray-300 px-1 py-0.5">n</kbd> nuevo día ·{" "}
-      <kbd className="rounded border border-gray-300 px-1 py-0.5">i</kbd> nuevo item ·{" "}
-      <kbd className="rounded border border-gray-300 px-1 py-0.5">esc</kbd> cerrar
+    <p className="mt-3 text-center text-xs text-[var(--operator-ink-subtle)]">
+      <kbd className="rounded border border-[var(--operator-border)] px-1 py-0.5">n</kbd> nuevo día ·{" "}
+      <kbd className="rounded border border-[var(--operator-border)] px-1 py-0.5">i</kbd> nuevo item ·{" "}
+      <kbd className="rounded border border-[var(--operator-border)] px-1 py-0.5">esc</kbd> cerrar
     </p>
   );
 }

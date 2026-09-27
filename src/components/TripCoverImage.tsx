@@ -35,11 +35,11 @@ export function TripCoverImage({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="text-sm font-medium text-gray-700">Imagen de portada</h3>
+    <div className="rounded-lg border border-[var(--operator-border)] bg-white p-4">
+      <h3 className="text-sm font-medium text-[var(--operator-ink)]">Imagen de portada</h3>
 
       {coverImageUrl ? (
-        <div className="relative mt-3 overflow-hidden rounded-lg border border-gray-100">
+        <div className="relative mt-3 overflow-hidden rounded-lg border border-[var(--operator-border)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={coverImageUrl}
@@ -56,7 +56,7 @@ export function TripCoverImage({
           </button>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-gray-400">Sin imagen de portada.</p>
+        <p className="mt-2 text-sm text-[var(--operator-ink-subtle)]">Sin imagen de portada.</p>
       )}
 
       {coversEnabled ? (
@@ -66,13 +66,13 @@ export function TripCoverImage({
             type="button"
             onClick={handleUpload}
             disabled={isPending}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] disabled:opacity-50"
           >
             {coverImageUrl ? "Cambiar portada" : "Subir portada"}
           </button>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-gray-400">Configura Supabase para subir la portada.</p>
+        <p className="mt-2 text-sm text-[var(--operator-ink-subtle)]">Configura Supabase para subir la portada.</p>
       )}
     </div>
   );

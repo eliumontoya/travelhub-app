@@ -37,13 +37,13 @@ export function LanguageToggle({
 
   const containerCls =
     variant === "light"
-      ? "inline-flex overflow-hidden rounded-md border border-gray-300 text-xs dark:border-gray-600"
+      ? "inline-flex overflow-hidden rounded-md border border-[var(--operator-border)] text-xs dark:border-[var(--operator-border)]"
       : "inline-flex overflow-hidden rounded-md border border-white/40 text-xs";
 
   const btn = (active: boolean) =>
     variant === "light"
-      ? `px-2 py-1 ${active ? "bg-gray-900 text-white" : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"}`
-      : `px-2 py-1 ${active ? "bg-white text-gray-900" : "text-white/80 hover:bg-white/10"}`;
+      ? `px-2 py-1 ${active ? "bg-[var(--operator-brand-strong)] text-white" : "text-[var(--operator-ink)] hover:bg-[var(--operator-surface-subtle)] dark:text-[var(--operator-brand)] dark:hover:bg-[var(--operator-brand)]"}`
+      : `px-2 py-1 ${active ? "bg-white text-[var(--operator-brand)]" : "text-white/80 hover:bg-white/10"}`;
 
   return (
     <div className={containerCls}>

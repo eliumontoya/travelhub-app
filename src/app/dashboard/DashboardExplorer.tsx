@@ -31,12 +31,12 @@ import { DashboardFilters } from "./DashboardFilters";
 type TripsViewMode = "list" | "board";
 
 const statusMeta: Record<TripStatus, { label: string; color: string }> = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" },
+  draft: { label: "Borrador", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)]" },
   published: {
     label: "Publicado",
     color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
   },
-  archived: { label: "Archivado", color: "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500" },
+  archived: { label: "Archivado", color: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-subtle)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-muted)]" },
 };
 
 type TripListItem = {
@@ -125,8 +125,8 @@ export function DashboardExplorer({
           aria-pressed={viewMode === "list"}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
             viewMode === "list"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              ? "bg-[var(--operator-brand)] text-white"
+              : "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)]"
           }`}
         >
           Vista de lista
@@ -137,8 +137,8 @@ export function DashboardExplorer({
           aria-pressed={viewMode === "board"}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
             viewMode === "board"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              ? "bg-[var(--operator-brand)] text-white"
+              : "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)]"
           }`}
         >
           Vista de tablero
@@ -146,8 +146,8 @@ export function DashboardExplorer({
       </div>
 
       {viewMode === "list" && selected.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950">
-          <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-4 py-3 dark:border-[var(--operator-border)] dark:bg-[var(--operator-surface-subtle)]">
+          <span className="text-sm font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
             {selected.size} viaje{selected.size === 1 ? "" : "s"} seleccionado
             {selected.size === 1 ? "" : "s"}
           </span>
@@ -163,7 +163,7 @@ export function DashboardExplorer({
             type="button"
             disabled={isPending}
             onClick={() => runBulkAction("archived")}
-            className="rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600"
+            className="rounded-lg bg-[var(--operator-brand)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50 dark:bg-[var(--operator-surface-subtle)] dark:hover:bg-[var(--operator-brand)]"
           >
             Archivar seleccionados
           </button>
@@ -177,13 +177,13 @@ export function DashboardExplorer({
             return (
               <div
                 key={trip.id}
-                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
+                className="flex items-center gap-3 rounded-xl border border-[var(--operator-border)] bg-white p-5 shadow-sm transition hover:shadow-md dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:hover:shadow-none"
               >
                 <input
                   type="checkbox"
                   checked={selected.has(trip.id)}
                   onChange={() => toggleSelected(trip.id)}
-                  className="h-4 w-4 shrink-0 rounded border-gray-300 dark:border-gray-600"
+                  className="h-4 w-4 shrink-0 rounded border-[var(--operator-border)] dark:border-[var(--operator-border)]"
                   aria-label={`Seleccionar ${trip.title}`}
                 />
                 <Link
@@ -192,13 +192,13 @@ export function DashboardExplorer({
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-gray-900 dark:text-gray-100">{trip.title}</h2>
+                      <h2 className="font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{trip.title}</h2>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                         {status.label}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatAssignedClients(trip.clients)}</p>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                    <p className="mt-1 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">{formatAssignedClients(trip.clients)}</p>
+                    <p className="text-sm text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">
                       {formatDateShort(trip.startDate)} – {formatDateShort(trip.endDate)}
                       {" · "}
                       {trip.travelerCount} {trip.travelerCount === 1 ? "viajero" : "viajeros"}
@@ -208,7 +208,7 @@ export function DashboardExplorer({
                         {formatTags(trip.tags).map((name) => (
                           <li
                             key={name}
-                            className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                            className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-brand)] dark:bg-[var(--operator-surface-subtle)] dark:text-[var(--operator-brand)]"
                           >
                             {name}
                           </li>
@@ -216,13 +216,13 @@ export function DashboardExplorer({
                       </ul>
                     )}
                   </div>
-                  <span className="text-gray-300 dark:text-gray-600">→</span>
+                  <span className="text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">→</span>
                 </Link>
               </div>
             );
           })}
           {filteredTrips.length === 0 && (
-            <p className="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+            <p className="rounded-xl border border-dashed border-[var(--operator-border)] p-5 text-center text-sm text-[var(--operator-ink-subtle)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-muted)]">
               {hasActiveFilters ? "Ningún viaje coincide con la búsqueda o los filtros." : "Todavía no hay viajes."}
             </p>
           )}
@@ -233,14 +233,14 @@ export function DashboardExplorer({
 
       {viewMode === "list" && !hasActiveFilters && tripsPagination}
       {viewMode === "list" && hasActiveFilters && (
-        <div className="mt-4 text-center text-sm text-gray-400 dark:text-gray-500">
+        <div className="mt-4 text-center text-sm text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">
           {filteredTrips.length} viaje{filteredTrips.length !== 1 ? "s" : ""} encontrado
           {filteredTrips.length !== 1 ? "s" : ""}
         </div>
       )}
 
       <div className="mt-10 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Clientes</h2>
+        <h2 className="text-lg font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Clientes</h2>
         <ExportClientsCsvButton clients={filteredClients} />
       </div>
       <div className="grid gap-3">
@@ -248,16 +248,16 @@ export function DashboardExplorer({
           <Link
             key={client.id}
             href={`/dashboard/clients/${client.id}`}
-            className="rounded-lg border border-gray-200 bg-white p-4 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
+            className="rounded-lg border border-[var(--operator-border)] bg-white p-4 transition hover:shadow-md dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:hover:shadow-none"
           >
-            <p className="font-medium text-gray-900 dark:text-gray-100">{client.name}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{client.email} · {client.phone}</p>
+            <p className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{client.name}</p>
+            <p className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">{client.email} · {client.phone}</p>
             {client.tags.length > 0 && (
               <ul className="mt-1.5 flex flex-wrap gap-1.5">
                 {formatTags(client.tags).map((name) => (
                   <li
                     key={name}
-                    className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                    className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-medium text-[var(--operator-brand)] dark:bg-[var(--operator-surface-subtle)] dark:text-[var(--operator-brand)]"
                   >
                     {name}
                   </li>
@@ -267,7 +267,7 @@ export function DashboardExplorer({
           </Link>
         ))}
         {filteredClients.length === 0 && (
-          <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+          <p className="rounded-lg border border-dashed border-[var(--operator-border)] p-4 text-center text-sm text-[var(--operator-ink-subtle)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-muted)]">
             Ningún cliente coincide con la búsqueda.
           </p>
         )}

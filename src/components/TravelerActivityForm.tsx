@@ -31,7 +31,7 @@ function ActionFeedback({ state }: { state: TravelerActivityActionState }) {
     <p
       role={state.status === "error" ? "alert" : "status"}
       aria-live="polite"
-      className={`text-sm ${state.status === "error" ? "text-red-700 dark:text-red-300" : "text-[var(--operator-brand)]"}`}
+      className={`text-sm ${state.status === "error" ? "text-[var(--operator-coral)] dark:text-[var(--operator-coral)]" : "text-[var(--operator-brand)]"}`}
     >
       {state.message}
     </p>
@@ -61,7 +61,7 @@ function DeleteTravelerActivityButton({ action }: { action: BoundTravelerActivit
       <button
         type="submit"
         disabled={isPending}
-        className="min-h-10 rounded-lg px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--operator-focus)] disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-300 dark:hover:bg-red-950/30"
+        className="min-h-10 rounded-lg px-3 py-2 text-sm font-medium text-[var(--operator-coral)] hover:bg-[var(--operator-coral)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--operator-focus)] disabled:cursor-not-allowed disabled:opacity-50 dark:text-[var(--operator-coral)] dark:hover:bg-[var(--operator-coral)]/10/30"
       >
         {isPending ? "Eliminando…" : "Eliminar"}
       </button>

@@ -434,7 +434,7 @@ export function DashboardFilters({
                 type="button"
                 onClick={badge.onRemove}
                 aria-label={`Quitar filtro ${badge.label}`}
-                className="text-[#ad5a7f] hover:text-[#65003d] dark:text-[#efb4cb] dark:hover:text-white"
+                className="text-[#ad5a7f] hover:text-[#65003d] dark:text-[#efb4cb] dark:hover:text-[var(--operator-brand)]"
               >
                 ×
               </button>

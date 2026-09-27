@@ -11,13 +11,11 @@ import { uploadDocument } from "./actions";
 
 function statusLabel(item: ServiceChecklistItemWithUpload) {
   const status = item.upload?.status;
-  if (status === "processed") return { icon: "✅", text: "Procesado" };
-  if (status === "reviewed") return { icon: "✅", text: "Revisado" };
-  if (status === "re_upload_requested")
-    return { icon: "⚠", text: "Re-subir solicitado" };
-  if (status === "uploaded")
-    return { icon: "🔄", text: "Pendiente de revisión" };
-  return { icon: "⬜", text: "Pendiente" };
+  if (status === "processed") return { icon: "✓", text: "Procesado" };
+  if (status === "reviewed") return { icon: "✓", text: "Revisado" };
+  if (status === "re_upload_requested") return { icon: "!", text: "Re-subir solicitado" };
+  if (status === "uploaded") return { icon: "↻", text: "Pendiente de revisión" };
+  return { icon: "□", text: "Pendiente" };
 }
 
 function canUpload(item: ServiceChecklistItemWithUpload) {
@@ -56,34 +54,34 @@ export default async function ClientTripDocumentsPage({
     trip?.status === "published" ? "Ver itinerario" : "Ver en mi cuenta";
 
   return (
-    <main className="mx-auto min-h-screen max-w-2xl px-4 py-8">
-      <header className="mb-6">
+    <main className="min-h-screen bg-[#fffaf7] px-4 py-8 text-[var(--operator-ink)]">
+      <div className="mx-auto max-w-3xl"><header className="mb-6 overflow-hidden rounded-2xl bg-[var(--operator-brand)] px-5 py-6 text-white shadow-[var(--operator-shadow-panel)]">
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <Link
             href="/client"
-            className="text-blue-600 hover:underline dark:text-blue-400"
+            className="text-white/82 hover:text-[var(--operator-brand)] hover:underline"
           >
             ← Volver a mis viajes
           </Link>
           {trip && (
             <Link
               href={tripHref}
-              className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+              className="font-medium text-white/82 hover:text-[var(--operator-brand)] hover:underline"
             >
               {tripLinkLabel}
             </Link>
           )}
         </div>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="mt-4 font-serif text-3xl font-semibold tracking-[-0.04em] text-white">
           Documentos del viaje
         </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-sm text-white/76">
           {completed}/{total} completados
         </p>
       </header>
 
       {total === 0 ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 text-sm text-[var(--operator-ink-muted)] shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
           Todavía no hay documentos solicitados para este viaje.
         </p>
       ) : (
@@ -94,27 +92,27 @@ export default async function ClientTripDocumentsPage({
             return (
               <li
                 key={item.id}
-                className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+                className="rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span aria-hidden="true">{icon}</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-[var(--operator-surface-subtle)] font-bold text-[var(--operator-brand)]">{icon}</span>
+                      <span className="font-semibold text-[var(--operator-brand)]">
                         {item.label}
                       </span>
                       {item.required && (
-                        <span className="text-xs text-red-600 dark:text-red-400">
+                        <span className="text-xs text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">
                           *
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs text-[var(--operator-ink-muted)]">
                       {text}
                     </p>
                     {item.upload?.status === "re_upload_requested" &&
                       item.upload.agentComment && (
-                        <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+                        <p className="mt-2 text-sm text-[var(--operator-brand)]">
                           Comentario del agente: {item.upload.agentComment}
                         </p>
                       )}
@@ -132,11 +130,11 @@ export default async function ClientTripDocumentsPage({
                         name="file"
                         type="file"
                         required
-                        className="block w-40 text-xs text-blue-950 file:mr-2 file:rounded file:border-0 file:bg-blue-600 file:px-2 file:py-1 file:text-white dark:text-blue-100"
+                        className="block w-40 text-xs text-[var(--operator-ink-muted)] file:mr-2 file:rounded-lg file:border-0 file:bg-[var(--operator-brand)] file:px-2 file:py-1 file:text-white"
                       />
                       <button
                         type="submit"
-                        className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                        className="rounded-xl bg-[var(--operator-brand)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--operator-brand-strong)]"
                       >
                         Subir
                       </button>
@@ -148,6 +146,7 @@ export default async function ClientTripDocumentsPage({
           })}
         </ul>
       )}
+      </div>
     </main>
   );
 }

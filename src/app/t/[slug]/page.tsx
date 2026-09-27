@@ -6,7 +6,7 @@ import {
   getTripWithDetails,
   hasOwnedServiceRequirements,
 } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
+import { formatDateLong, formatDateShort, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
@@ -36,6 +36,7 @@ import {
   TravelerActivityAddFormProvider,
 } from "@/components/TravelerActivityAddFormPanel";
 import { canRenderTravelerActivityControls } from "@/lib/traveler-activity-controls";
+import { ItemTypeIcon, CalendarGlyph } from "@/components/ItemTypeIcon";
 import { OperatorSurface } from "@/components/ui/OperatorSurface";
 
 export async function generateMetadata({
@@ -117,87 +118,83 @@ export default async function PublicTripPage({
   const tripEnded = Boolean(trip.endDate) && trip.endDate < today;
 
   return (
-    <main className="min-h-screen bg-[var(--operator-canvas)] pb-16 text-[var(--operator-ink)] print:bg-white print:pb-0">
+    <main className="min-h-screen bg-[#fffaf7] pb-16 text-[#171329] print:bg-white print:pb-0">
       <div className="fixed right-4 top-4 z-30 flex items-center gap-2 print:hidden">
         <ClientSessionButton returnTo={`/t/${slug}`} />
         <ThemeToggle />
       </div>
 
       {isDraftPreview && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-800 print:hidden dark:border-amber-950 dark:bg-amber-950/30 dark:text-amber-300">
+        <div className="border-b border-[var(--operator-gold)]/50 bg-[var(--operator-gold)]/15 px-4 py-2 text-center text-sm font-medium text-[var(--operator-brand)] print:hidden dark:border-[var(--operator-gold)]/50 dark:bg-[var(--operator-gold)]/15/30 dark:text-[var(--operator-brand)]">
           Vista previa de borrador: esta URL temporal solo sirve para revisión. La URL final se activa al publicar el viaje.
         </div>
       )}
 
       <section
-        className="bg-[var(--operator-brand-strong)] bg-gradient-to-t from-[var(--operator-brand-strong)] via-[var(--operator-brand)] to-[var(--operator-brand-strong)] bg-cover bg-center print:hidden"
+        data-testid="traveler-hubit-hero"
+        className="mx-auto mt-5 max-w-[calc(100%-2rem)] overflow-hidden rounded-[1rem] bg-[var(--operator-brand)] bg-cover bg-center text-white shadow-[0_20px_46px_rgba(81,0,52,0.14)] print:hidden lg:max-w-[calc(100%-3rem)]"
         style={{
           backgroundImage: trip.coverImageUrl
-            ? `linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.35)), url("${trip.coverImageUrl}")`
-            : undefined,
+            ? `linear-gradient(110deg, rgba(81,0,52,0.94), rgba(81,0,52,0.86) 48%, rgba(81,0,52,0.74)), url("${trip.coverImageUrl}")`
+            : "linear-gradient(110deg, color-mix(in srgb, var(--operator-brand) 88%, var(--operator-coral)), var(--operator-brand) 56%, color-mix(in srgb, var(--operator-brand) 88%, var(--operator-gold)))",
         }}
       >
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-          <div className="rounded-[var(--operator-radius-panel)] border border-[var(--operator-accent)]/35 bg-[var(--operator-brand-strong)]/85 p-5 text-white shadow-[var(--operator-shadow-panel)] backdrop-blur-sm sm:p-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="min-w-0">
-                {(contact.logoUrl || contact.agencyName) && (
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    {contact.logoUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={contact.logoUrl}
-                        alt={contact.agencyName ?? "Logo"}
-                        className="h-12 w-auto rounded-lg bg-white/90 p-1 object-contain shadow-sm"
-                      />
-                    )}
-                    {contact.agencyName && (
-                      <span className="text-base font-semibold drop-shadow break-words">
-                        {contact.agencyName}
-                      </span>
-                    )}
-                  </div>
-                )}
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{trip.title}</h1>
-                <p className="mt-2 text-sm text-white/80 sm:text-base">
-                  {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
-                  {" · "}
-                  {trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}
-                </p>
-                <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/75">
-                  <a href={`mailto:${contact.email}`} className="hover:text-white hover:underline">
-                    {contact.email}
-                  </a>
-                  <a
-                    href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}
-                    className="hover:text-white hover:underline"
-                  >
-                    {contact.phone}
-                  </a>
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <LanguageToggle lang={lang} variant="light" />
-              </div>
+        <div className="px-6 py-7 sm:px-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              {(contact.logoUrl || contact.agencyName) && (
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  {contact.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={contact.logoUrl} alt={contact.agencyName ?? "Logo"} className="h-11 w-auto rounded-lg bg-white/92 p-1 object-contain shadow-sm" />
+                  )}
+                  {contact.agencyName && <span className="text-sm font-semibold text-white/84 break-words">{contact.agencyName}</span>}
+                </div>
+              )}
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/72">Viaje de placer</p>
+              <h1 className="text-4xl font-serif font-semibold tracking-[-0.045em] sm:text-6xl">{trip.title}</h1>
+              <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-base text-white/86">
+                <span>{formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}</span>
+                <span className="rounded-full bg-[var(--operator-surface-subtle)] px-4 py-1.5 text-sm font-bold text-[var(--operator-brand)]">● En curso</span>
+                <span>{trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}</span>
+              </p>
+              <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/75">
+                <a href={`mailto:${contact.email}`} className="hover:text-[var(--operator-brand)] hover:underline">{contact.email}</a>
+                <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`} className="hover:text-[var(--operator-brand)] hover:underline">{contact.phone}</a>
+              </p>
             </div>
+
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <LanguageToggle lang={lang} variant="light" />
+            </div>
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-4 text-center text-sm font-semibold sm:grid-cols-4">
+            {trip.days.slice(0, 4).map((day, index) => (
+              <a key={day.id} href={`#day-${day.id}`} className="relative block text-white/84">
+                <span className={`mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full border-2 ${index === 0 ? "border-[#ff5848] bg-[#ff5848] text-white" : index === 1 ? "border-white bg-[#ff5848] ring-2 ring-[#ff5848]" : "border-white/70 bg-white/12"}`}>{index === 0 ? "✓" : ""}</span>
+                Día {index + 1}<br /><span className="text-xs font-medium text-white/64">{formatDateShort(day.date)}</span>
+              </a>
+            ))}
           </div>
         </div>
       </section>
 
       <div className="hidden print:block px-4 pt-4">
-        <h1 className="text-2xl font-bold text-gray-900">{trip.title}</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-2xl font-bold text-[var(--operator-brand)]">{trip.title}</h1>
+        <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
           {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
         </p>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[220px_minmax(0,1fr)_320px] print:block print:max-w-3xl print:py-0">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] print:block print:max-w-3xl print:py-0">
         <aside className="hidden lg:block print:hidden">
-          <div className="sticky top-6 rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">
-              {t.daysNav}
-            </p>
+          <div className="sticky top-6 rounded-[1rem] border border-[#ebe5e8] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f8e8ef] text-[var(--operator-brand)]">
+                <CalendarGlyph className="h-5 w-5" />
+              </span>
+              <h2 className="font-serif text-lg font-semibold text-[var(--operator-brand)]">Tu itinerario</h2>
+            </div>
             <TripDaySidebar days={trip.days} lang={lang} />
           </div>
         </aside>
@@ -216,12 +213,12 @@ export default async function PublicTripPage({
                 <article
                   key={day.id}
                   id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-[var(--operator-radius-panel)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)] sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none"
+                  className="scroll-mt-6 rounded-[1rem] border border-[#ebe5e8] bg-white/96 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)] print:break-inside-avoid print:border-[var(--operator-border)] print:shadow-none"
                 >
                 <header className="mb-4 flex flex-col gap-2 border-b border-[var(--operator-border-subtle)] pb-4 sm:flex-row sm:items-center sm:justify-between print:border-b-0 print:pb-0">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)]">Día {dayIdx + 1}</p>
-                    <h2 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold capitalize text-[var(--operator-ink)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--operator-brand)]">Día {dayIdx + 1}</p>
+                    <h2 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-serif font-semibold capitalize text-[var(--operator-brand)]">
                       {formatDateLong(day.date, lang)}
                       <WeatherBadge weather={dayWeather[dayIdx]} />
                     </h2>
@@ -232,8 +229,8 @@ export default async function PublicTripPage({
                 </header>
 
                 {day.notes && (
-                  <div className="mb-4 rounded-[var(--operator-radius-card)] border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-gray-200 print:bg-white">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)] dark:text-blue-400">
+                  <div className="mb-4 rounded-[var(--operator-radius-card)] border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-[var(--operator-border)] print:bg-white">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)] dark:text-[var(--operator-gold)]">
                       Nota del día
                     </p>
                     <NoteHtml html={day.notes} className="text-sm text-[var(--operator-ink-muted)]" />
@@ -247,7 +244,6 @@ export default async function PublicTripPage({
                 <div className="space-y-3">
                   {day.items.map((rawItem) => {
                     const item = rawItem as ItemWithSupplier;
-                    const meta = itemTypeMeta[item.type];
                     const resolvedLocation = resolveItemLocation(item);
                     const tzLabel = getApproxUtcOffsetLabel(resolvedLocation?.lat ?? item.lat, resolvedLocation?.lng ?? item.lng);
                     const metadataSummary = formatItemMetadataSummary(item);
@@ -264,16 +260,11 @@ export default async function PublicTripPage({
                     return (
                       <div
                         key={item.id}
-                        className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border-subtle)] bg-[var(--operator-surface-raised)] p-4 print:break-inside-avoid print:border-gray-300 print:bg-white"
+                        className="rounded-[1rem] border border-[#ebe5e8] bg-white p-4 shadow-[0_6px_18px_rgba(81,0,52,0.04)] print:break-inside-avoid print:border-[var(--operator-border)] print:bg-white"
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 items-start gap-3">
-                            <span
-                              className={`shrink-0 rounded-full px-2.5 py-1.5 text-lg ${meta.color}`}
-                              title={t.itemType[item.type]}
-                            >
-                              {meta.icon}
-                            </span>
+                            <ItemTypeIcon type={item.type} title={t.itemType[item.type]} />
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium text-[var(--operator-ink)]">{item.title}</span>
@@ -294,7 +285,7 @@ export default async function PublicTripPage({
                                 <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">{resolvedLocation.label}</p>
                               )}
                               {metadataSummary && (
-                                <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-sky-600 dark:text-sky-400" : "text-gray-400 dark:text-gray-500"}`}>
+                                <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-[var(--operator-brand)] dark:text-[var(--operator-gold)]" : "text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]"}`}>
                                   {metadataSummary}
                                 </p>
                               )}
@@ -344,14 +335,14 @@ export default async function PublicTripPage({
                                                   href={doc.url}
                                                   target="_blank"
                                                   rel="noreferrer"
-                                                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:underline dark:border-gray-800 dark:bg-gray-950 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[var(--operator-border)] bg-white px-3 py-2 text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)] hover:underline dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-gold)] dark:hover:bg-[var(--operator-surface-subtle)]"
                                                 >
-                                                  <span>📎</span>
+                                                  <span>□</span>
                                                   <span className="truncate">{doc.fileName}</span>
                                                 </a>
                                               ) : (
-                                                <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
-                                                  <span>📎</span>
+                                                <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm text-[var(--operator-ink-muted)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)]">
+                                                  <span>□</span>
                                                   <span className="truncate">{doc.fileName}</span>
                                                 </span>
                                               )}
@@ -401,7 +392,7 @@ export default async function PublicTripPage({
         </section>
 
         <aside className="order-2 space-y-4 lg:order-none print:hidden">
-          <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+          <section className="rounded-[1rem] border border-[#ebe5e8] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
             <h2 className="text-sm font-semibold text-[var(--operator-ink)]">Acciones del viaje</h2>
             <div className="mt-3 grid gap-2">
               <AddTripToCalendarButton trip={trip} lang={lang} />
@@ -423,7 +414,7 @@ export default async function PublicTripPage({
             <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
               <h2 className="text-sm font-semibold text-[var(--operator-ink)]">Resumen de costos</h2>
               <p className="mt-1 text-2xl font-bold text-[var(--operator-ink)]">{formatCost(totalCost, trip.currency)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Total estimado del viaje</p>
+              <p className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">Total estimado del viaje</p>
             </section>
           )}
 
@@ -458,7 +449,7 @@ export default async function PublicTripPage({
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block truncate rounded-lg border border-gray-100 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:underline dark:border-gray-800 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                        className="block truncate rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)] hover:underline dark:border-[var(--operator-border)] dark:text-[var(--operator-gold)] dark:hover:bg-[var(--operator-surface-subtle)]"
                       >
                         {doc.filename}
                       </a>
@@ -479,7 +470,7 @@ export default async function PublicTripPage({
                 Documentos pendientes
               </h2>
               <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
-                Tenés documentos pendientes por subir para este viaje.
+                Tienes documentos pendientes por subir para este viaje.
               </p>
               <a
                 href={`/client/trips/${trip.id}/documents`}

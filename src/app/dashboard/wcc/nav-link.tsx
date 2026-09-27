@@ -13,8 +13,8 @@ export function WccNavLink({ href, label }: { href: string; label: string }) {
       aria-current={isActive ? "page" : undefined}
       className={
         isActive
-          ? "rounded-full bg-emerald-400 px-3 py-1.5 font-semibold text-slate-950"
-          : "rounded-full border border-slate-700 px-3 py-1.5 text-slate-300 hover:border-slate-500 hover:text-white"
+          ? "rounded-full bg-[var(--operator-gold)] px-3 py-1.5 font-semibold text-[var(--operator-brand)]"
+          : "rounded-full border border-[var(--operator-border)] px-3 py-1.5 text-[var(--operator-ink-muted)] hover:border-[var(--operator-brand)] hover:text-[var(--operator-brand)]"
       }
     >
       {label}

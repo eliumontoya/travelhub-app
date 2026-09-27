@@ -100,14 +100,14 @@ export function TagMultiCombobox({
           {selectedTags.map((t) => (
             <li
               key={t.id}
-              className="flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700"
+              className="flex items-center gap-1 rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 text-sm text-[var(--operator-brand)]"
             >
               {t.name}
               <button
                 type="button"
                 onClick={() => handleRemoveExisting(t.id)}
                 aria-label={`Quitar ${t.name}`}
-                className="text-blue-400 hover:text-blue-600"
+                className="text-[var(--operator-gold)] hover:text-[var(--operator-brand)]"
               >
                 ×
               </button>
@@ -117,15 +117,15 @@ export function TagMultiCombobox({
           {newNames.map((name) => (
             <li
               key={name}
-              className="flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-700"
+              className="flex items-center gap-1 rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 text-sm text-[var(--operator-brand)]"
             >
               {name}
-              <span className="text-xs text-emerald-500">(nuevo)</span>
+              <span className="text-xs text-[var(--operator-brand)]">(nuevo)</span>
               <button
                 type="button"
                 onClick={() => handleRemoveNew(name)}
                 aria-label={`Quitar ${name}`}
-                className="text-emerald-400 hover:text-emerald-600"
+                className="text-[var(--operator-gold)] hover:text-[var(--operator-brand)]"
               >
                 ×
               </button>
@@ -146,15 +146,15 @@ export function TagMultiCombobox({
           onFocus={() => setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           placeholder="Buscar o crear tag…"
-          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           autoComplete="off"
         />
 
         {isOpen && (results.length > 0 || recentTags.length > 0 || showCreateAffordance) && (
-          <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
+          <ul className="absolute z-10 mt-1 w-full rounded-lg border border-[var(--operator-border)] bg-white shadow-md">
             {recentTags.length > 0 && results.length === 0 && (
               <>
-                <li className="px-3 pt-2 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide pointer-events-none select-none">
+                <li className="px-3 pt-2 pb-1 text-xs font-medium text-[var(--operator-ink-subtle)] uppercase tracking-wide pointer-events-none select-none">
                   Recientes
                 </li>
                 {recentTags.map((t) => (
@@ -163,7 +163,7 @@ export function TagMultiCombobox({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectExisting(t)}
-                      className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--operator-canvas)]"
                     >
                       {t.name}
                     </button>
@@ -177,7 +177,7 @@ export function TagMultiCombobox({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelectExisting(t)}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--operator-canvas)]"
                 >
                   {t.name}
                 </button>
@@ -189,7 +189,7 @@ export function TagMultiCombobox({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleCreateNew}
-                  className="block w-full px-3 py-2 text-left text-sm text-emerald-700 hover:bg-emerald-50"
+                  className="block w-full px-3 py-2 text-left text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)]"
                 >
                   Crear &ldquo;{trimmedQuery}&rdquo;
                 </button>

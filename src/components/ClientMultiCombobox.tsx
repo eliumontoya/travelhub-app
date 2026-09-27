@@ -62,14 +62,14 @@ export function ClientMultiCombobox({
           {selectedClients.map((c) => (
             <li
               key={c.id}
-              className="flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700"
+              className="flex items-center gap-1 rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 text-sm text-[var(--operator-brand)]"
             >
               {c.name}
               <button
                 type="button"
                 onClick={() => handleRemove(c.id)}
                 aria-label={`Quitar ${c.name}`}
-                className="text-blue-400 hover:text-blue-600"
+                className="text-[var(--operator-gold)] hover:text-[var(--operator-brand)]"
               >
                 ×
               </button>
@@ -90,19 +90,19 @@ export function ClientMultiCombobox({
           onFocus={() => setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           placeholder="Buscar cliente por nombre…"
-          className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           autoComplete="off"
         />
 
         {isOpen && results.length > 0 && (
-          <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
+          <ul className="absolute z-10 mt-1 w-full rounded-lg border border-[var(--operator-border)] bg-white shadow-md">
             {results.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelect(c)}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--operator-canvas)]"
                 >
                   {c.name}
                 </button>

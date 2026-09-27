@@ -12,13 +12,13 @@ export function KnowledgeStatusForm({ entryId, currentStatus }: { entryId: strin
   const [state, formAction, pending] = useActionState(updateKnowledgeStatusAction.bind(null, entryId), initialState);
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-2">
-      <select name="status" defaultValue={currentStatus} className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs font-medium text-slate-100">
+      <select name="status" defaultValue={currentStatus} className="rounded-lg border border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-2 py-1.5 text-xs font-medium text-[var(--operator-ink)]">
         {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
       </select>
-      <button disabled={pending} className="rounded-lg border border-emerald-500/50 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/10 disabled:opacity-60">
+      <button disabled={pending} className="rounded-lg border border-[var(--operator-brand)] px-3 py-1.5 text-xs font-semibold text-[var(--operator-gold)] hover:bg-[var(--operator-surface-subtle)] disabled:opacity-60">
         Cambiar
       </button>
-      {state.message && <span className={state.ok ? "text-xs text-emerald-300" : "text-xs text-rose-300"}>{state.message}</span>}
+      {state.message && <span className={state.ok ? "text-xs text-[var(--operator-gold)]" : "text-xs text-[var(--operator-coral)]"}>{state.message}</span>}
     </form>
   );
 }

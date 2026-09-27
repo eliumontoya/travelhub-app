@@ -97,6 +97,8 @@ describe("/t/[slug] service-document callout", () => {
 
     expect(hasOwnedServiceRequirements).toHaveBeenCalledWith("trip-1", "client-1");
     expect(text).toContain("Documentos pendientes");
+    expect(text).toContain("Tienes documentos pendientes por subir para este viaje.");
+    expect(text).not.toContain("Tenés documentos pendientes por subir para este viaje.");
     expect(text.indexOf("Checklist de equipaje")).toBeLessThan(text.indexOf("Documentos pendientes"));
     expect(calloutLink?.text).toContain("Subir documentos");
   });
@@ -137,9 +139,9 @@ describe("/t/[slug] corporate traveler presentation", () => {
     const activityForm = readFileSync(new URL("../../../../components/TravelerActivityForm.tsx", import.meta.url), "utf8");
     const activityPanel = readFileSync(new URL("../../../../components/TravelerActivityAddFormPanel.tsx", import.meta.url), "utf8");
 
-    expect(page).toContain("bg-[var(--operator-canvas)]");
-    expect(page).toContain("from-[var(--operator-brand-strong)]");
-    expect(page).toContain("border-[var(--operator-border)]");
+    expect(page).toContain('data-testid="traveler-hubit-hero"');
+    expect(page).toContain("bg-[var(--operator-brand)]");
+    expect(page).toContain("border border-[#ebe5e8]");
     expect(activityForm).toContain("OperatorButton");
     expect(activityPanel).toContain("OperatorButton");
   });

@@ -88,8 +88,8 @@ export function TripDaySidebar({
               onClick={(e) => handleClick(e, day.id)}
               className={`block rounded-md px-2 py-1 text-sm capitalize ${
                 activeId === day.id
-                  ? "font-semibold text-gray-900 dark:text-gray-100"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  ? "font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]"
+                  : "text-[var(--operator-ink-muted)] hover:text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)] dark:hover:text-[var(--operator-brand)]"
               }`}
             >
               {formatDateCompact(day.date, lang)}

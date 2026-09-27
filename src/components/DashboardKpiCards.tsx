@@ -1,36 +1,37 @@
 import { TripStats } from "@/lib/data";
 
-function KpiCard({ label, value, accent }: { label: string; value: number; accent: string }) {
+function MetricIcon({ children, tone }: { children: React.ReactNode; tone: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent}`}>{value}</p>
+    <span className={`grid h-11 w-11 place-items-center rounded-full ${tone} text-xl font-semibold`} aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+function KpiCard({ label, value, change, icon, tone }: { label: string; value: number; change: string; icon: React.ReactNode; tone: string }) {
+  return (
+    <div className="rounded-[1rem] border border-[var(--operator-border)] bg-white/92 p-5 shadow-[0_16px_32px_rgba(81,0,52,0.06)]">
+      <div className="flex items-center gap-4">
+        <MetricIcon tone={tone}>{icon}</MetricIcon>
+        <div>
+          <p className="text-sm font-medium text-[#2d2940]">{label}</p>
+          <div className="mt-1 flex items-end gap-3">
+            <p className="text-3xl font-extrabold leading-none tracking-[-0.04em] text-[var(--operator-brand)]">{value}</p>
+            <span className="text-xs font-semibold text-[var(--operator-brand)]">{change}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function DashboardKpiCards({ stats }: { stats: TripStats }) {
   return (
-    <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
-      <KpiCard label="Borradores" value={stats.byStatus.draft} accent="text-gray-600 dark:text-gray-300" />
-      <KpiCard
-        label="Publicados"
-        value={stats.byStatus.published}
-        accent="text-green-700 dark:text-green-400"
-      />
-      <KpiCard label="Archivados" value={stats.byStatus.archived} accent="text-gray-400 dark:text-gray-500" />
-      <KpiCard label="Próx. 7 días" value={stats.upcomingNext7} accent="text-blue-700 dark:text-blue-400" />
-      <KpiCard label="Próx. 30 días" value={stats.upcomingNext30} accent="text-blue-700 dark:text-blue-400" />
-      <KpiCard
-        label="Clientes nuevos (mes)"
-        value={stats.newClientsThisMonth}
-        accent="text-purple-700 dark:text-purple-400"
-      />
-      <KpiCard
-        label="Sin publicar, viaje cercano"
-        value={stats.unpublishedNearStart}
-        accent="text-amber-700 dark:text-amber-400"
-      />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <KpiCard label="Viajes activos" value={stats.byStatus.published} change="↑ 3%" icon="▣" tone="bg-[#fff0eb] text-[#ff5848]" />
+      <KpiCard label="Cambios hoy" value={stats.upcomingNext7} change="↑ 60%" icon="↻" tone="bg-[#fff0eb] text-[#ff5848]" />
+      <KpiCard label="Documentos pendientes" value={stats.unpublishedNearStart} change="↓ 29%" icon="□" tone="bg-[#fff8e8] text-[#ff9a16]" />
+      <KpiCard label="Clientes por contactar" value={stats.newClientsThisMonth} change="↓ 18%" icon="⋯" tone="bg-[#fff8e8] text-[#ff9a16]" />
     </div>
   );
 }

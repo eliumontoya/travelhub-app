@@ -51,17 +51,17 @@ export function MoveItemToDayDialog({
       </span>
       <dialog
         ref={dialogRef}
-        className="w-full max-w-sm rounded-xl border border-gray-200 p-0 backdrop:bg-black/40"
+        className="w-full max-w-sm rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
       >
         <form onSubmit={handleSubmit} className="space-y-4 p-5">
-          <h3 className="text-lg font-semibold text-gray-900">Mover a otro día</h3>
+          <h3 className="text-lg font-semibold text-[var(--operator-brand)]">Mover a otro día</h3>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Día destino</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Día destino</label>
             <select
               name="targetDayId"
               required
               defaultValue={targets[0]?.id}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             >
               {targets.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -75,14 +75,14 @@ export function MoveItemToDayDialog({
             <button
               type="button"
               onClick={close}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
             >
               Mover
             </button>

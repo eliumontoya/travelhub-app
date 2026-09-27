@@ -16,12 +16,14 @@
   --operator-ink-subtle: #967888;
   --operator-border: #eadde3;
   --operator-border-subtle: #eee1e7;
-  --operator-brand: #65003d;
-  --operator-brand-strong: #4e002f;
+  --operator-brand: #510034;
+  --operator-brand-strong: #350022;
+  --operator-coral: #ff5848;
+  --operator-gold: #ffad18;
   --operator-action: var(--operator-brand);
   --operator-action-hover: var(--operator-brand-strong);
   --operator-action-foreground: #ffffff;
-  --operator-accent: #f0bd79;
+  --operator-accent: var(--operator-gold);
   --operator-accent-hover: #ffc54b;
   --operator-accent-foreground: #3a1529;
   --operator-focus: var(--operator-brand);
@@ -53,8 +55,10 @@
   --operator-ink-subtle: #c9adb9;
   --operator-border: #573044;
   --operator-border-subtle: #543044;
-  --operator-brand: #a72964;
-  --operator-brand-strong: #8b2356;
+  --operator-brand: #b53073;
+  --operator-brand-strong: #942257;
+  --operator-coral: #ff7b70;
+  --operator-gold: #ffc857;
   --operator-accent: #f0bd79;
   --operator-accent-hover: #ffd983;
   --operator-accent-foreground: #321426;
@@ -82,4 +86,70 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* HUBit visual sweep: keep legacy agent/traveler pages functionally intact while aligning old utility colors to the supplied mock palette. */
+[data-testid="dashboard-hubit-shell"] [class*="bg-slate-900"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-900"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-950"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-slate-950"],
+[data-testid="client-home-atmosphere"] [class*="bg-slate-900"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-900"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-950"],
+[data-testid="client-home-atmosphere"] [class*="bg-slate-950"] {
+  background-color: var(--operator-surface) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="bg-slate-800"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-800"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-50"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-100"],
+[data-testid="client-home-atmosphere"] [class*="bg-slate-800"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-800"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-50"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-100"] {
+  background-color: var(--operator-surface-subtle) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="bg-blue-"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-emerald-"],
+[data-testid="client-home-atmosphere"] [class*="bg-blue-"],
+[data-testid="client-home-atmosphere"] [class*="bg-emerald-"] {
+  background-color: var(--operator-brand) !important;
+  color: white !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="text-blue-"],
+[data-testid="dashboard-hubit-shell"] [class*="text-emerald-"],
+[data-testid="dashboard-hubit-shell"] [class*="text-purple-"],
+[data-testid="client-home-atmosphere"] [class*="text-blue-"],
+[data-testid="client-home-atmosphere"] [class*="text-emerald-"],
+[data-testid="client-home-atmosphere"] [class*="text-purple-"] {
+  color: var(--operator-brand) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="text-slate-"],
+[data-testid="dashboard-hubit-shell"] [class*="text-gray-"],
+[data-testid="client-home-atmosphere"] [class*="text-slate-"],
+[data-testid="client-home-atmosphere"] [class*="text-gray-"] {
+  color: var(--operator-ink-muted) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="font-bold"][class*="text-gray-900"] {
+  color: var(--operator-brand) !important;
+  letter-spacing: -0.04em;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="border-slate-"],
+[data-testid="dashboard-hubit-shell"] [class*="border-gray-"],
+[data-testid="client-home-atmosphere"] [class*="border-slate-"],
+[data-testid="client-home-atmosphere"] [class*="border-gray-"] {
+  border-color: var(--operator-border) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="rounded-lg"],
+[data-testid="dashboard-hubit-shell"] [class*="rounded-xl"],
+[data-testid="client-home-atmosphere"] [class*="rounded-lg"],
+[data-testid="client-home-atmosphere"] [class*="rounded-xl"] {
+  border-radius: 1rem;
 }

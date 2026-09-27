@@ -11,13 +11,13 @@ type RichTextEditorProps = {
 };
 
 const TOOLBAR_BASE =
-  "mb-1 flex flex-wrap items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 px-1.5 py-1 dark:border-gray-700 dark:bg-gray-800/60";
+  "mb-1 flex flex-wrap items-center gap-1 rounded-lg border border-[var(--operator-border)] bg-[var(--operator-canvas)] px-1.5 py-1 dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand)]/60";
 
 const TOOLBAR_BTN =
-  "rounded px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-700";
+  "rounded px-2 py-1 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-border)] disabled:opacity-40 dark:text-[var(--operator-brand)] dark:hover:bg-[var(--operator-brand-strong)]";
 
 const EDITOR_BASE =
-  "min-h-[5rem] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 [&:empty]:before:text-gray-400 [&:empty]:before:content-[attr(data-placeholder)]";
+  "min-h-[5rem] w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm text-[var(--operator-brand)] bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-brand)] [&:empty]:before:text-[var(--operator-ink-subtle)] [&:empty]:before:content-[attr(data-placeholder)]";
 
 export function RichTextEditor({ name, defaultValue, placeholder, className }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);

@@ -28,21 +28,21 @@ export function ClientsExplorer({
 
   return (
     <>
-      <section className="mb-5 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <section className="mb-5 rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <label className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="flex-1 text-sm font-medium text-[var(--operator-ink)]">
             Buscar por nombre
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar cliente por nombre…"
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-950"
+              className="mt-2 w-full rounded-xl border border-[var(--operator-border)] bg-white px-4 py-3 text-sm text-[var(--operator-ink)] outline-none transition placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-brand)] focus:ring-2 focus:ring-[var(--operator-brand)]/15"
             />
           </label>
           <ExportClientsCsvButton clients={filteredClients} />
         </div>
-        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-3 text-sm text-[var(--operator-ink-muted)]">
           {totalCount} cliente{totalCount === 1 ? "" : "s"} registrado{totalCount === 1 ? "" : "s"}; {filteredClients.length} visible{filteredClients.length === 1 ? "" : "s"} en esta página.
         </p>
       </section>
@@ -51,12 +51,12 @@ export function ClientsExplorer({
         {filteredClients.map((client) => (
           <div
             key={client.id}
-            className="rounded-lg border border-gray-200 bg-white p-4 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:shadow-none"
+            className="rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_12px_30px_rgba(81,0,52,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(81,0,52,0.09)]"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <Link href={`/dashboard/clients/${client.id}`} className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900 dark:text-gray-100">{client.name}</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p className="font-semibold text-[var(--operator-brand)]">{client.name}</p>
+                <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
                   {[client.email, client.phone].filter(Boolean).join(" · ")}
                 </p>
                 {client.tags.length > 0 && (
@@ -64,7 +64,7 @@ export function ClientsExplorer({
                     {formatTags(client.tags).map((name) => (
                       <li
                         key={name}
-                        className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-semibold text-[var(--operator-brand)]"
                       >
                         {name}
                       </li>
@@ -80,12 +80,12 @@ export function ClientsExplorer({
           </div>
         ))}
         {clients.length === 0 && (
-          <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+          <p className="rounded-2xl border border-dashed border-[var(--operator-border)] bg-white/70 p-5 text-center text-sm text-[var(--operator-ink-muted)]">
             Todavía no hay clientes registrados.
           </p>
         )}
         {clients.length > 0 && filteredClients.length === 0 && (
-          <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+          <p className="rounded-2xl border border-dashed border-[var(--operator-border)] bg-white/70 p-5 text-center text-sm text-[var(--operator-ink-muted)]">
             Ningún cliente coincide con la búsqueda en esta página.
           </p>
         )}

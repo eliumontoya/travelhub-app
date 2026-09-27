@@ -31,7 +31,7 @@ export function GenerateDaysButton({
       type="button"
       disabled={isPending}
       onClick={handleClick}
-      className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+      className="w-full rounded-lg border border-dashed border-[var(--operator-border)] py-3 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)] disabled:opacity-50"
     >
       {isPending ? "Generando..." : "Generar días"}
     </button>

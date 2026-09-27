@@ -9,17 +9,17 @@ import { formatDateTime, formatRelativeTime } from "@/lib/item-meta";
 import { WccEmptyState, WccNotice } from "../components";
 
 const priorityStyles: Record<string, string> = {
-  urgent: "border-red-400/60 bg-red-500/15 text-red-100",
-  high: "border-amber-400/60 bg-amber-500/15 text-amber-100",
-  normal: "border-slate-600 bg-slate-800 text-slate-200",
-  low: "border-slate-700 bg-slate-900 text-slate-300",
+  urgent: "border-[var(--operator-coral)]/50 bg-[var(--operator-coral)]/10 text-[var(--operator-coral)]",
+  high: "border-[var(--operator-gold)]/60 bg-[var(--operator-gold)]/15 text-[var(--operator-brand)]",
+  normal: "border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]",
+  low: "border-[var(--operator-border)] bg-white/94 text-[var(--operator-ink-muted)]",
 };
 
 const statusStyles: Record<string, string> = {
-  open: "border-emerald-400/60 bg-emerald-500/15 text-emerald-100",
-  acknowledged: "border-sky-400/60 bg-sky-500/15 text-sky-100",
-  resolved: "border-slate-600 bg-slate-800 text-slate-300",
-  canceled: "border-slate-700 bg-slate-900 text-slate-400",
+  open: "border-[var(--operator-gold)]/60 bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]",
+  acknowledged: "border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] text-[var(--operator-brand)]",
+  resolved: "border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]",
+  canceled: "border-[var(--operator-border)] bg-white/94 text-[var(--operator-ink-muted)]",
 };
 
 function Badge({ children, className }: { children: React.ReactNode; className: string }) {
@@ -42,12 +42,12 @@ function contactLabel(escalation: WccEscalationRow) {
 function FilterGroup({ label, values, active, param, other }: { label: string; values: string[]; active?: string; param: "status" | "priority"; other: { status?: string; priority?: string } }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--operator-ink-subtle)]">{label}</p>
       <div className="mt-2 flex flex-wrap gap-2">
         {values.map((value) => {
           const next = { ...other, [param]: active === value ? undefined : value };
           return (
-            <Link key={value} href={filterHref(next)} className={active === value ? "rounded-full bg-emerald-400 px-3 py-1.5 text-sm font-semibold text-slate-950" : "rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-white"}>
+            <Link key={value} href={filterHref(next)} className={active === value ? "rounded-full bg-[var(--operator-gold)] px-3 py-1.5 text-sm font-semibold text-[var(--operator-brand)]" : "rounded-full border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink-muted)] hover:border-[var(--operator-brand)] hover:text-[var(--operator-brand)]"}>
               {value}
             </Link>
           );
@@ -71,11 +71,11 @@ export default async function WccEscalationsPage({
     <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Escalaciones WhatsApp</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">Cola de atención humana</h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate-400">Bandeja solo lectura, ordenada por las escalaciones más recientes y pensada para distinguir rápido casos abiertos o urgentes.</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--operator-gold)]">Escalaciones WhatsApp</p>
+          <h2 className="mt-2 text-3xl font-bold text-[var(--operator-brand)]">Cola de atención humana</h2>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--operator-ink-muted)]">Bandeja solo lectura, ordenada por las escalaciones más recientes y pensada para distinguir rápido casos abiertos o urgentes.</p>
         </div>
-        <Link href="/dashboard/wcc" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-400 hover:text-emerald-200">← Dashboard WCC</Link>
+        <Link href="/dashboard/wcc" className="rounded-xl border border-[var(--operator-border)] px-4 py-2 text-sm font-semibold text-[var(--operator-brand)] hover:border-[var(--operator-gold)] hover:text-[var(--operator-gold)]">← Dashboard WCC</Link>
       </div>
 
       {(!queue.isSupabaseConfigured || queue.isConfiguredButUnavailable) && (
@@ -84,16 +84,16 @@ export default async function WccEscalationsPage({
         </WccNotice>
       )}
 
-      <section className="mt-6 grid gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 lg:grid-cols-[1fr_1fr_auto]">
+      <section className="mt-6 grid gap-4 rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)] lg:grid-cols-[1fr_1fr_auto]">
         <FilterGroup label="Estado" values={wccEscalationStatuses} active={queue.status} param="status" other={{ priority: queue.priority }} />
         <FilterGroup label="Prioridad" values={wccEscalationPriorities} active={queue.priority} param="priority" other={{ status: queue.status }} />
         <div className="flex items-end">
-          <Link href="/dashboard/wcc/escalations" className="rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-white">Limpiar filtros</Link>
+          <Link href="/dashboard/wcc/escalations" className="rounded-full border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink-muted)] hover:border-[var(--operator-brand)] hover:text-[var(--operator-brand)]">Limpiar filtros</Link>
         </div>
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-        <div className="hidden grid-cols-6 gap-4 border-b border-slate-800 px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 sm:grid">
+      <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--operator-border)] bg-white/94">
+        <div className="hidden grid-cols-6 gap-4 border-b border-[var(--operator-border)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--operator-ink-subtle)] sm:grid">
           <span className="col-span-2">Caso</span>
           <span>Contacto</span>
           <span>Prioridad</span>
@@ -101,29 +101,29 @@ export default async function WccEscalationsPage({
           <span>Abierta</span>
         </div>
         {queue.escalations.length ? (
-          <ul className="divide-y divide-slate-800">
+          <ul className="divide-y divide-[var(--operator-border)]">
             {queue.escalations.map((escalation) => (
               <li key={escalation.id} className="grid grid-cols-1 gap-3 px-5 py-4 text-sm sm:grid-cols-6 sm:gap-4">
                 <div className="sm:col-span-2">
-                  <p className="font-semibold text-white">{escalation.summary ?? escalation.reason}</p>
-                  {escalation.summary ? <p className="mt-1 text-slate-400">{escalation.reason}</p> : null}
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                  <p className="font-semibold text-[var(--operator-brand)]">{escalation.summary ?? escalation.reason}</p>
+                  {escalation.summary ? <p className="mt-1 text-[var(--operator-ink-muted)]">{escalation.reason}</p> : null}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--operator-ink-subtle)]">
                     <span>Conversación: {escalation.conversation?.status ?? "sin contexto"}</span>
                     {escalation.conversation?.lastIntent ? <span>Intent: {escalation.conversation.lastIntent}</span> : null}
-                    {escalation.conversation ? <Link href={`/dashboard/wcc/conversations/${escalation.conversation.id}`} className="text-emerald-300 hover:underline">Ver conversación</Link> : null}
+                    {escalation.conversation ? <Link href={`/dashboard/wcc/conversations/${escalation.conversation.id}`} className="text-[var(--operator-gold)] hover:underline">Ver conversación</Link> : null}
                   </div>
                 </div>
                 <div>
                   {escalation.contact ? (
-                    <Link href={`/dashboard/wcc/contacts/${escalation.contact.id}`} className="font-semibold text-emerald-300 hover:underline">{contactLabel(escalation)}</Link>
+                    <Link href={`/dashboard/wcc/contacts/${escalation.contact.id}`} className="font-semibold text-[var(--operator-gold)] hover:underline">{contactLabel(escalation)}</Link>
                   ) : (
-                    <span className="text-slate-400">{contactLabel(escalation)}</span>
+                    <span className="text-[var(--operator-ink-muted)]">{contactLabel(escalation)}</span>
                   )}
-                  {escalation.contact?.phoneE164 ? <p className="mt-1 text-slate-500">{escalation.contact.phoneE164}</p> : null}
+                  {escalation.contact?.phoneE164 ? <p className="mt-1 text-[var(--operator-ink-subtle)]">{escalation.contact.phoneE164}</p> : null}
                 </div>
                 <div><Badge className={priorityStyles[escalation.priority]}>{escalation.priority}</Badge></div>
-                <div><Badge className={statusStyles[escalation.status]}>{escalation.status}</Badge>{escalation.resolvedAt ? <p className="mt-2 text-xs text-slate-500">Resuelta: {formatDateTime(escalation.resolvedAt)}</p> : null}</div>
-                <div className="text-slate-400"><p>{formatRelativeTime(escalation.openedAt)}</p><p className="mt-1 text-xs text-slate-500">{formatDateTime(escalation.openedAt)}</p></div>
+                <div><Badge className={statusStyles[escalation.status]}>{escalation.status}</Badge>{escalation.resolvedAt ? <p className="mt-2 text-xs text-[var(--operator-ink-subtle)]">Resuelta: {formatDateTime(escalation.resolvedAt)}</p> : null}</div>
+                <div className="text-[var(--operator-ink-muted)]"><p>{formatRelativeTime(escalation.openedAt)}</p><p className="mt-1 text-xs text-[var(--operator-ink-subtle)]">{formatDateTime(escalation.openedAt)}</p></div>
               </li>
             ))}
           </ul>
@@ -132,11 +132,11 @@ export default async function WccEscalationsPage({
         )}
       </section>
 
-      <div className="mt-5 flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-5 flex flex-col gap-3 text-sm text-[var(--operator-ink-muted)] sm:flex-row sm:items-center sm:justify-between">
         <span>{queue.totalCount ? `Página ${queue.page} de ${queue.totalPages} · ${queue.totalCount} escalaciones` : "Sin escalaciones"}</span>
         <div className="flex gap-2">
-          {hasPrevious ? <Link className="rounded-lg border border-slate-700 px-3 py-2 hover:border-slate-500" href={filterHref({ status: queue.status, priority: queue.priority, page: queue.page - 1 })}>Anterior</Link> : <span className="rounded-lg border border-slate-800 px-3 py-2 text-slate-600">Anterior</span>}
-          {hasNext ? <Link className="rounded-lg border border-slate-700 px-3 py-2 hover:border-slate-500" href={filterHref({ status: queue.status, priority: queue.priority, page: queue.page + 1 })}>Siguiente</Link> : <span className="rounded-lg border border-slate-800 px-3 py-2 text-slate-600">Siguiente</span>}
+          {hasPrevious ? <Link className="rounded-lg border border-[var(--operator-border)] px-3 py-2 hover:border-[var(--operator-brand)]" href={filterHref({ status: queue.status, priority: queue.priority, page: queue.page - 1 })}>Anterior</Link> : <span className="rounded-lg border border-[var(--operator-border)] px-3 py-2 text-[var(--operator-ink-subtle)]">Anterior</span>}
+          {hasNext ? <Link className="rounded-lg border border-[var(--operator-border)] px-3 py-2 hover:border-[var(--operator-brand)]" href={filterHref({ status: queue.status, priority: queue.priority, page: queue.page + 1 })}>Siguiente</Link> : <span className="rounded-lg border border-[var(--operator-border)] px-3 py-2 text-[var(--operator-ink-subtle)]">Siguiente</span>}
         </div>
       </div>
     </main>

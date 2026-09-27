@@ -105,7 +105,7 @@ export function SupplierCatalogClient({
             }
           }}
           placeholder="Buscar por nombre…"
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          className="min-w-0 flex-1 rounded-xl border border-[var(--operator-border)] bg-white px-4 py-2.5 text-sm text-[var(--operator-ink)] outline-none focus:border-[var(--operator-brand)] focus:ring-2 focus:ring-[var(--operator-brand)]/15"
         />
         <input
           type="text"
@@ -117,19 +117,19 @@ export function SupplierCatalogClient({
             }
           }}
           placeholder="Filtrar por tag…"
-          className="min-w-40 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          className="min-w-40 rounded-xl border border-[var(--operator-border)] bg-white px-4 py-2.5 text-sm text-[var(--operator-ink)] outline-none focus:border-[var(--operator-brand)] focus:ring-2 focus:ring-[var(--operator-brand)]/15"
         />
         <button
           type="button"
           onClick={() => applyFilters(searchText, currentType, tagText, 1)}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+          className="rounded-xl border border-[var(--operator-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)]"
         >
           Buscar
         </button>
         <select
           value={currentType}
           onChange={(e) => applyFilters(currentQuery, e.target.value, currentTag, 1)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          className="rounded-xl border border-[var(--operator-border)] bg-white px-4 py-2.5 text-sm text-[var(--operator-ink)] outline-none focus:border-[var(--operator-brand)] focus:ring-2 focus:ring-[var(--operator-brand)]/15"
         >
           <option value="">Todos los tipos</option>
           {supplierTypes.map((t) => (
@@ -141,7 +141,7 @@ export function SupplierCatalogClient({
         <button
           type="button"
           onClick={() => setShowCreateDialog(true)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-xl bg-[var(--operator-brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] hover:bg-[var(--operator-brand-strong)]"
         >
           + Nuevo proveedor
         </button>
@@ -149,8 +149,8 @@ export function SupplierCatalogClient({
 
       {/* Table */}
       {suppliers.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-gray-500 dark:text-gray-400">
+        <div className="rounded-2xl border border-[var(--operator-border)] bg-white/94 p-8 text-center shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
+          <p className="text-[var(--operator-ink-muted)]">
             {currentQuery || currentType || currentTag
               ? "No se encontraron proveedores con esos filtros."
               : "Aún no hay proveedores. ¡Crea el primero!"}
@@ -159,48 +159,48 @@ export function SupplierCatalogClient({
             <button
               type="button"
               onClick={() => setShowCreateDialog(true)}
-              className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="mt-3 rounded-xl bg-[var(--operator-brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] hover:bg-[var(--operator-brand-strong)]"
             >
               Crear primer proveedor
             </button>
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--operator-border)] bg-white/94 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-900">
+            <thead className="bg-[var(--operator-surface-subtle)]">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Nombre</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Tipo</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Teléfono</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Tags</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Acciones</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Nombre</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Tipo</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Teléfono</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Tags</th>
+                <th className="px-4 py-3 text-right font-medium text-[var(--operator-ink-muted)]">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-[var(--operator-border)]">
               {suppliers.map((supplier) => (
-                <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                <tr key={supplier.id} className="hover:bg-[var(--operator-surface-subtle)]">
+                  <td className="px-4 py-3 font-semibold text-[var(--operator-brand)]">
                     <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
                       <span>{supplier.name}</span>
                       <SupplierGooglePlaceBadge googlePlaceId={supplier.googlePlaceId} />
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">
                     {supplier.type.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">
                     {supplier.contactPhone || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">
                     {supplier.contactEmail || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">
                     {supplier.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {supplier.tags.map((tag) => (
-                          <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                          <span key={tag} className="rounded-full bg-[var(--operator-surface-subtle)] px-2 py-0.5 text-xs font-semibold text-[var(--operator-brand)]">
                             {tag}
                           </span>
                         ))}
@@ -211,21 +211,21 @@ export function SupplierCatalogClient({
                     <button
                       type="button"
                       onClick={() => setEnrichingSupplier(supplier)}
-                      className="mr-2 text-sm text-blue-600 hover:underline"
+                      className="mr-2 text-sm text-[var(--operator-brand)] hover:underline"
                     >
                       Completar desde Google
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingSupplier(supplier)}
-                      className="mr-2 text-sm text-blue-600 hover:underline"
+                      className="mr-2 text-sm text-[var(--operator-brand)] hover:underline"
                     >
                       Editar
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(supplier)}
-                      className="text-sm text-red-600 hover:underline"
+                      className="text-sm text-[var(--operator-coral)] hover:underline"
                     >
                       Eliminar
                     </button>
@@ -243,18 +243,18 @@ export function SupplierCatalogClient({
           {currentPage > 1 && (
             <a
               href={buildPageUrl(currentPage - 1)}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+              className="rounded-xl border border-[var(--operator-border)] bg-white px-3 py-1.5 text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)]"
             >
               Anterior
             </a>
           )}
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+          <span className="text-sm text-[var(--operator-ink-muted)]">
             Pág. {currentPage} de {totalPages}
           </span>
           {currentPage < totalPages && (
             <a
               href={buildPageUrl(currentPage + 1)}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+              className="rounded-xl border border-[var(--operator-border)] bg-white px-3 py-1.5 text-sm text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)]"
             >
               Siguiente
             </a>

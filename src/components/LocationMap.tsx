@@ -23,12 +23,12 @@ export function LocationActions({ lat, lng, label, address }: LocationProps) {
         href={mapsUrl}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+        className="inline-flex items-center gap-1 text-sm font-medium text-[var(--operator-brand)] hover:underline dark:text-[var(--operator-gold)]"
       >
         📍 Abrir en Google Maps
       </a>
       {embedSrc && (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+        <div className="overflow-hidden rounded-lg border border-[var(--operator-border)] dark:border-[var(--operator-border)]">
           <iframe
             title={label ?? address ?? "Mapa"}
             src={embedSrc}

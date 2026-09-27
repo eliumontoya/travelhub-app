@@ -168,13 +168,13 @@ describe("/client/trips/[id]/documents page", () => {
     const element = await Page({ params: Promise.resolve({ id: "t1" }) });
     const items = findListItemsByLabel(element);
 
-    expect(items["Visado"]).toContain("⬜");
+    expect(items["Visado"]).toContain("□");
     expect(items["Visado"]).toContain("Pendiente");
-    expect(items["Seguro"]).toContain("🔄");
+    expect(items["Seguro"]).toContain("↻");
     expect(items["Seguro"]).toContain("Pendiente de revisión");
-    expect(items["Pasaporte"]).toContain("✅");
+    expect(items["Pasaporte"]).toContain("✓");
     expect(items["Pasaporte"]).toContain("Procesado");
-    expect(items["Comprobante"]).toContain("⚠");
+    expect(items["Comprobante"]).toContain("!");
     expect(items["Comprobante"]).toContain("Re-subir solicitado");
     expect(items["Comprobante"]).toContain("Comentario del agente: Necesitamos copia más legible");
   });

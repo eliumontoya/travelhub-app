@@ -100,13 +100,13 @@ export function TripClientsManager({
       <span onClick={open}>{trigger}</span>
       <dialog
         ref={dialogRef}
-        className="w-full max-w-md rounded-xl border border-gray-200 p-0 backdrop:bg-black/40"
+        className="w-full max-w-md rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
       >
         <form onSubmit={handleSubmit} className="space-y-4 p-5">
-          <h3 className="text-lg font-semibold text-gray-900">Gestionar clientes</h3>
+          <h3 className="text-lg font-semibold text-[var(--operator-brand)]">Gestionar clientes</h3>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Clientes asignados</label>
+            <label className="block text-sm font-medium text-[var(--operator-ink)]">Clientes asignados</label>
             <ClientMultiCombobox
               clients={clients}
               name="clientIds"
@@ -119,33 +119,33 @@ export function TripClientsManager({
             <button
               type="button"
               onClick={() => setShowCreate(true)}
-              className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:bg-gray-50"
+              className="w-full rounded-lg border border-dashed border-[var(--operator-border)] py-2 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)]"
             >
               + Crear cliente nuevo
             </button>
           ) : (
-            <fieldset className="rounded-lg border border-gray-200 p-3 space-y-2">
-              <legend className="px-1 text-sm font-medium text-gray-700">Nuevo cliente</legend>
+            <fieldset className="rounded-lg border border-[var(--operator-border)] p-3 space-y-2">
+              <legend className="px-1 text-sm font-medium text-[var(--operator-ink)]">Nuevo cliente</legend>
               <input
                 type="text"
                 placeholder="Nombre *"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
               <input
                 type="email"
                 placeholder="Email (opcional)"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
               />
-              {createError && <p className="text-sm text-red-600">{createError}</p>}
+              {createError && <p className="text-sm text-[var(--operator-coral)]">{createError}</p>}
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => { setShowCreate(false); setCreateError(null); }}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                  className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)]"
                 >
                   Cancelar
                 </button>
@@ -153,7 +153,7 @@ export function TripClientsManager({
                   type="button"
                   onClick={handleCreateClient}
                   disabled={creating}
-                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="rounded-lg bg-[var(--operator-brand)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
                 >
                   {creating ? "Creando…" : "Crear"}
                 </button>
@@ -161,20 +161,20 @@ export function TripClientsManager({
             </fieldset>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={close}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
             >
               Guardar
             </button>

@@ -3,17 +3,17 @@ import Link from "next/link";
 type NoticeTone = "safe" | "warning";
 
 export function WccNotice({ children, tone = "safe" }: { children: React.ReactNode; tone?: NoticeTone }) {
-  const toneClasses = tone === "warning" ? "border-amber-400/40 bg-amber-400/10 text-amber-100" : "border-slate-700 bg-slate-900 text-slate-300";
+  const toneClasses = tone === "warning" ? "border-[var(--operator-gold)]/40 bg-[#fff8e8] text-[var(--operator-brand)]" : "border-[var(--operator-border)] bg-white/94 text-[var(--operator-ink-muted)]";
   return <div className={`mt-6 rounded-2xl border p-4 text-sm ${toneClasses}`}>{children}</div>;
 }
 
 export function WccEmptyState({ title, description, actionHref, actionLabel }: { title: string; description: string; actionHref?: string; actionLabel?: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/60 p-6 text-sm text-slate-400">
-      <p className="font-semibold text-slate-200">{title}</p>
+    <div className="rounded-2xl border border-dashed border-[var(--operator-border)] bg-white/80 p-6 text-sm text-[var(--operator-ink-muted)]">
+      <p className="font-semibold text-[var(--operator-brand)]">{title}</p>
       <p className="mt-2 leading-6">{description}</p>
       {actionHref && actionLabel ? (
-        <Link href={actionHref} className="mt-4 inline-flex rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300 hover:border-emerald-400 hover:text-emerald-200">
+        <Link href={actionHref} className="mt-4 inline-flex rounded-xl border border-[var(--operator-border)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--operator-gold)] hover:border-[var(--operator-gold)] hover:text-[var(--operator-gold)]">
           {actionLabel}
         </Link>
       ) : null}
@@ -22,9 +22,9 @@ export function WccEmptyState({ title, description, actionHref, actionLabel }: {
 }
 
 export function WccBackLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return <Link href={href} className="text-sm font-semibold text-emerald-300 hover:text-emerald-200">← {children}</Link>;
+  return <Link href={href} className="text-sm font-semibold text-[var(--operator-gold)] hover:text-[var(--operator-gold)]">← {children}</Link>;
 }
 
 export function WccInlineLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return <Link href={href} className="font-semibold text-emerald-300 hover:underline">{children}</Link>;
+  return <Link href={href} className="font-semibold text-[var(--operator-gold)] hover:underline">{children}</Link>;
 }

@@ -38,8 +38,8 @@ export function PackingListManager({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 dark:border-gray-800 dark:bg-gray-900">
-      <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+    <div className="rounded-xl border border-[var(--operator-border)] bg-white p-4 sm:p-5 dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)]">
+      <h3 className="mb-3 font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{title}</h3>
 
       <ul className="mb-3 space-y-2">
         {items.map((item) => {
@@ -51,9 +51,9 @@ export function PackingListManager({
                 checked={checked}
                 disabled={isPending}
                 onChange={(e) => handleToggle(item, e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-[var(--operator-border)]"
               />
-              <span className={`flex-1 text-sm ${checked ? "text-gray-400 line-through" : "text-gray-700 dark:text-gray-300"}`}>
+              <span className={`flex-1 text-sm ${checked ? "text-[var(--operator-ink-subtle)] line-through" : "text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]"}`}>
                 {item.label}
               </span>
               {!readOnly && (
@@ -61,7 +61,7 @@ export function PackingListManager({
                   type="button"
                   disabled={isPending}
                   onClick={() => startTransition(() => onDelete!(item.id))}
-                  className="text-xs text-gray-400 hover:text-red-500"
+                  className="text-xs text-[var(--operator-ink-subtle)] hover:text-[var(--operator-coral)]"
                   aria-label={`Eliminar ${item.label}`}
                 >
                   ✕
@@ -87,12 +87,12 @@ export function PackingListManager({
             type="text"
             name="label"
             placeholder="Agregar item (ej. Protector solar)"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="flex-1 rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           />
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
           >
             + Agregar
           </button>

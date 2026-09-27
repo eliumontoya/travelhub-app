@@ -13,10 +13,10 @@ export default async function WccKnowledgeDetailPage({ params }: { params: Promi
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <WccBackLink href="/dashboard/wcc/knowledge">Volver a knowledge</WccBackLink>
-      <section className="mt-5 rounded-3xl border border-emerald-400/20 bg-slate-900 p-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">Editar knowledge</p>
-        <h2 className="mt-2 text-3xl font-bold text-white">{entry?.topic ?? "Entrada no disponible"}</h2>
-        <p className="mt-3 text-sm text-slate-300">Ajusta la respuesta y su estado. Las entradas archived o draft no alimentan respuestas automáticas.</p>
+      <section className="mt-5 rounded-3xl border border-white/15 bg-white/94 p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--operator-gold)]">Editar knowledge</p>
+        <h2 className="mt-2 text-3xl font-bold text-[var(--operator-brand)]">{entry?.topic ?? "Entrada no disponible"}</h2>
+        <p className="mt-3 text-sm text-[var(--operator-ink-muted)]">Ajusta la respuesta y su estado. Las entradas archived o draft no alimentan respuestas automáticas.</p>
       </section>
 
       {detail.isConfiguredButUnavailable && <WccNotice tone="warning">Supabase está configurado, pero no se pudo leer esta entrada.</WccNotice>}
@@ -25,8 +25,8 @@ export default async function WccKnowledgeDetailPage({ params }: { params: Promi
 
       {entry && (
         <>
-          <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-300">
-            <p>Estado actual: <span className="font-semibold text-white">{entry.status}</span></p>
+          <div className="mt-6 rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)] text-sm text-[var(--operator-ink-muted)]">
+            <p>Estado actual: <span className="font-semibold text-[var(--operator-brand)]">{entry.status}</span></p>
             <p className="mt-1">Actualizado: {formatRelativeTime(entry.updatedAt)}</p>
             <p className="mt-1">Aprobado: {entry.approvedAt ? formatRelativeTime(entry.approvedAt) : "no aprobado"}</p>
             <div className="mt-4"><KnowledgeStatusForm entryId={entry.id} currentStatus={entry.status} /></div>

@@ -12,18 +12,18 @@ describe("LanguageToggle", () => {
   it("renders dark variant classes by default", () => {
     const html = renderToStaticMarkup(<LanguageToggle lang="es" />);
     expect(html).toContain("border-white/40");
-    expect(html).toContain("bg-white text-gray-900");
+    expect(html).toContain("bg-white text-[var(--operator-brand)]");
   });
 
   it("renders light variant classes when variant is light", () => {
     const html = renderToStaticMarkup(<LanguageToggle lang="es" variant="light" />);
-    expect(html).toContain("border-gray-300");
-    expect(html).toContain("bg-gray-900 text-white");
+    expect(html).toContain("border-[var(--operator-border)]");
+    expect(html).toContain("bg-[var(--operator-brand-strong)] text-white");
   });
 
   it("renders light active state for the other language", () => {
     const html = renderToStaticMarkup(<LanguageToggle lang="en" variant="light" />);
-    expect(html).toContain("border-gray-300");
-    expect(html).toContain("bg-gray-900 text-white");
+    expect(html).toContain("border-[var(--operator-border)]");
+    expect(html).toContain("bg-[var(--operator-brand-strong)] text-white");
   });
 });

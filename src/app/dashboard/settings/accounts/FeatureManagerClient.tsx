@@ -86,7 +86,7 @@ export function FeatureManagerClient({
 
   if (profiles.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+      <p className="rounded-2xl border border-dashed border-[var(--operator-border)] bg-white/94 px-4 py-6 text-sm text-[var(--operator-ink-muted)]">
         Aún no hay cuentas registradas para administrar.
       </p>
     );
@@ -94,9 +94,9 @@ export function FeatureManagerClient({
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
-          <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:bg-gray-950 dark:text-gray-300">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--operator-border)] bg-white/94 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
+        <table className="min-w-full divide-y divide-[var(--operator-border)] text-sm">
+          <thead className="bg-[var(--operator-surface-subtle)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-muted)]">
             <tr>
               <th scope="col" className="px-4 py-3">
                 Cuenta
@@ -118,18 +118,18 @@ export function FeatureManagerClient({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+          <tbody className="divide-y divide-[var(--operator-border)]">
             {profiles.map((profile) => {
               const features = localFeatures[profile.id] ?? profile.features;
               return (
                 <tr key={profile.id}>
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                  <td className="px-4 py-3 font-semibold text-[var(--operator-brand)]">
                     {profile.email ?? profile.id}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">
                     {profile.role === "admin" ? "Admin" : "Agente"}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">
                     {profile.travelAgentName ?? "—"}
                   </td>
                   {FEATURE_DEFINITIONS.map((def) => {
@@ -149,7 +149,7 @@ export function FeatureManagerClient({
                                 event.target.checked,
                               )
                             }
-                            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800"
+                            className="h-4 w-4 rounded border-[var(--operator-border)] text-[var(--operator-brand)] focus:ring-[var(--operator-brand)] disabled:opacity-50"
                           />
                         </label>
                       </td>
@@ -167,20 +167,20 @@ export function FeatureManagerClient({
           type="button"
           onClick={handleSave}
           disabled={saving || !hasChanges}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-xl bg-[var(--operator-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
         >
           {saving ? "Guardando…" : "Guardar cambios"}
         </button>
         {saveSuccess && (
-          <p className="text-sm text-emerald-600 dark:text-emerald-400">
+          <p className="text-sm text-[var(--operator-brand)]">
             Permisos guardados.
           </p>
         )}
         {saveError && (
-          <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+          <p className="text-sm text-[var(--operator-coral)]">{saveError}</p>
         )}
         {!hasChanges && !saveError && !saveSuccess && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-[var(--operator-ink-muted)]">
             Sin cambios pendientes.
           </p>
         )}
