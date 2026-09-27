@@ -44,10 +44,10 @@ export default async function LoginPage({
       >
         <div className="mb-8 flex justify-center">
           <Image
-            src="/logo.jpeg"
+            src="/logo-transparent.png"
             alt="TravelHub"
-            width={182}
-            height={128}
+            width={2017}
+            height={780}
             priority
             className="h-28 w-auto object-contain sm:h-32"
           />

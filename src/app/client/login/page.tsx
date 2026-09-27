@@ -80,14 +80,75 @@ export default async function ClientLoginPage({
             <label htmlFor="email" className="block text-sm font-semibold text-[var(--operator-ink)]">
               Email
             </label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              required
-              autoComplete="email"
-              className="mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] border border-[var(--operator-border)] bg-[var(--operator-surface)] px-3 text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
-            />
+            <div
+              data-impeccable-variants="710e89a6"
+              data-impeccable-variant-count="3"
+              style={{ display: "contents" }}
+            >
+              {/* impeccable-variants-start 710e89a6 */}
+              <div data-impeccable-variant="1">
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  required
+                  autoComplete="email"
+                  placeholder="Correo Electrónico"
+                  className="email-live-variant email-live-variant-1 mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
+                />
+              </div>
+              <div data-impeccable-variant="2" style={{ display: "none" }}>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  required
+                  autoComplete="email"
+                  placeholder="Correo Electrónico"
+                  className="email-live-variant email-live-variant-2 mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
+                />
+              </div>
+              <div data-impeccable-variant="3" style={{ display: "none" }}>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  required
+                  autoComplete="email"
+                  placeholder="Correo Electrónico"
+                  className="email-live-variant email-live-variant-3 mt-2 min-h-11 w-full rounded-[var(--operator-radius-control)] text-sm text-[var(--operator-ink)] outline-none placeholder:text-[var(--operator-ink-subtle)] focus:border-[var(--operator-focus)]"
+                />
+              </div>
+              {/* impeccable-variants-end 710e89a6 */}
+            </div>
+            <style data-impeccable-css="710e89a6">{`
+              @scope ([data-impeccable-variant="1"]) {
+                :scope > .email-live-variant {
+                  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2376596a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") no-repeat 0.875rem center / 1.125rem;
+                  padding-left: 2.75rem;
+                }
+                :scope > .email-live-variant-1 {
+                  border: 1px solid var(--operator-border);
+                }
+              }
+              @scope ([data-impeccable-variant="2"]) {
+                :scope > .email-live-variant {
+                  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2365003d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") no-repeat 0.875rem center / 1.125rem;
+                  border: 1px solid var(--operator-brand);
+                  box-shadow: inset 0 0 0 1px rgb(101 0 61 / 0.08);
+                  padding-left: 2.75rem;
+                }
+              }
+              @scope ([data-impeccable-variant="3"]) {
+                :scope > .email-live-variant {
+                  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2376596a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") no-repeat 0.875rem center / 1.125rem;
+                  border: 1px solid var(--operator-border);
+                  border-bottom-color: var(--operator-brand);
+                  border-bottom-width: 2px;
+                  padding-left: 2.75rem;
+                }
+              }
+            `}</style>
           </div>
           <div>
             <label htmlFor="pin" className="block text-sm font-semibold text-[var(--operator-ink)]">
