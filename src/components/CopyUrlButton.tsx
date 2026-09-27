@@ -29,14 +29,16 @@ export function CopyUrlButtonClient({ slug }: { slug: string }) {
   return (
     <div className="relative flex flex-wrap items-center gap-2">
       <button
+        type="button"
         onClick={handleCopy}
-        className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)]"
+        className="rounded-lg border border-[#f0bd79]/55 bg-[#fffdfb] px-4 py-2 text-sm font-semibold text-[#4a1834] shadow-[0_8px_18px_rgba(27,8,19,0.18)] transition hover:bg-[#f7dfbc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
       >
         {copied ? "¡Copiado!" : "Copiar URL"}
       </button>
       <button
+        type="button"
         onClick={handleToggleQr}
-        className="rounded-lg border border-[var(--operator-border)] px-4 py-2 text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
+        className="rounded-lg border border-white/60 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(27,8,19,0.12)] transition hover:border-[#f0bd79]/70 hover:bg-[#fffdfb] hover:text-[#4a1834] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
       >
         QR
       </button>
