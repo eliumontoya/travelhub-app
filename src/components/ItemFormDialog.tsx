@@ -10,6 +10,7 @@ import { showUndoToast } from "@/components/UndoToast";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 import { shouldAutofillSupplierLocation } from "@/lib/item-location";
+import { ItemTypeIcon } from "@/components/ItemTypeIcon";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
@@ -352,7 +353,7 @@ export function ItemFormDialog({
             >
               {itemTypes.map((t) => (
                 <option key={t} value={t}>
-                  {itemTypeMeta[t].icon} {itemTypeMeta[t].label}
+                  {itemTypeMeta[t].label}
                 </option>
               ))}
             </select>
@@ -451,8 +452,9 @@ export function ItemFormDialog({
 
           {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
             <div key={`${selectedType}-${metadataAutofillVersion}`} className="border-t border-[var(--operator-border)] pt-4">
-              <h4 className="mb-3 text-sm font-semibold text-[var(--operator-brand)]">
-                {itemTypeMeta[selectedType].icon} Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}
+              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--operator-brand)]">
+                <ItemTypeIcon type={selectedType} title={itemTypeMeta[selectedType].label} className="h-8 w-8" />
+                <span>Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}</span>
               </h4>
               <div className="space-y-3">
                 {metadataFieldsByType[selectedType].map((field) => (

@@ -8,6 +8,7 @@ import {
   formatCost,
 } from "@/lib/item-meta";
 import { PrintButton } from "@/components/PrintButton";
+import { ItemTypeIcon } from "@/components/ItemTypeIcon";
 import { formatItemMetadataSummary } from "@/lib/item-display";
 
 export default async function TripQuotePage({
@@ -69,9 +70,7 @@ export default async function TripQuotePage({
                       className="flex items-start justify-between gap-3 rounded-lg border border-[var(--operator-border)] p-3 print:break-inside-avoid"
                     >
                       <div className="flex items-start gap-2">
-                        <span className={`w-fit rounded-full px-2 py-1 text-lg ${meta.color}`}>
-                          {meta.icon}
-                        </span>
+                        <ItemTypeIcon type={item.type} title={meta.label} className="h-10 w-10" />
                         <div>
                           <p className="font-medium text-[var(--operator-brand)]">{item.title}</p>
                           {item.location && (

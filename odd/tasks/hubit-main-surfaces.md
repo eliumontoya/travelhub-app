@@ -55,5 +55,7 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 - 2026-09-27: Ran final representative visual QA in mock mode by rebuilding without `.env.local` and opening protected/dashboard pages on a temporary `localhost:3335` production server: dashboard desktop/mobile, client detail, trip editor, WCC, public traveler desktop/mobile, and client login redirect. Fixed the global heading override that made dark plum heroes unreadable, then verified WCC and trip editor hero text visually. Removed the remaining traveler lock emoji from `ClientSessionButton` and confirmed the emoji/glyph scan returned no matches.
 
+- 2026-09-27: Added a reusable authored SVG item-type icon system for flight, hotel, restaurant, activity, transport, and note. Replaced visual item-type icon uses in the public traveler itinerary, trip editor, quote page, and item form dialog, and matched the `/t/[slug]` left itinerary panel heading to the reference calendar icon plus “Tu itinerario” treatment. Verification passed: focused Vitest suite (26 tests), `npx tsc --noEmit`, Impeccable detector `[]`, and `npm run build -- --webpack`.
+
 ## Next step
-Prepare final handoff; no source changes remain for the requested UI/icon alignment unless the user asks for PR/push.
+Commit the latest itinerary icon correction, then prepare final handoff unless the user asks for PR/push.

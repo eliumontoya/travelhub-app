@@ -24,6 +24,7 @@ import {
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { ItemFormDialog } from "@/components/ItemFormDialog";
+import { ItemTypeIcon } from "@/components/ItemTypeIcon";
 import { MoveItemToDayDialog } from "@/components/MoveItemToDayDialog";
 import { DayFormDialog } from "@/components/DayFormDialog";
 import { TravelAgentCombobox } from "@/components/TravelAgentCombobox";
@@ -377,9 +378,7 @@ export default async function TripEditorPage({
                           key={item.id}
                           className="group flex flex-col gap-3 rounded-xl border border-[#f0bd79]/35 bg-[#fff8f1] p-3 transition hover:border-[#b67a91] hover:bg-[#fffdfb] sm:flex-row sm:items-start print:break-inside-avoid print:bg-white dark:border-[#f0bd79]/20 dark:bg-[#321426] dark:hover:border-[#f0bd79]"
                         >
-                          <span className={`w-fit rounded-full px-2.5 py-1.5 text-lg ${meta.color}`}>
-                            {meta.icon}
-                          </span>
+                          <ItemTypeIcon type={item.type} title={meta.label} className="h-10 w-10" />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{item.title}</span>

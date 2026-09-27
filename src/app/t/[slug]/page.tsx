@@ -6,7 +6,7 @@ import {
   getTripWithDetails,
   hasOwnedServiceRequirements,
 } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatDateShort, formatCost } from "@/lib/item-meta";
+import { formatDateLong, formatDateShort, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
@@ -36,6 +36,7 @@ import {
   TravelerActivityAddFormProvider,
 } from "@/components/TravelerActivityAddFormPanel";
 import { canRenderTravelerActivityControls } from "@/lib/traveler-activity-controls";
+import { ItemTypeIcon, CalendarGlyph } from "@/components/ItemTypeIcon";
 import { OperatorSurface } from "@/components/ui/OperatorSurface";
 
 export async function generateMetadata({
@@ -188,9 +189,12 @@ export default async function PublicTripPage({
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] print:block print:max-w-3xl print:py-0">
         <aside className="hidden lg:block print:hidden">
           <div className="sticky top-6 rounded-[1rem] border border-[#ebe5e8] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">
-              {t.daysNav}
-            </p>
+            <div className="mb-5 flex items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f8e8ef] text-[var(--operator-brand)]">
+                <CalendarGlyph className="h-5 w-5" />
+              </span>
+              <h2 className="font-serif text-lg font-semibold text-[var(--operator-brand)]">Tu itinerario</h2>
+            </div>
             <TripDaySidebar days={trip.days} lang={lang} />
           </div>
         </aside>
@@ -240,7 +244,6 @@ export default async function PublicTripPage({
                 <div className="space-y-3">
                   {day.items.map((rawItem) => {
                     const item = rawItem as ItemWithSupplier;
-                    const meta = itemTypeMeta[item.type];
                     const resolvedLocation = resolveItemLocation(item);
                     const tzLabel = getApproxUtcOffsetLabel(resolvedLocation?.lat ?? item.lat, resolvedLocation?.lng ?? item.lng);
                     const metadataSummary = formatItemMetadataSummary(item);
@@ -261,12 +264,7 @@ export default async function PublicTripPage({
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 items-start gap-3">
-                            <span
-                              className={`shrink-0 rounded-full px-2.5 py-1.5 text-lg ${meta.color}`}
-                              title={t.itemType[item.type]}
-                            >
-                              {meta.icon}
-                            </span>
+                            <ItemTypeIcon type={item.type} title={t.itemType[item.type]} />
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium text-[var(--operator-ink)]">{item.title}</span>
