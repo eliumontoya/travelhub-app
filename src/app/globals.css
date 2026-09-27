@@ -135,13 +135,7 @@ body {
   color: var(--operator-ink-muted) !important;
 }
 
-[data-testid="dashboard-hubit-shell"] h1,
-[data-testid="dashboard-hubit-shell"] h2,
-[data-testid="dashboard-hubit-shell"] h3,
-[data-testid="dashboard-hubit-shell"] [class*="font-bold"][class*="text-gray-900"],
-[data-testid="client-home-atmosphere"] h1,
-[data-testid="client-home-atmosphere"] h2,
-[data-testid="client-home-atmosphere"] h3 {
+[data-testid="dashboard-hubit-shell"] [class*="font-bold"][class*="text-gray-900"] {
   color: var(--operator-brand) !important;
   letter-spacing: -0.04em;
 }

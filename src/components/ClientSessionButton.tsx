@@ -25,7 +25,7 @@ export async function ClientSessionButton({
         title="Iniciar sesión"
         className={`flex h-9 w-9 items-center justify-center rounded-full bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)] ${className}`}
       >
-        🔐
+        <span className="text-[0.63rem] font-black tracking-[0.08em]">PIN</span>
       </Link>
     );
   }
@@ -37,7 +37,7 @@ export async function ClientSessionButton({
       title="Ir a mi cuenta"
       className={`flex h-9 w-9 items-center justify-center rounded-full bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] hover:bg-[var(--operator-border)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand-strong)] ${className}`}
     >
-      🔐
+      <span className="text-[0.63rem] font-black tracking-[0.08em]">PIN</span>
     </Link>
   );
 }

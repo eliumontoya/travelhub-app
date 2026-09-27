@@ -23,8 +23,8 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 - [x] HMS-002 — Dashboard shell and homepage use the HUBit agent hierarchy without changing data, links, or admin-only navigation.
 - [x] HMS-003 — All dashboard subpages inherit the HUBit visual system, including legacy WCC/admin/client/trip surfaces, without changing behavior.
 - [x] HMS-004 — Traveler and client-facing surfaces use the reference trip-first visual hierarchy without changing public/client controls.
-- [ ] HMS-005 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
-- [ ] HMS-006 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
+- [x] HMS-005 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
+- [x] HMS-006 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
 
 ## Verification
 - Existing route tests plus any focused structural tests needed for preserved behavior.
@@ -53,5 +53,7 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 - 2026-09-27: Replaced internal/login HUBit logo asset with the designer-provided transparent logo source from `/Users/eliumontoya/Downloads/HUBit-mock-site-source/logotransparente.png`, processed to remove the white matte, published as `/hubit-logo-transparent.png`, and pointed dashboard, agent login, and client login to that same asset. Verification passed: focused Vitest suite (13 tests), `npx tsc --noEmit`, Impeccable detector `[]`, `npm run build -- --webpack`, and visual screenshot inspection of `/login` on port 3333.
 
+- 2026-09-27: Ran final representative visual QA in mock mode by rebuilding without `.env.local` and opening protected/dashboard pages on a temporary `localhost:3335` production server: dashboard desktop/mobile, client detail, trip editor, WCC, public traveler desktop/mobile, and client login redirect. Fixed the global heading override that made dark plum heroes unreadable, then verified WCC and trip editor hero text visually. Removed the remaining traveler lock emoji from `ClientSessionButton` and confirmed the emoji/glyph scan returned no matches.
+
 ## Next step
-Capture representative protected dashboard pages on port 3333 with an authenticated session or equivalent fixture, inspect for any remaining visual mismatches, and complete HMS-005/HMS-006 before declaring the full goal done.
+Prepare final handoff; no source changes remain for the requested UI/icon alignment unless the user asks for PR/push.
