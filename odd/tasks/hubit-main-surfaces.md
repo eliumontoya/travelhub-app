@@ -46,5 +46,8 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 - 2026-09-27: Rebuilt client login and client document upload pages into the HUBit login/traveler world, restyled settings/suppliers pages, and replaced document/checklist emojis with glyph marks. Commit `b802df9`.
 - 2026-09-27: Removed remaining emoji-style travel/status/weather/flight icons from shared item metadata, weather metadata, flight status badge, theme toggle, dashboard updates, and service checklist status helpers. Replaced them with HUBit glyph/letter marks and palette tokens. Verification passed: relevant tests, TypeScript, Webpack build, and Impeccable detector `[]`.
 
+
+- 2026-09-27: Restyled travel agent catalog, permissions/accounts, and supplier catalog client surfaces into the HUBit plum/warm card system while preserving the existing CRUD/dialog behavior. Verification passed: relevant tests, TypeScript, Webpack build, and Impeccable detector `[]`.
+
 ## Next step
 Continue extending the HUBit visual system across remaining dashboard/client/traveler subpages, capture representative pages on port 3333, run Impeccable detector, then commit the verified work unit.

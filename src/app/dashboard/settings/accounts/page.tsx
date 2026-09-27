@@ -10,14 +10,12 @@ export default async function AccountsPage() {
   const profiles = await listProfiles();
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-        Permisos por agente
-      </h1>
-      <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
-        Asigna qué secciones del dashboard puede ver cada agente. Los cambios
-        se reflejan al navegar de nuevo en cualquier sesión.
-      </p>
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+      <section className="mb-7 overflow-hidden rounded-2xl bg-[var(--operator-brand)] px-5 py-6 text-white shadow-[var(--operator-shadow-panel)] sm:px-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">Administración</p>
+        <h1 className="mt-2 font-serif text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Permisos por agente</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/82">Asigna qué secciones del dashboard puede ver cada agente. Los cambios se reflejan al navegar de nuevo en cualquier sesión.</p>
+      </section>
       <FeatureManagerClient profiles={profiles} />
     </main>
   );

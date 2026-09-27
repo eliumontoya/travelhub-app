@@ -36,54 +36,54 @@ export function TravelAgentCatalogClient({
         <button
           type="button"
           onClick={() => setShowCreateDialog(true)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-xl bg-[var(--operator-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] hover:bg-[var(--operator-brand-strong)]"
         >
           + Nuevo agente
         </button>
       </div>
 
       {agents.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-gray-500 dark:text-gray-400">
+        <div className="rounded-2xl border border-[var(--operator-border)] bg-white/94 p-8 text-center shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
+          <p className="text-[var(--operator-ink-muted)]">
             Aún no hay agentes de viajes. ¡Crea el primero!
           </p>
           <button
             type="button"
             onClick={() => setShowCreateDialog(true)}
-            className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="mt-3 rounded-xl bg-[var(--operator-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] hover:bg-[var(--operator-brand-strong)]"
           >
             Crear primer agente
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--operator-border)] bg-white/94 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-900">
+            <thead className="bg-[var(--operator-surface-subtle)]">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Nombre</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Teléfono</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Acciones</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Nombre</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-[var(--operator-ink-muted)]">Teléfono</th>
+                <th className="px-4 py-3 text-right font-medium text-[var(--operator-ink-muted)]">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-[var(--operator-border)]">
               {agents.map((agent) => (
-                <tr key={agent.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{agent.name}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{agent.email || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{agent.phone || "—"}</td>
+                <tr key={agent.id} className="hover:bg-[var(--operator-surface-subtle)]">
+                  <td className="px-4 py-3 font-semibold text-[var(--operator-brand)]">{agent.name}</td>
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">{agent.email || "—"}</td>
+                  <td className="px-4 py-3 text-[var(--operator-ink-muted)]">{agent.phone || "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => setEditingAgent(agent)}
-                      className="mr-2 text-sm text-blue-600 hover:underline"
+                      className="mr-2 text-sm text-[var(--operator-brand)] hover:underline"
                     >
                       Editar
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(agent)}
-                      className="text-sm text-red-600 hover:underline"
+                      className="text-sm text-[var(--operator-coral)] hover:underline"
                     >
                       Eliminar
                     </button>
