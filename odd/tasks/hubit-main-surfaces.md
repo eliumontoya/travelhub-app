@@ -20,10 +20,10 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 ## Acceptance criteria
 - [x] HMS-001 — Login reflects the HUBit reference hierarchy without changing sign-in behavior or state rendering.
-- [x] HMS-002 — Dashboard uses a responsive HUBit agent shell and homepage hierarchy without changing data, links, or admin-only navigation.
-- [x] HMS-003 — Traveler itinerary uses the reference's trip-first layout and responsive reading hierarchy without changing public-trip behavior or controls.
-- [x] HMS-004 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
-- [x] HMS-005 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
+- [ ] HMS-002 — Dashboard uses a responsive HUBit agent shell and homepage hierarchy without changing data, links, or admin-only navigation.
+- [ ] HMS-003 — Traveler itinerary uses the reference's trip-first layout and responsive reading hierarchy without changing public-trip behavior or controls.
+- [ ] HMS-004 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
+- [ ] HMS-005 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
 
 ## Verification
 - Existing route tests plus any focused structural tests needed for preserved behavior.
@@ -34,8 +34,8 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 ## Progress
 - 2026-09-27: Created branch `codex/hubit-visual-alignment` and isolated worktree. Reviewed the supplied mock source and mapped current login, dashboard, traveler, tokens, and behavior boundaries.
 - 2026-09-27: Added RED expectations for the HUBit login brand and dashboard shell, then implemented the visual-only GREEN changes.
-- 2026-09-27: Completed desktop/mobile captures for login and traveler plus a desktop dashboard capture. Confirmed rendering of the visual anchors in the running app.
-- 2026-09-27: Passed focused login/layout tests, `npx tsc --noEmit`, and `npm run build -- --webpack`. The default Turbopack build panics in this symlinked worktree with `Invalid distDirRoot`; this is environment-specific. Impeccable detect reported one existing advisory for a pre-existing dark hero overlay in the traveler route; no new blocking finding.
+- 2026-09-27: Initial visual QA incorrectly accepted superficial alignment. The user-provided live screenshot proved the output did not match the mock's concrete visual system; HMS-002 through HMS-005 are reopened.
+- 2026-09-27: Rebuilt the login from a generated, provenance-backed travel-office scene and a centered frosted HUBit panel. Focused login tests and TypeScript pass. The dashboard and traveler require the same fidelity pass before this feature can be considered complete.
 
 ## Next step
-Review the visual alignment in the isolated worktree before extending the same system to secondary routes.
+Rebuild the agent dashboard and traveler pages from the supplied reference compositions, then rerun full visual and functional verification.
