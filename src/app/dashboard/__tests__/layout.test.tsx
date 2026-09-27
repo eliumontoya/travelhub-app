@@ -39,6 +39,7 @@ describe("DashboardLayout navigation", () => {
   it("shows the admin-only Cuentas link without dropping redesigned navigation entries", async () => {
     const html = await renderLayout("admin");
 
+    expect(html).toContain('data-testid="dashboard-hubit-shell"');
     expect(html).toContain('href="/dashboard/settings/accounts"');
     expect(html).toContain(">Cuentas<");
     for (const label of ["Dashboard", "Viajes", "Clientes", "Proveedores", "Agentes", "WhatsApp C.C.", "Ajustes"]) {

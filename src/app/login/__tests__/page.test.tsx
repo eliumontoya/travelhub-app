@@ -51,6 +51,7 @@ describe("/login page", () => {
     expect(findElements(element, (node) => node.props["data-testid"] === "login-window-grid")).toHaveLength(1);
     expect(findElements(element, (node) => node.props["data-testid"] === "login-sunset-skyline")).toHaveLength(1);
     expect(findElements(element, (node) => node.props["data-testid"] === "login-panel")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "login-hubit-brand")).toHaveLength(1);
     expect(forms).toHaveLength(1);
     expect(forms[0]?.props.action).toBe(signIn);
     expect(inputs.some((node) => node.props.name === "email" && node.props.type === "email" && node.props.id === "email")).toBe(true);

@@ -52,7 +52,7 @@ export default async function DashboardPage({
   ]);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {showSettingsSaved && (
         <div
           role="status"
@@ -87,19 +87,19 @@ export default async function DashboardPage({
 
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Resumen ejecutivo</p>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+          <p className="text-sm font-medium text-[var(--operator-ink-muted)]">Martes, 15 de abril de 2025</p>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--operator-ink)] sm:text-4xl">Buenos días</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href="/dashboard/trips/new"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+            className="rounded-full bg-[var(--operator-brand)] px-5 py-2.5 text-center text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] transition hover:bg-[var(--operator-brand-strong)]"
           >
             + Nuevo viaje
           </Link>
           <Link
             href="/dashboard/clients"
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+            className="rounded-full border border-[var(--operator-border)] bg-[var(--operator-surface)] px-5 py-2.5 text-center text-sm font-semibold text-[var(--operator-brand)] transition hover:bg-[var(--operator-surface-subtle)]"
           >
             Ver clientes
           </Link>

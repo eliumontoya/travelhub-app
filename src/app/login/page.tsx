@@ -42,15 +42,19 @@ export default async function LoginPage({
         aria-label="TravelHub"
         className="w-full max-w-md rounded-2xl bg-white/90 p-6 shadow-[0_24px_70px_rgba(30,7,21,0.35)] backdrop-blur-md sm:p-9"
       >
-        <div className="mb-8 flex justify-center">
-          <Image
-            src="/logo-transparent.png"
-            alt="TravelHub"
-            width={2017}
-            height={780}
-            priority
-            className="h-28 w-auto object-contain sm:h-32"
-          />
+        <div data-testid="login-hubit-brand" className="mb-8 text-center">
+          <div className="flex justify-center">
+            <Image
+              src="/logo-transparent.png"
+              alt="HUBit by TravelHub"
+              width={2017}
+              height={780}
+              priority
+              className="h-24 w-auto object-contain sm:h-28"
+            />
+          </div>
+          <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-[var(--operator-ink)] sm:text-4xl">Bienvenido</p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.28em] text-[var(--operator-ink-muted)]">Tu agencia. Más lejos.</p>
         </div>
 
         {error && (
@@ -91,7 +95,7 @@ export default async function LoginPage({
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
               type="submit"
-              className="w-full rounded-xl bg-[#731044] px-4 py-3 text-sm font-medium text-white shadow-[0_10px_24px_rgba(92,18,62,0.26)] transition hover:bg-[#5c123e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#731044]"
+              className="w-full rounded-full bg-[var(--operator-brand)] px-4 py-3 text-sm font-semibold text-white shadow-[var(--operator-shadow-action)] transition hover:bg-[var(--operator-brand-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--operator-focus)]"
             >
               Entrar
             </button>

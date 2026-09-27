@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { ProfileMenu } from "@/components/ProfileMenu";
@@ -39,80 +40,40 @@ export default async function DashboardLayout({
   ]);
 
   return (
-    <div className="min-h-screen bg-[var(--operator-canvas)] text-[var(--operator-ink)]">
-      <header className="border-b border-[var(--operator-border)] bg-[var(--operator-surface)]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm font-semibold tracking-[-0.02em] text-[var(--operator-brand)]">
-              TravelHub
+    <div data-testid="dashboard-hubit-shell" className="min-h-screen bg-[var(--operator-canvas)] text-[var(--operator-ink)] lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <aside className="hidden bg-[linear-gradient(180deg,var(--operator-brand-strong),#31001e)] px-4 py-6 text-white lg:flex lg:min-h-screen lg:flex-col">
+        <Link href="/dashboard" className="mb-10 flex items-center" aria-label="HUBit dashboard">
+          <Image src="/logo-transparent.png" alt="HUBit by TravelHub" width={2017} height={780} className="h-11 w-auto brightness-0 invert" />
+        </Link>
+        <nav className="space-y-1 text-sm font-medium">
+          <Link href="/dashboard" className="block rounded-[var(--operator-radius-control)] bg-white/12 px-3 py-3 transition hover:bg-white/18">Inicio</Link>
+          <Link href="/dashboard/trips" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">Viajes</Link>
+          <Link href="/dashboard/clients" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">Clientes</Link>
+          <Link href="/dashboard/suppliers" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">Proveedores</Link>
+          {isAdmin && <Link href="/dashboard/travel-agents" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">Agentes</Link>}
+          {isAdmin && <Link href="/dashboard/settings/accounts" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">Cuentas</Link>}
+          {isAdmin && <Link href="/dashboard/wcc" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">WhatsApp C.C.</Link>}
+          {isAdmin && <Link href="/dashboard/settings" className="block rounded-[var(--operator-radius-control)] px-3 py-3 transition hover:bg-white/12">Ajustes</Link>}
+        </nav>
+        <div className="mt-auto border-t border-white/15 pt-4"><ChangelogDialog entries={changelog} /></div>
+      </aside>
+      <div className="min-w-0">
+        <header className="border-b border-[var(--operator-border)] bg-[var(--operator-surface)]/95 backdrop-blur">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+            <Link href="/dashboard" className="flex items-center lg:hidden" aria-label="HUBit dashboard">
+              <Image src="/logo-transparent.png" alt="HUBit by TravelHub" width={2017} height={780} className="h-8 w-auto object-contain" />
             </Link>
-            <nav className="hidden sm:flex items-center gap-3 text-sm">
-              <Link
-                href="/dashboard"
-                className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/dashboard/trips"
-                className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-              >
-                Viajes
-              </Link>
-              <Link
-                href="/dashboard/clients"
-                className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-              >
-                Clientes
-              </Link>
-              <Link
-                href="/dashboard/suppliers"
-                className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-              >
-                Proveedores
-              </Link>
-              {isAdmin && (
-                <>
-                  <Link
-                    href="/dashboard/travel-agents"
-                    className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-                  >
-                    Agentes
-                  </Link>
-                  <Link
-                    href="/dashboard/settings/accounts"
-                    className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-                  >
-                    Cuentas
-                  </Link>
-                  <Link
-                    href="/dashboard/wcc"
-                    className="rounded-full bg-[var(--operator-surface-subtle)] px-3 py-1 font-semibold text-[var(--operator-brand)] transition hover:bg-[var(--operator-surface-hover)]"
-                  >
-                    WhatsApp C.C.
-                  </Link>
-                  <Link
-                    href="/dashboard/settings"
-                    className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]"
-                  >
-                    Ajustes
-                  </Link>
-                </>
-              )}
+            <nav className="hidden items-center gap-3 text-sm sm:flex lg:hidden">
+              <Link href="/dashboard" className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]">Dashboard</Link>
+              <Link href="/dashboard/trips" className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]">Viajes</Link>
+              <Link href="/dashboard/clients" className="text-[var(--operator-ink-muted)] transition hover:text-[var(--operator-brand)]">Clientes</Link>
             </nav>
+            <div className="ml-auto flex items-center gap-2"><ThemeToggle /><ProfileMenu email={email} signOutAction={signOutAction} /></div>
           </div>
-          <div className="flex items-center gap-2">
-            <ChangelogDialog entries={changelog} />
-            <ThemeToggle />
-            <ProfileMenu email={email} signOutAction={signOutAction} />
-          </div>
-        </div>
-      </header>
-      <CommandPalette
-        clients={clients.map((c) => ({ id: c.id, name: c.name }))}
-        trips={trips.map((t) => ({ id: t.id, title: t.title }))}
-      />
-      {children}
+        </header>
+        <CommandPalette clients={clients.map((c) => ({ id: c.id, name: c.name }))} trips={trips.map((t) => ({ id: t.id, title: t.title }))} />
+        {children}
+      </div>
     </div>
   );
 }

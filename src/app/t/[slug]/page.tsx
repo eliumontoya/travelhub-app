@@ -117,7 +117,7 @@ export default async function PublicTripPage({
   const tripEnded = Boolean(trip.endDate) && trip.endDate < today;
 
   return (
-    <main className="min-h-screen bg-[var(--operator-canvas)] pb-16 text-[var(--operator-ink)] print:bg-white print:pb-0">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(255,173,24,0.13),transparent_28%),var(--operator-canvas)] pb-16 text-[var(--operator-ink)] print:bg-white print:pb-0">
       <div className="fixed right-4 top-4 z-30 flex items-center gap-2 print:hidden">
         <ClientSessionButton returnTo={`/t/${slug}`} />
         <ThemeToggle />
@@ -130,15 +130,16 @@ export default async function PublicTripPage({
       )}
 
       <section
-        className="bg-[var(--operator-brand-strong)] bg-gradient-to-t from-[var(--operator-brand-strong)] via-[var(--operator-brand)] to-[var(--operator-brand-strong)] bg-cover bg-center print:hidden"
+        data-testid="traveler-hubit-hero"
+        className="relative overflow-hidden bg-[var(--operator-brand-strong)] bg-gradient-to-br from-[var(--operator-brand-strong)] via-[var(--operator-brand)] to-[#8a1a53] bg-cover bg-center print:hidden"
         style={{
           backgroundImage: trip.coverImageUrl
             ? `linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.35)), url("${trip.coverImageUrl}")`
             : undefined,
         }}
       >
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-          <div className="rounded-[var(--operator-radius-panel)] border border-[var(--operator-accent)]/35 bg-[var(--operator-brand-strong)]/85 p-5 text-white shadow-[var(--operator-shadow-panel)] backdrop-blur-sm sm:p-6">
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
+          <div className="max-w-5xl text-white">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0">
                 {(contact.logoUrl || contact.agencyName) && (
@@ -158,8 +159,9 @@ export default async function PublicTripPage({
                     )}
                   </div>
                 )}
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{trip.title}</h1>
-                <p className="mt-2 text-sm text-white/80 sm:text-base">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-white/70">Tu viaje</p>
+                <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">{trip.title}</h1>
+                <p className="mt-3 text-sm text-white/80 sm:text-base">
                   {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
                   {" · "}
                   {trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}
