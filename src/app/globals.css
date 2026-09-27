@@ -87,3 +87,75 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* HUBit visual sweep: keep legacy agent/traveler pages functionally intact while aligning old utility colors to the supplied mock palette. */
+[data-testid="dashboard-hubit-shell"] [class*="bg-slate-900"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-900"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-950"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-slate-950"],
+[data-testid="client-home-atmosphere"] [class*="bg-slate-900"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-900"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-950"],
+[data-testid="client-home-atmosphere"] [class*="bg-slate-950"] {
+  background-color: var(--operator-surface) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="bg-slate-800"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-800"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-50"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-gray-100"],
+[data-testid="client-home-atmosphere"] [class*="bg-slate-800"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-800"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-50"],
+[data-testid="client-home-atmosphere"] [class*="bg-gray-100"] {
+  background-color: var(--operator-surface-subtle) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="bg-blue-"],
+[data-testid="dashboard-hubit-shell"] [class*="bg-emerald-"],
+[data-testid="client-home-atmosphere"] [class*="bg-blue-"],
+[data-testid="client-home-atmosphere"] [class*="bg-emerald-"] {
+  background-color: var(--operator-brand) !important;
+  color: white !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="text-blue-"],
+[data-testid="dashboard-hubit-shell"] [class*="text-emerald-"],
+[data-testid="dashboard-hubit-shell"] [class*="text-purple-"],
+[data-testid="client-home-atmosphere"] [class*="text-blue-"],
+[data-testid="client-home-atmosphere"] [class*="text-emerald-"],
+[data-testid="client-home-atmosphere"] [class*="text-purple-"] {
+  color: var(--operator-brand) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="text-slate-"],
+[data-testid="dashboard-hubit-shell"] [class*="text-gray-"],
+[data-testid="client-home-atmosphere"] [class*="text-slate-"],
+[data-testid="client-home-atmosphere"] [class*="text-gray-"] {
+  color: var(--operator-ink-muted) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] h1,
+[data-testid="dashboard-hubit-shell"] h2,
+[data-testid="dashboard-hubit-shell"] h3,
+[data-testid="dashboard-hubit-shell"] [class*="font-bold"][class*="text-gray-900"],
+[data-testid="client-home-atmosphere"] h1,
+[data-testid="client-home-atmosphere"] h2,
+[data-testid="client-home-atmosphere"] h3 {
+  color: var(--operator-brand) !important;
+  letter-spacing: -0.04em;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="border-slate-"],
+[data-testid="dashboard-hubit-shell"] [class*="border-gray-"],
+[data-testid="client-home-atmosphere"] [class*="border-slate-"],
+[data-testid="client-home-atmosphere"] [class*="border-gray-"] {
+  border-color: var(--operator-border) !important;
+}
+
+[data-testid="dashboard-hubit-shell"] [class*="rounded-lg"],
+[data-testid="dashboard-hubit-shell"] [class*="rounded-xl"],
+[data-testid="client-home-atmosphere"] [class*="rounded-lg"],
+[data-testid="client-home-atmosphere"] [class*="rounded-xl"] {
+  border-radius: 1rem;
+}

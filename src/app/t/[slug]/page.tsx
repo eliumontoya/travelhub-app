@@ -6,7 +6,7 @@ import {
   getTripWithDetails,
   hasOwnedServiceRequirements,
 } from "@/lib/data";
-import { itemTypeMeta, formatDateLong, formatCost } from "@/lib/item-meta";
+import { itemTypeMeta, formatDateLong, formatDateShort, formatCost } from "@/lib/item-meta";
 import { getApproxUtcOffsetLabel } from "@/lib/timezone";
 import { formatItemDetailRows, formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
@@ -117,7 +117,7 @@ export default async function PublicTripPage({
   const tripEnded = Boolean(trip.endDate) && trip.endDate < today;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(255,173,24,0.13),transparent_28%),var(--operator-canvas)] pb-16 text-[var(--operator-ink)] print:bg-white print:pb-0">
+    <main className="min-h-screen bg-[#fffaf7] pb-16 text-[#171329] print:bg-white print:pb-0">
       <div className="fixed right-4 top-4 z-30 flex items-center gap-2 print:hidden">
         <ClientSessionButton returnTo={`/t/${slug}`} />
         <ThemeToggle />
@@ -131,58 +131,49 @@ export default async function PublicTripPage({
 
       <section
         data-testid="traveler-hubit-hero"
-        className="relative overflow-hidden bg-[var(--operator-brand-strong)] bg-gradient-to-br from-[var(--operator-brand-strong)] via-[var(--operator-brand)] to-[#8a1a53] bg-cover bg-center print:hidden"
+        className="mx-auto mt-5 max-w-[calc(100%-2rem)] overflow-hidden rounded-[1rem] bg-[var(--operator-brand)] bg-cover bg-center text-white shadow-[0_20px_46px_rgba(81,0,52,0.14)] print:hidden lg:max-w-[calc(100%-3rem)]"
         style={{
           backgroundImage: trip.coverImageUrl
-            ? `linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.35)), url("${trip.coverImageUrl}")`
-            : undefined,
+            ? `linear-gradient(110deg, rgba(81,0,52,0.94), rgba(81,0,52,0.86) 48%, rgba(81,0,52,0.74)), url("${trip.coverImageUrl}")`
+            : "linear-gradient(110deg, color-mix(in srgb, var(--operator-brand) 88%, var(--operator-coral)), var(--operator-brand) 56%, color-mix(in srgb, var(--operator-brand) 88%, var(--operator-gold)))",
         }}
       >
-        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
-          <div className="max-w-5xl text-white">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="min-w-0">
-                {(contact.logoUrl || contact.agencyName) && (
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    {contact.logoUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={contact.logoUrl}
-                        alt={contact.agencyName ?? "Logo"}
-                        className="h-12 w-auto rounded-lg bg-white/90 p-1 object-contain shadow-sm"
-                      />
-                    )}
-                    {contact.agencyName && (
-                      <span className="text-base font-semibold drop-shadow break-words">
-                        {contact.agencyName}
-                      </span>
-                    )}
-                  </div>
-                )}
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-white/70">Tu viaje</p>
-                <h1 className="text-4xl font-semibold tracking-[-0.035em] sm:text-6xl">{trip.title}</h1>
-                <p className="mt-3 text-sm text-white/80 sm:text-base">
-                  {formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}
-                  {" · "}
-                  {trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}
-                </p>
-                <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/75">
-                  <a href={`mailto:${contact.email}`} className="hover:text-white hover:underline">
-                    {contact.email}
-                  </a>
-                  <a
-                    href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}
-                    className="hover:text-white hover:underline"
-                  >
-                    {contact.phone}
-                  </a>
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <LanguageToggle lang={lang} variant="light" />
-              </div>
+        <div className="px-6 py-7 sm:px-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              {(contact.logoUrl || contact.agencyName) && (
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  {contact.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={contact.logoUrl} alt={contact.agencyName ?? "Logo"} className="h-11 w-auto rounded-lg bg-white/92 p-1 object-contain shadow-sm" />
+                  )}
+                  {contact.agencyName && <span className="text-sm font-semibold text-white/84 break-words">{contact.agencyName}</span>}
+                </div>
+              )}
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/72">Viaje de placer</p>
+              <h1 className="text-4xl font-serif font-semibold tracking-[-0.045em] sm:text-6xl">{trip.title}</h1>
+              <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-base text-white/86">
+                <span>{formatDateLong(trip.startDate, lang)} – {formatDateLong(trip.endDate, lang)}</span>
+                <span className="rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-bold text-emerald-800">● En curso</span>
+                <span>{trip.travelerCount} {trip.travelerCount === 1 ? t.traveler : t.travelers}</span>
+              </p>
+              <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/75">
+                <a href={`mailto:${contact.email}`} className="hover:text-white hover:underline">{contact.email}</a>
+                <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`} className="hover:text-white hover:underline">{contact.phone}</a>
+              </p>
             </div>
+
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <LanguageToggle lang={lang} variant="light" />
+            </div>
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-4 text-center text-sm font-semibold sm:grid-cols-4">
+            {trip.days.slice(0, 4).map((day, index) => (
+              <a key={day.id} href={`#day-${day.id}`} className="relative block text-white/84">
+                <span className={`mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full border-2 ${index === 0 ? "border-[#ff5848] bg-[#ff5848] text-white" : index === 1 ? "border-white bg-[#ff5848] ring-2 ring-[#ff5848]" : "border-white/70 bg-white/12"}`}>{index === 0 ? "✓" : ""}</span>
+                Día {index + 1}<br /><span className="text-xs font-medium text-white/64">{formatDateShort(day.date)}</span>
+              </a>
+            ))}
           </div>
         </div>
       </section>
@@ -194,9 +185,9 @@ export default async function PublicTripPage({
         </p>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[220px_minmax(0,1fr)_320px] print:block print:max-w-3xl print:py-0">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] print:block print:max-w-3xl print:py-0">
         <aside className="hidden lg:block print:hidden">
-          <div className="sticky top-6 rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+          <div className="sticky top-6 rounded-[1rem] border border-[#ebe5e8] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--operator-ink-subtle)]">
               {t.daysNav}
             </p>
@@ -218,12 +209,12 @@ export default async function PublicTripPage({
                 <article
                   key={day.id}
                   id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-[var(--operator-radius-panel)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)] sm:p-5 print:break-inside-avoid print:border-gray-300 print:shadow-none"
+                  className="scroll-mt-6 rounded-[1rem] border border-[#ebe5e8] bg-white/96 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)] print:break-inside-avoid print:border-gray-300 print:shadow-none"
                 >
                 <header className="mb-4 flex flex-col gap-2 border-b border-[var(--operator-border-subtle)] pb-4 sm:flex-row sm:items-center sm:justify-between print:border-b-0 print:pb-0">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--operator-brand)]">Día {dayIdx + 1}</p>
-                    <h2 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold capitalize text-[var(--operator-ink)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--operator-brand)]">Día {dayIdx + 1}</p>
+                    <h2 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-serif font-semibold capitalize text-[var(--operator-brand)]">
                       {formatDateLong(day.date, lang)}
                       <WeatherBadge weather={dayWeather[dayIdx]} />
                     </h2>
@@ -266,7 +257,7 @@ export default async function PublicTripPage({
                     return (
                       <div
                         key={item.id}
-                        className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border-subtle)] bg-[var(--operator-surface-raised)] p-4 print:break-inside-avoid print:border-gray-300 print:bg-white"
+                        className="rounded-[1rem] border border-[#ebe5e8] bg-white p-4 shadow-[0_6px_18px_rgba(81,0,52,0.04)] print:break-inside-avoid print:border-gray-300 print:bg-white"
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 items-start gap-3">
@@ -403,7 +394,7 @@ export default async function PublicTripPage({
         </section>
 
         <aside className="order-2 space-y-4 lg:order-none print:hidden">
-          <section className="rounded-[var(--operator-radius-card)] border border-[var(--operator-border)] bg-[var(--operator-surface)] p-4 shadow-[var(--operator-shadow-card)]">
+          <section className="rounded-[1rem] border border-[#ebe5e8] bg-white/94 p-5 shadow-[0_18px_42px_rgba(81,0,52,0.07)]">
             <h2 className="text-sm font-semibold text-[var(--operator-ink)]">Acciones del viaje</h2>
             <div className="mt-3 grid gap-2">
               <AddTripToCalendarButton trip={trip} lang={lang} />

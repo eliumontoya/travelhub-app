@@ -1,16 +1,16 @@
 # HUBit main-surface visual alignment
 
 ## Objective
-Align the existing TravelHub login, authenticated agent dashboard, and public traveler itinerary with the supplied HUBit mock site's visual system while preserving all current behavior, routes, data access, and accessibility contracts.
+Align the existing TravelHub login, every authenticated agent page, and every traveler/client-facing page with the supplied HUBit mock site's visual system while preserving all current behavior, routes, data access, and accessibility contracts.
 
 ## Problem
 The reference design establishes a clearer HUBit hierarchy—plum/coral/gold branding, warm paper surfaces, a branded agent shell, and itinerary-led traveler layout—while the existing main routes still use uneven, mostly generic visual treatments.
 
 ## Scope
 - `/login`: visual composition only; retain existing Supabase sign-in action, validation, redirects, errors, and unconfigured state.
-- `/dashboard`: visual shell and homepage only; retain navigation, roles, command palette, data queries, links, dashboard actions, and client-side components.
-- `/t/[slug]`: visual hierarchy only; retain public visibility, localization, controls, documents, calendar, feedback, print, and traveler activity behavior.
-- Shared semantic tokens/primitives only when they safely benefit these surfaces.
+- `/dashboard/**`: visual shell, homepage, trips, clients, suppliers, settings, accounts, WCC, and editor/detail screens; retain navigation, roles, command palette, data queries, links, dashboard actions, and client-side components.
+- `/t/[slug]` and `/client/**`: visual hierarchy only; retain public visibility, localization, controls, documents, calendar, feedback, print, login, session, document upload, and traveler activity behavior.
+- Shared semantic tokens/primitives and compatibility visual sweep when they safely benefit these surfaces.
 
 ## Constraints
 - Mock-site files and supplied images are visual references only, never functional or content requirements.
@@ -20,22 +20,29 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 ## Acceptance criteria
 - [x] HMS-001 — Login reflects the HUBit reference hierarchy without changing sign-in behavior or state rendering.
-- [ ] HMS-002 — Dashboard uses a responsive HUBit agent shell and homepage hierarchy without changing data, links, or admin-only navigation.
-- [ ] HMS-003 — Traveler itinerary uses the reference's trip-first layout and responsive reading hierarchy without changing public-trip behavior or controls.
-- [ ] HMS-004 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
-- [ ] HMS-005 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
+- [x] HMS-002 — Dashboard shell and homepage use the HUBit agent hierarchy without changing data, links, or admin-only navigation.
+- [ ] HMS-003 — All dashboard subpages inherit the HUBit visual system, including legacy WCC/admin/client/trip surfaces, without changing behavior.
+- [ ] HMS-004 — Traveler and client-facing surfaces use the reference trip-first visual hierarchy without changing public/client controls.
+- [ ] HMS-005 — Main surfaces use consistent, accessible visual tokens; desktop and mobile renders are inspected.
+- [ ] HMS-006 — Targeted tests, typecheck, build/checks, and Impeccable detector results are recorded before completion.
 
 ## Verification
 - Existing route tests plus any focused structural tests needed for preserved behavior.
 - `npx tsc --noEmit`
-- `npm run build`
+- `npm run build -- --webpack`
 - Impeccable detector on changed UI targets.
+- Desktop/mobile screenshots for login, dashboard, representative dashboard subpages, traveler, and client-facing pages.
 
 ## Progress
 - 2026-09-27: Created branch `codex/hubit-visual-alignment` and isolated worktree. Reviewed the supplied mock source and mapped current login, dashboard, traveler, tokens, and behavior boundaries.
 - 2026-09-27: Added RED expectations for the HUBit login brand and dashboard shell, then implemented the visual-only GREEN changes.
 - 2026-09-27: Initial visual QA incorrectly accepted superficial alignment. The user-provided live screenshot proved the output did not match the mock's concrete visual system; HMS-002 through HMS-005 are reopened.
 - 2026-09-27: Rebuilt the login from a generated, provenance-backed travel-office scene and a centered frosted HUBit panel. Focused login tests and TypeScript pass. The dashboard and traveler require the same fidelity pass before this feature can be considered complete.
+- 2026-09-27: Corrected the login micro-fidelity from the mock folder: translucent panel, inline email/password icons and placeholders, remember/forgot row, and airplane divider under the CTA. Added failing structural assertions before implementation.
+- 2026-09-27: Reworked the agent shell, dashboard home, and KPI cards toward the supplied agent mock while preserving role-gated navigation and existing data loads.
+- 2026-09-27: Started a broad dashboard/client visual sweep in `globals.css` so legacy subpages that still use old gray/blue/slate/emerald utility classes inherit HUBit plum, warm surfaces, rounded cards, and border treatment while their components keep working.
+- 2026-09-27: Started traveler route alignment with the mock trip hero/timeline and warm itinerary card system.
+- 2026-09-27: Verification so far: `npm test -- src/app/login/__tests__/page.test.tsx src/app/dashboard/__tests__/layout.test.tsx`, `npx tsc --noEmit`, and `npm run build -- --webpack` pass.
 
 ## Next step
-Rebuild the agent dashboard and traveler pages from the supplied reference compositions, then rerun full visual and functional verification.
+Continue extending the HUBit visual system across remaining dashboard/client/traveler subpages, capture representative pages on port 3333, run Impeccable detector, then commit the verified work unit.
