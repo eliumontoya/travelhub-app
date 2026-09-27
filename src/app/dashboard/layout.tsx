@@ -5,6 +5,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { DashboardSidebarNav } from "@/components/DashboardSidebarNav";
 import { signOutAction } from "@/app/dashboard/settings/actions";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getCurrentUserRole } from "@/lib/auth/roles";
@@ -45,16 +46,7 @@ export default async function DashboardLayout({
         <Link href="/dashboard" className="mb-9 flex items-center" aria-label="HUBit dashboard">
           <Image src="/hubit-logo-sidebar.png" alt="HUBit by TravelHub" width={728} height={282} className="h-12 w-auto object-contain" />
         </Link>
-        <nav className="space-y-2 text-sm font-semibold">
-          <Link href="/dashboard" className="flex items-center gap-3 rounded-xl bg-white/12 px-4 py-3.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition hover:bg-white/18"><span aria-hidden="true">⌂</span>Inicio</Link>
-          <Link href="/dashboard/trips" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">▢</span>Viajes</Link>
-          <Link href="/dashboard/clients" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">◎</span>Clientes</Link>
-          <Link href="/dashboard/suppliers" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">▤</span>Proveedores</Link>
-          {isAdmin && <Link href="/dashboard/travel-agents" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">◇</span>Agentes</Link>}
-          {isAdmin && <Link href="/dashboard/settings/accounts" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">◌</span>Cuentas</Link>}
-          {isAdmin && <Link href="/dashboard/wcc" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">ϟ</span>WhatsApp C.C.</Link>}
-          {isAdmin && <Link href="/dashboard/settings" className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-white/88 transition hover:bg-white/12"><span aria-hidden="true">⚙</span>Ajustes</Link>}
-        </nav>
+<DashboardSidebarNav isAdmin={isAdmin} />
         <div className="mt-auto space-y-4 border-t border-white/15 pt-5">
           <ChangelogDialog entries={changelog} />
           <Link href="/" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/12">← Volver al sitio</Link>
