@@ -59,5 +59,7 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 - 2026-09-27: Added a sidebar-specific HUBit logo asset with white HUB/byline and preserved orange “it”, then switched only the desktop purple dashboard sidebar to that asset so the light-header/login logos keep using the original transparent logo. Verification passed: dashboard layout test, `npx tsc --noEmit`, Impeccable detector `[]`, and `npm run build -- --webpack`.
 
+- 2026-09-27: Fixed the public traveler `/t/[slug]` header controls by replacing the letter fallbacks in the theme toggle (`OS`/`CL`) and client session button (`PIN`) with visible SVG icons: moon/sun for dark mode and the same account/user face used in the agent profile menu. Verification passed: focused Vitest suite (5 tests), `npx tsc --noEmit`, Impeccable detector `[]`, and `npm run build -- --webpack`. The broader `/client/login` test still has a pre-existing stale copy expectation for “Acceso para clientes”, so it was not used as evidence for this icon-only fix.
+
 ## Next step
 Prepare final handoff unless the user asks for PR/push.
