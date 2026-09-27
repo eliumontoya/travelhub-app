@@ -822,9 +822,8 @@ export default async function TripEditorPage({
                   {feedback.map((f) => (
                     <div key={f.id} className="rounded-lg border border-[var(--operator-border)] p-3 dark:border-[var(--operator-border)]">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[var(--operator-gold)]">
-                          {"★".repeat(f.rating)}
-                          <span className="text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{"★".repeat(5 - f.rating)}</span>
+                        <span className="rounded-full bg-[var(--operator-gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--operator-brand)]">
+                          Calificación {f.rating}/5
                         </span>
                         <span className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{formatDateLong(f.createdAt.slice(0, 10))}</span>
                       </div>

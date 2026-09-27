@@ -43,9 +43,9 @@ export function TripFeedbackForm({
             type="button"
             onClick={() => setRating(value)}
             aria-label={`Calificar ${value} de 5`}
-            className={`text-2xl leading-none ${value <= rating ? "text-[var(--operator-gold)]" : "text-[var(--operator-ink-subtle)]"}`}
+            className={`h-9 w-9 rounded-full border text-sm font-semibold transition ${value <= rating ? "border-[var(--operator-gold)] bg-[var(--operator-gold)] text-[var(--operator-brand)]" : "border-[var(--operator-border)] bg-white text-[var(--operator-ink-muted)] hover:border-[var(--operator-gold)]"}`}
           >
-            ★
+            {value}
           </button>
         ))}
       </div>
