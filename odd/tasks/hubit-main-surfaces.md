@@ -57,5 +57,7 @@ The reference design establishes a clearer HUBit hierarchy—plum/coral/gold bra
 
 - 2026-09-27: Added a reusable authored SVG item-type icon system for flight, hotel, restaurant, activity, transport, and note. Replaced visual item-type icon uses in the public traveler itinerary, trip editor, quote page, and item form dialog, and matched the `/t/[slug]` left itinerary panel heading to the reference calendar icon plus “Tu itinerario” treatment. Verification passed: focused Vitest suite (26 tests), `npx tsc --noEmit`, Impeccable detector `[]`, and `npm run build -- --webpack`.
 
+- 2026-09-27: Added a sidebar-specific HUBit logo asset with white HUB/byline and preserved orange “it”, then switched only the desktop purple dashboard sidebar to that asset so the light-header/login logos keep using the original transparent logo. Verification passed: dashboard layout test, `npx tsc --noEmit`, Impeccable detector `[]`, and `npm run build -- --webpack`.
+
 ## Next step
-Commit the latest itinerary icon correction, then prepare final handoff unless the user asks for PR/push.
+Prepare final handoff unless the user asks for PR/push.
