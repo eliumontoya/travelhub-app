@@ -8,11 +8,11 @@
 
 ## TDD Cycle Evidence
 
-| Task | RED | GREEN | TRIANGULATE | REFACTOR |
-| --- | --- | --- | --- | --- |
-| 1.1 | Created `item-supplier-compatibility.test.ts`; focused test failed because the compatibility module did not exist (`Cannot find package`). | N/A — RED task. | Added separate mapped-pair, supplier-free/`other`, and domain-error scenarios. | Test cases are grouped by observable contract. |
-| 1.2 | The new test suite failed before the module existed. | Added pure typed compatibility module; focused test passed: 3 tests. | Mapping and supplier-free branches are covered by distinct inputs. | Kept imports type-only and module independent of UI or persistence. |
-| 1.3 | Existing focused tests specified the intended invariant before refactor review. | Focused test rerun passed: 3 tests. | The tests prove all mapped pairs, supplier-free types, and `other` rejection. | No behavior change was needed; the mapping remains the sole source of truth in this slice. |
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1.1 | `src/lib/__tests__/item-supplier-compatibility.test.ts` | Pure unit | N/A — new test and module files; no existing production file was modified. | Created the contract test first; focused run failed because the compatibility module did not exist (`Cannot find package`). | N/A — RED task. | Added separate mapped-pair, supplier-free/`other`, and domain-error scenarios. | Grouped test cases by observable contract without changing source behavior. |
+| 1.2 | `src/lib/__tests__/item-supplier-compatibility.test.ts` | Pure unit | N/A — the assigned slice creates a new pure module and test; no existing test suite required a baseline. | The new test suite failed before the module existed. | Added the pure typed compatibility module; focused test passed: 3 tests. | Mapping and supplier-free branches are covered by distinct inputs. | Kept imports type-only and the module independent of UI or persistence. |
+| 1.3 | `src/lib/__tests__/item-supplier-compatibility.test.ts` | Pure unit | N/A — no existing production behavior was modified during refactor. | The focused tests specified the intended invariant before refactor review. | Focused test rerun passed: 3 tests. | Tests prove all mapped pairs, supplier-free types, and `other` rejection. | No behavior change was needed; the mapping remains the sole source of truth in this slice. |
 
 ## Work Unit Evidence
 
@@ -32,7 +32,7 @@
 ## Remaining Tasks
 
 - [ ] 2.1–2.3 Trusted Item Persistence
-- [ ] 3.1–3.3 Action and MCP Adapters
-- [ ] 4.1–4.3 Supplier Discovery Combobox
+- [ ] 3.1–3.5 Action and MCP Adapters
+- [ ] 4.1–4.4 Supplier Discovery Combobox
 - [ ] 5.1–5.3 Item Form State Integration
 - [ ] 6.1–6.4 Full Verification and Handoff
