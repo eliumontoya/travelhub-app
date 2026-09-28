@@ -1,111 +1,211 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Supplier } from "@/types";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { Supplier } from "@/types";
+import type { SupplierType } from "@/lib/constants";
 import { CreateSupplierDialog } from "@/components/CreateSupplierDialog";
 
 function normalize(text: string) {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
 }
+
+export function getSupplierOptions(
+  suppliers: Supplier[],
+  requiredSupplierType: SupplierType,
+  query: string,
+) {
+  const normalizedQuery = normalize(query.trim());
+  return suppliers.filter(
+    (supplier) =>
+      supplier.type === requiredSupplierType &&
+      (!normalizedQuery || normalize(supplier.name).includes(normalizedQuery)),
+  );
+}
+
+type SupplierComboboxProps = {
+  suppliers: Supplier[];
+  name: string;
+  requiredSupplierType?: SupplierType;
+  value?: string;
+  onChange?: (supplier: Supplier | null) => void;
+  onSupplierCreated?: (supplier: Supplier) => void;
+  defaultValue?: string;
+  onSupplierSelected?: (supplier: Supplier) => void;
+};
 
 export function SupplierCombobox({
   suppliers,
   name,
+  requiredSupplierType,
+  value,
+  onChange,
+  onSupplierCreated,
   defaultValue,
   onSupplierSelected,
-}: {
-  suppliers: Supplier[];
-  name: string;
-  defaultValue?: string;
-  onSupplierSelected?: (supplier: Supplier) => void;
-}) {
-  const defaultSupplier = defaultValue
-    ? suppliers.find((s) => s.id === defaultValue)
-    : undefined;
+}: SupplierComboboxProps) {
+  const listboxId = useId();
+  const defaultSupplier = defaultValue ? suppliers.find((supplier) => supplier.id === defaultValue) : undefined;
   const [query, setQuery] = useState(defaultSupplier?.name ?? "");
-  const [selectedId, setSelectedId] = useState(defaultSupplier?.id ?? "");
+  const [uncontrolledValue, setUncontrolledValue] = useState(defaultSupplier?.id ?? "");
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [allSuppliers, setAllSuppliers] = useState<Supplier[]>(suppliers);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-  const selectedSupplier = allSuppliers.find((s) => s.id === selectedId);
-
+  const skipQuerySync = useRef(false);
+  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedValue = value ?? uncontrolledValue;
+  const selectedSupplier = allSuppliers.find((supplier) => supplier.id === selectedValue);
   const results = useMemo(() => {
-    const q = normalize(query.trim());
-    if (!q) return [];
-    return allSuppliers.filter((s) => normalize(s.name).includes(q)).slice(0, 8);
-  }, [allSuppliers, query]);
+    if (requiredSupplierType) return getSupplierOptions(allSuppliers, requiredSupplierType, query);
+    const normalizedQuery = normalize(query.trim());
+    return allSuppliers.filter((supplier) => !normalizedQuery || normalize(supplier.name).includes(normalizedQuery));
+  }, [allSuppliers, query, requiredSupplierType]);
+
+  useEffect(() => {
+    setAllSuppliers((current) => {
+      const created = current.filter((supplier) => !suppliers.some(({ id }) => id === supplier.id));
+      return [...created, ...suppliers];
+    });
+  }, [suppliers]);
+
+  useEffect(() => {
+    if (selectedSupplier) {
+      setQuery(selectedSupplier.name);
+    } else if (value !== undefined && !skipQuerySync.current) {
+      setQuery("");
+    }
+    skipQuerySync.current = false;
+  }, [selectedSupplier, selectedValue, value]);
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeout.current) clearTimeout(blurTimeout.current);
+    };
+  }, []);
+
+  function open() {
+    setIsOpen(true);
+    setActiveIndex(-1);
+  }
+
+  function handleFocus() {
+    if (blurTimeout.current) clearTimeout(blurTimeout.current);
+    open();
+  }
+
+  function handleBlur() {
+    blurTimeout.current = setTimeout(() => setIsOpen(false), 150);
+  }
+
+  function notifyChange(supplier: Supplier | null) {
+    setUncontrolledValue(supplier?.id ?? "");
+    onChange?.(supplier);
+    if (supplier) onSupplierSelected?.(supplier);
+  }
 
   function handleSelect(supplier: Supplier) {
     setQuery(supplier.name);
-    setSelectedId(supplier.id);
     setIsOpen(false);
-    onSupplierSelected?.(supplier);
+    setActiveIndex(-1);
+    notifyChange(supplier);
   }
 
-  function handleChange(value: string) {
-    setQuery(value);
-    setSelectedId("");
+  function handleChange(nextQuery: string) {
+    skipQuerySync.current = true;
+    setQuery(nextQuery);
+    setActiveIndex(-1);
     setIsOpen(true);
+    if (selectedValue) notifyChange(null);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setIsOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!isOpen) open();
+      if (results.length === 0) return;
+      const offset = event.key === "ArrowDown" ? 1 : -1;
+      setActiveIndex((index) => (index + offset + results.length) % results.length);
+      return;
+    }
+
+    if (event.key === "Enter" && isOpen && activeIndex >= 0) {
+      event.preventDefault();
+      handleSelect(results[activeIndex]);
+    }
   }
 
   function handleSupplierCreated(supplier: Supplier) {
-    setAllSuppliers((prev) => [supplier, ...prev]);
+    setAllSuppliers((current) => [supplier, ...current]);
     setQuery(supplier.name);
-    setSelectedId(supplier.id);
     setIsOpen(false);
-    onSupplierSelected?.(supplier);
+    setActiveIndex(-1);
+    onSupplierCreated?.(supplier);
+    notifyChange(supplier);
   }
 
   return (
     <div className="relative">
       <input
         type="text"
+        role="combobox"
+        aria-label="Buscar proveedor"
+        aria-autocomplete="list"
+        aria-controls={listboxId}
+        aria-expanded={isOpen}
+        aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${results[activeIndex]?.id}` : undefined}
         value={query}
-        onChange={(e) => handleChange(e.target.value)}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => setTimeout(() => setIsOpen(false), 150)}
+        onChange={(event) => handleChange(event.target.value)}
+        onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         placeholder="Buscar proveedor…"
         className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
         autoComplete="off"
       />
-      <input type="hidden" name={name} value={selectedId} />
+      <input type="hidden" name={name} value={selectedValue} />
 
       {isOpen && (
-        <ul className="absolute z-10 mt-1 w-full rounded-lg border border-[var(--operator-border)] bg-white shadow-md">
+        <ul
+          id={listboxId}
+          role="listbox"
+          className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[var(--operator-border)] bg-white shadow-md"
+        >
           {results.length === 0 && query.trim() && (
-            <li className="px-3 py-2 text-sm text-[var(--operator-ink-subtle)]">
-              Sin resultados
-            </li>
+            <li className="px-3 py-2 text-sm text-[var(--operator-ink-subtle)]">Sin resultados</li>
           )}
-          {results.map((s) => (
-            <li key={s.id}>
+          {results.map((supplier, index) => (
+            <li key={supplier.id}>
               <button
+                id={`${listboxId}-${supplier.id}`}
                 type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelect(s)}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--operator-canvas)]"
+                role="option"
+                aria-selected={supplier.id === selectedValue}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => handleSelect(supplier)}
+                className={`block w-full px-3 py-2 text-left text-sm hover:bg-[var(--operator-canvas)] ${
+                  index === activeIndex ? "bg-[var(--operator-canvas)]" : ""
+                }`}
               >
-                <span className="font-medium">{s.name}</span>
-                {s.address && (
-                  <span className="ml-2 text-xs text-[var(--operator-ink-subtle)]">{s.address}</span>
-                )}
-                {s.contactPhone && (
-                  <span className="ml-2 text-xs text-[var(--operator-ink-subtle)]">{s.contactPhone}</span>
-                )}
+                <span className="font-medium">{supplier.name}</span>
+                {supplier.address && <span className="ml-2 text-xs text-[var(--operator-ink-subtle)]">{supplier.address}</span>}
+                {supplier.contactPhone && <span className="ml-2 text-xs text-[var(--operator-ink-subtle)]">{supplier.contactPhone}</span>}
               </button>
             </li>
           ))}
           <li className="border-t border-[var(--operator-border)]">
             <button
               type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setShowCreateDialog(true);
-              }}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => setShowCreateDialog(true)}
               className="block w-full px-3 py-2 text-left text-sm font-medium text-[var(--operator-brand)] hover:bg-[var(--operator-surface-subtle)]"
             >
               + Crear nuevo proveedor
@@ -114,7 +214,6 @@ export function SupplierCombobox({
         </ul>
       )}
 
-      {/* Selected supplier details */}
       {selectedSupplier && !isOpen && (
         <div className="mt-1 text-xs text-[var(--operator-ink-muted)]">
           {selectedSupplier.address && <p>{selectedSupplier.address}</p>}
@@ -127,6 +226,7 @@ export function SupplierCombobox({
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onCreated={handleSupplierCreated}
+        defaultType={requiredSupplierType}
       />
     </div>
   );

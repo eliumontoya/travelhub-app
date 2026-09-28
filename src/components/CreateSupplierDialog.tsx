@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Supplier } from "@/types";
-import { SUPPLIER_TYPES } from "@/lib/constants";
+import { SUPPLIER_TYPES, type SupplierType } from "@/lib/constants";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { SupplierPlaceAutocomplete, SupplierPlaceSelection } from "@/components/SupplierPlaceAutocomplete";
 import {
@@ -16,12 +17,14 @@ export function CreateSupplierDialog({
   onCreated,
   onUpdated,
   supplier,
+  defaultType,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated?: (supplier: Supplier) => void;
   onUpdated?: () => void;
   supplier?: Supplier;
+  defaultType?: SupplierType;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -31,6 +34,7 @@ export function CreateSupplierDialog({
   const [lat, setLat] = useState(supplier?.lat?.toString() ?? "");
   const [lng, setLng] = useState(supplier?.lng?.toString() ?? "");
   const [googlePlaceId, setGooglePlaceId] = useState(supplier?.googlePlaceId ?? "");
+  const [mounted, setMounted] = useState(false);
 
   const isEditing = Boolean(supplier);
 
@@ -38,7 +42,11 @@ export function CreateSupplierDialog({
     if (open && dialogRef.current && !dialogRef.current.open) {
       dialogRef.current.showModal();
     }
-  }, [open]);
+  }, [mounted, open]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handlePlaceSelect = useCallback((place: SupplierPlaceSelection) => {
     if (place.name) setName(place.name);
@@ -81,7 +89,9 @@ export function CreateSupplierDialog({
     });
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <dialog
       ref={dialogRef}
       className="w-full max-w-md rounded-xl border border-[var(--operator-border)] p-0 backdrop:bg-black/40"
@@ -114,7 +124,7 @@ export function CreateSupplierDialog({
           <select
             id="supplier-type"
             name="type"
-            defaultValue={supplier?.type ?? "hotel"}
+            defaultValue={supplier?.type ?? defaultType ?? "hotel"}
             className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           >
             {SUPPLIER_TYPES.map((t) => (
@@ -266,6 +276,7 @@ export function CreateSupplierDialog({
           </button>
         </div>
       </form>
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
