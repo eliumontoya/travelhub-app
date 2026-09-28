@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ItemSupplierCompatibilityError } from "@/lib/item-supplier-compatibility";
 
 const createItem = vi.fn();
 const updateItem = vi.fn();
@@ -89,8 +90,8 @@ describe("add_item", () => {
     const client = await bootClient();
     const result = await callTool(client, "add_item", {
       tripDayId: "day-1",
-      type: "flight",
-      title: "AF123 CDG→BCN",
+      type: "hotel",
+      title: "Hotel Central",
       startTime: "08:00",
       endTime: "10:00",
       location: "CDG",
@@ -98,24 +99,57 @@ describe("add_item", () => {
       lng: 2.5,
       cost: 199.99,
       supplierId: "sup-1",
-      metadata: { airline: "AF" },
+      metadata: { roomType: "suite" },
+    });
+
+    expect(createItem).toHaveBeenCalledWith({
+      tripDayId: "day-1",
+      type: "hotel",
+      title: "Hotel Central",
+      startTime: "08:00",
+      endTime: "10:00",
+      location: "CDG",
+      lat: 49.0,
+      lng: 2.5,
+      cost: 199.99,
+      supplierId: "sup-1",
+      metadata: { roomType: "suite" },
+    });
+    const payload = parseToolText(result) as { id: string };
+    expect(payload.id).toBe("item-new");
+  });
+
+  it("dispatches supplier-free flight input without a supplier", async () => {
+    const client = await bootClient();
+    const result = await callTool(client, "add_item", {
+      tripDayId: "day-1",
+      type: "flight",
+      title: "AF123 CDG→BCN",
     });
 
     expect(createItem).toHaveBeenCalledWith({
       tripDayId: "day-1",
       type: "flight",
       title: "AF123 CDG→BCN",
-      startTime: "08:00",
-      endTime: "10:00",
-      location: "CDG",
-      lat: 49.0,
-      lng: 2.5,
-      cost: 199.99,
-      supplierId: "sup-1",
-      metadata: { airline: "AF" },
     });
-    const payload = parseToolText(result) as { id: string };
-    expect(payload.id).toBe("item-new");
+    expect(parseToolText(result)).toEqual(expect.objectContaining({ id: "item-new" }));
+  });
+
+  it("maps supplier compatibility failures to a validation error without leaking internals", async () => {
+    createItem.mockRejectedValueOnce(
+      new ItemSupplierCompatibilityError("El proveedor no es compatible con el tipo de item")
+    );
+    const client = await bootClient();
+    const result = await callTool(client, "add_item", {
+      tripDayId: "day-1",
+      type: "restaurant",
+      title: "Cena",
+      supplierId: "hotel-supplier",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe("El proveedor no es compatible con el tipo de item");
+    expect(JSON.stringify(result)).not.toContain("ItemSupplierCompatibilityError");
   });
 
   it("rejects unsupported type at schema validation", async () => {
@@ -151,6 +185,63 @@ describe("update_item", () => {
     expect(updateItem).toHaveBeenCalledWith("item-1", { title: "Renamed", cost: 250 });
     const payload = parseToolText(result) as { id: string; title: string };
     expect(payload.title).toBe("Renamed");
+  });
+
+  it("dispatches a compatible supplier update", async () => {
+    const client = await bootClient();
+    const result = await callTool(client, "update_item", {
+      id: "item-1",
+      type: "restaurant",
+      supplierId: "restaurant-supplier",
+    });
+
+    expect(updateItem).toHaveBeenCalledWith("item-1", {
+      type: "restaurant",
+      supplierId: "restaurant-supplier",
+    });
+    expect(parseToolText(result)).toEqual(expect.objectContaining({ id: "item-1" }));
+  });
+
+  it("passes null to explicitly clear a supplier", async () => {
+    const client = await bootClient();
+    const result = await callTool(client, "update_item", {
+      id: "item-1",
+      supplierId: null,
+    });
+
+    expect(updateItem).toHaveBeenCalledWith("item-1", { supplierId: null });
+    expect(parseToolText(result)).toEqual(expect.objectContaining({ id: "item-1", supplierId: null }));
+  });
+
+  it("maps compatibility failures to a validation error", async () => {
+    updateItem.mockRejectedValueOnce(
+      new ItemSupplierCompatibilityError("El proveedor no es compatible con el tipo de item")
+    );
+    const client = await bootClient();
+    const result = await callTool(client, "update_item", {
+      id: "item-1",
+      type: "flight",
+      supplierId: "hotel-supplier",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe("El proveedor no es compatible con el tipo de item");
+  });
+
+  it("rejects a supplier added to a supplier-free item without exposing internals", async () => {
+    updateItem.mockRejectedValueOnce(
+      new ItemSupplierCompatibilityError("El proveedor no es compatible con el tipo de item")
+    );
+    const client = await bootClient();
+    const result = await callTool(client, "update_item", {
+      id: "item-1",
+      type: "flight",
+      supplierId: "hotel-supplier",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe("El proveedor no es compatible con el tipo de item");
+    expect(JSON.stringify(result)).not.toContain("ItemSupplierCompatibilityError");
   });
 
   it("catches 'no encontrado' throw → NOT_FOUND: item <id>", async () => {

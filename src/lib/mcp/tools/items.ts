@@ -3,7 +3,8 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import * as data from "@/lib/data";
-import { notFound, success } from "@/lib/mcp/errors";
+import { isItemSupplierCompatibilityError } from "@/lib/item-supplier-compatibility";
+import { mcpError, notFound, success } from "@/lib/mcp/errors";
 import { isNotFoundMessage, safeMessage, unexpectedError } from "@/lib/mcp/tools/utils";
 
 const itemTypeSchema = z.enum([
@@ -23,8 +24,13 @@ async function safeCall<T>(fn: () => Promise<T>): Promise<CallToolResult> {
   try {
     return success(await fn());
   } catch (err) {
-    return unexpectedError(err);
+    return itemToolError(err);
   }
+}
+
+function itemToolError(error: unknown): CallToolResult {
+  if (isItemSupplierCompatibilityError(error)) return mcpError(error.message);
+  return unexpectedError(error);
 }
 
 /**
@@ -76,7 +82,7 @@ export function registerItemTools(server: McpServer): void {
       notes: z.string().optional(),
       cost: z.number().optional(),
       sortOrder: z.number().int().optional(),
-      supplierId: z.string().min(1).optional(),
+      supplierId: z.string().min(1).nullable().optional(),
       metadata: z.record(z.string(), z.unknown()).optional(),
     },
     async ({ id, ...input }) => {
@@ -85,7 +91,7 @@ export function registerItemTools(server: McpServer): void {
         return success(item);
       } catch (err) {
         if (isNotFoundMessage(safeMessage(err))) return notFound("item", id);
-        return unexpectedError(err);
+        return itemToolError(err);
       }
     }
   );
