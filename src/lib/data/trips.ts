@@ -5,6 +5,8 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { rowToClient, rowToTag } from "@/lib/data/clients";
 import { DOCUMENTS_BUCKET, PHOTOS_BUCKET, getSignedDocumentUrl, rowToDocument, rowToTripDocument, rowToTripPhoto, storagePathFromPublicUrl } from "@/lib/data/documents";
 import { deleteChecklistItem, ensureServiceForAssignment } from "@/lib/data/services";
+import { getSupplierById } from "@/lib/data/suppliers";
+import { ItemSupplierCompatibilityError, isSupplierTypeCompatible } from "@/lib/item-supplier-compatibility";
 
 // ---------- Trips ----------
 
@@ -1810,7 +1812,9 @@ export type CreateItemInput = {
   metadata?: Record<string, unknown> | null;
 };
 
-export type UpdateItemInput = Partial<Omit<CreateItemInput, "tripDayId">>;
+export type UpdateItemInput = Partial<Omit<CreateItemInput, "tripDayId" | "supplierId">> & {
+  supplierId?: string | null;
+};
 
 const TRAVELER_ACTIVITY_LIMITS = {
   title: 120,
@@ -2030,7 +2034,21 @@ export async function deleteTravelerActivity(
   return error ? UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT : { ok: true };
 }
 
+async function validateItemSupplier(type: Item["type"], supplierId?: string | null): Promise<void> {
+  if (supplierId === undefined || supplierId === null) return;
+
+  const supplier = await getSupplierById(supplierId);
+  if (!supplier || supplier.deletedAt) {
+    throw new ItemSupplierCompatibilityError("El proveedor no existe o no está activo");
+  }
+  if (!isSupplierTypeCompatible(type, supplier.type)) {
+    throw new ItemSupplierCompatibilityError("El proveedor no es compatible con el tipo de item");
+  }
+}
+
 export async function createItem(input: CreateItemInput): Promise<Item> {
+  await validateItemSupplier(input.type, input.supplierId);
+
   if (!isSupabaseConfigured()) {
     const item = {
       id: uid(),
@@ -2081,6 +2099,13 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
 }
 
 export async function updateItem(id: string, input: UpdateItemInput): Promise<Item> {
+  const current = await getItemById(id);
+  if (!current) throw new Error("Item no encontrado");
+
+  const resultingType = input.type ?? current.type;
+  const resultingSupplierId = input.supplierId === undefined ? current.supplierId : input.supplierId;
+  await validateItemSupplier(resultingType, resultingSupplierId);
+
   if (!isSupabaseConfigured()) {
     const item = mockItems.find((i) => i.id === id);
     if (!item) throw new Error("Item no encontrado");
