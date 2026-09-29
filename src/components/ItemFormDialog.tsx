@@ -11,10 +11,9 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 import { shouldAutofillSupplierLocation } from "@/lib/item-location";
 import { ItemTypeIcon } from "@/components/ItemTypeIcon";
+import { getSupplierTypeForItem } from "@/lib/item-supplier-compatibility";
 
 const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
-
-const SUPPLIER_ENABLED_TYPES = new Set<ItemType>(["hotel", "restaurant", "transport"]);
 
 type MetadataFieldDef = {
   name: string;
@@ -198,8 +197,8 @@ export function ItemFormDialog({
   const [docsLoading, setDocsLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>(allSuppliers ?? []);
-  const [autoFillType, setAutoFillType] = useState<ItemType | null>(null);
   const [selectedType, setSelectedType] = useState<ItemType>(item?.type ?? "activity");
+  const [selectedSupplierId, setSelectedSupplierId] = useState(item?.supplierId ?? "");
   const [titleValue, setTitleValue] = useState(item?.title ?? "");
   const [locationValue, setLocationValue] = useState(item?.location ?? "");
   const [latValue, setLatValue] = useState<number | undefined>(item?.lat);
@@ -211,7 +210,7 @@ export function ItemFormDialog({
     setError(null);
     setUploadError(null);
     setSelectedType(item?.type ?? "activity");
-    setAutoFillType(null);
+    setSelectedSupplierId(item?.supplierId ?? "");
     setSuppliers(allSuppliers ?? []);
     setTitleValue(item?.title ?? "");
     setLocationValue(item?.location ?? "");
@@ -239,8 +238,7 @@ export function ItemFormDialog({
       setError("El título es obligatorio");
       return;
     }
-    const submittedType = autoFillType ?? selectedType;
-    if (autoFillType) formData.set("type", autoFillType);
+    const submittedType = selectedType;
     if (!formData.get("supplierId") || formData.get("supplierId") === "") {
       formData.delete("supplierId");
     }
@@ -269,11 +267,6 @@ export function ItemFormDialog({
   }
 
   function handleSupplierSelected(supplier: Supplier) {
-    if (supplier.type === "hotel" || supplier.type === "restaurant" || supplier.type === "transport") {
-      setAutoFillType(supplier.type);
-      setSelectedType(supplier.type);
-    }
-
     setTitleValue((current) => (current.trim() ? current : supplier.name));
     if (shouldAutofillSupplierLocation({ currentLocation: locationValue, currentLat: latValue, currentLng: lngValue })) {
       if (supplier.address) setLocationValue(supplier.address);
@@ -300,6 +293,25 @@ export function ItemFormDialog({
     setMetadataAutofill(nextMetadata);
     setMetadataAutofillVersion((version) => version + 1);
   }
+
+  function handleItemTypeChange(nextType: ItemType) {
+    setSelectedType(nextType);
+    setSelectedSupplierId((currentSupplierId) => {
+      const supplier = suppliers.find(({ id }) => id === currentSupplierId);
+      return supplier && supplier.type === getSupplierTypeForItem(nextType) ? currentSupplierId : "";
+    });
+  }
+
+  function handleSupplierChange(supplier: Supplier | null) {
+    setSelectedSupplierId(supplier?.id ?? "");
+    if (supplier) handleSupplierSelected(supplier);
+  }
+
+  function handleSupplierCreated(supplier: Supplier) {
+    setSuppliers((current) => [supplier, ...current.filter(({ id }) => id !== supplier.id)]);
+  }
+
+  const requiredSupplierType = getSupplierTypeForItem(selectedType);
 
   function handleUpload() {
     const file = fileInputRef.current?.files?.[0];
@@ -345,10 +357,7 @@ export function ItemFormDialog({
             <select
               name="type"
               value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.target.value as ItemType);
-                setAutoFillType(null);
-              }}
+              onChange={(e) => handleItemTypeChange(e.target.value as ItemType)}
               className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
             >
               {itemTypes.map((t) => (
@@ -359,14 +368,17 @@ export function ItemFormDialog({
             </select>
           </div>
 
-          {SUPPLIER_ENABLED_TYPES.has(selectedType) && (
+          {requiredSupplierType && (
             <div>
               <label className="block text-sm font-medium text-[var(--operator-ink)]">Proveedor</label>
               <SupplierCombobox
+                key={requiredSupplierType}
                 suppliers={suppliers}
                 name="supplierId"
-                defaultValue={item?.supplierId}
-                onSupplierSelected={handleSupplierSelected}
+                requiredSupplierType={requiredSupplierType}
+                value={selectedSupplierId}
+                onChange={handleSupplierChange}
+                onSupplierCreated={handleSupplierCreated}
               />
             </div>
           )}

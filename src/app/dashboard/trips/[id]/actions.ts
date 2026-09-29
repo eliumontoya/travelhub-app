@@ -219,6 +219,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
   await assertTripEditable(tripId);
   const type = String(formData.get("type") ?? "note") as ItemType;
   const metadata = parseItemMetadata(type, formData.get("metadata"));
+  const supplierId = String(formData.get("supplierId") ?? "").trim();
   await updateItem(itemId, {
     type,
     title: String(formData.get("title") ?? "").trim(),
@@ -230,7 +231,7 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
     confirmationCode: String(formData.get("confirmationCode") ?? "").trim() || undefined,
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     cost: parseCost(formData.get("cost")),
-    supplierId: String(formData.get("supplierId") ?? "").trim() || undefined,
+    supplierId: supplierId || null,
     metadata,
   });
   revalidateTrip(tripId);

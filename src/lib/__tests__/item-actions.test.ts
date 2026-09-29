@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ItemSupplierCompatibilityError } from "@/lib/item-supplier-compatibility";
 
 const mocks = vi.hoisted(() => ({
   createItem: vi.fn(),
@@ -94,6 +95,19 @@ describe("item server action metadata validation", () => {
     }));
   });
 
+  it("omits an empty supplierId when creating an item", async () => {
+    const formData = new FormData();
+    formData.set("type", "flight");
+    formData.set("title", "AA 1234");
+    formData.set("supplierId", "");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
+    mocks.createItem.mockResolvedValueOnce({ id: "item-1" });
+
+    await addItemAction("trip-1", "day-1", formData);
+
+    expect(mocks.createItem).toHaveBeenCalledWith(expect.not.objectContaining({ supplierId: expect.anything() }));
+  });
+
   it("passes supplierId when editing an item", async () => {
     const formData = new FormData();
     formData.set("type", "hotel");
@@ -108,6 +122,33 @@ describe("item server action metadata validation", () => {
     expect(mocks.updateItem).toHaveBeenCalledWith("item-1", expect.objectContaining({
       supplierId: "supplier-2",
     }));
+  });
+
+  it("passes null when an edit clears the supplier", async () => {
+    const formData = new FormData();
+    formData.set("type", "hotel");
+    formData.set("title", "Hotel Centro");
+    formData.set("supplierId", "");
+    formData.set("metadata", "null");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
+    mocks.updateItem.mockResolvedValueOnce({ id: "item-1" });
+
+    await editItemAction("trip-1", "item-1", formData);
+
+    expect(mocks.updateItem).toHaveBeenCalledWith("item-1", expect.objectContaining({ supplierId: null }));
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/trips/trip-1");
+  });
+
+  it("surfaces compatibility validation failures without revalidation", async () => {
+    const formData = new FormData();
+    formData.set("type", "restaurant");
+    formData.set("title", "Cena");
+    formData.set("supplierId", "hotel-supplier");
+    mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });
+    mocks.updateItem.mockRejectedValueOnce(new ItemSupplierCompatibilityError("El proveedor no es compatible con el tipo de item"));
+
+    await expect(editItemAction("trip-1", "item-1", formData)).rejects.toThrow("El proveedor no es compatible");
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("blocks edits when the trip is published", async () => {
