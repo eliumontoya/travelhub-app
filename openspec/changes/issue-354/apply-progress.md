@@ -133,3 +133,26 @@ Status: **complete for the corrective WU4/WU5 slice**. The focused supplier flow
 | Safe supplier runtime harness | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier" --timeout=45000` | **exit 0**; 2 tests passed in 4.6s on verified-free port `43127`. No unrelated service was stopped or modified. |
 
 The temporary `.playwright.issue-354-safe.config.ts` was removed after the green terminal result. Phase 6 verification, archive, and PR work remain out of scope.
+
+## Corrective Phase 6 Reverification — 2026-09-28
+
+- Focused unit: `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 file, 2 tests passed.
+- Typecheck: `npx tsc --noEmit` — exit 0.
+- Targeted issue lint: `npx eslint src/components/CreateSupplierDialog.tsx src/components/CreateTravelAgentDialog.tsx src/components/ItemFormDialog.tsx src/components/SupplierCombobox.tsx` — exit 0.
+- Full lint: `npm run lint` — exit 1 from pre-existing `src/app/layout.tsx:46`; the four issue-354 React errors are resolved.
+- Safe E2E: temporary Playwright config on verified-free port 43127 was removed; the supplier suite remains red (same-session quick-create/reselection unmounts the item dialog; stale-selection scenario passes). No commit was made because the E2E acceptance gate is not green.
+
+## Supplier Dialog Unmount Correction — 2026-09-28
+
+The remaining unmount came from React synthetic event bubbling across the body-level portal: submitting `CreateSupplierDialog` also reached the logical parent `ItemFormDialog` form. The parent then ran its item-submit path and closed the native item dialog. `CreateSupplierDialog` now stops propagation after preventing the create-form submit default, preserving the nested portal and in-memory created-supplier catalog.
+
+| Check | Exact command | Observed terminal result |
+| --- | --- | --- |
+| RED — explicit dialog-survival assertion | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier" --timeout=45000` | **exit 1** before the correction; the new `await expect(itemDialog).toBeVisible()` assertion failed after ArrowDown/Enter, while the stale-selection scenario passed. |
+| Focused component unit | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` | **exit 0**; 1 file, 2 tests passed in 338ms. |
+| Typecheck | `npx tsc --noEmit` | **exit 0**. |
+| Targeted issue lint | `npx eslint src/components/CreateSupplierDialog.tsx src/components/CreateTravelAgentDialog.tsx src/components/ItemFormDialog.tsx src/components/SupplierCombobox.tsx` | **exit 0**. |
+| Full lint | `npm run lint` | **exit 1** only for pre-existing `src/app/layout.tsx:46` `@next/next/no-sync-scripts`; 11 unrelated warnings were also reported. |
+| Safe supplier runtime harness | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier" --timeout=45000` | **exit 0**; 2 tests passed in 4.3s using an owned `localhost:43127` server after verifying the port was free. |
+
+The temporary `.playwright.issue-354-safe.config.ts` was removed after verification. Rollback boundary for this correction: `src/components/CreateSupplierDialog.tsx` and `e2e/mock/supplier-item-compatibility.spec.ts`; it does not change public routes, services, migrations, or the supplier catalog contract.

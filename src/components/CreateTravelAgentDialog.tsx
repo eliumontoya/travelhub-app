@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { TravelAgent } from "@/types";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -25,7 +25,11 @@ export function CreateTravelAgentDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const isEditing = Boolean(agent);
 
@@ -34,10 +38,6 @@ export function CreateTravelAgentDialog({
       dialogRef.current.showModal();
     }
   }, [mounted, open]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   function close() {
     dialogRef.current?.close();

@@ -45,6 +45,7 @@ test.describe("supplier discovery", () => {
     await supplierInput.press("ArrowDown");
     await expect(supplierInput).toHaveAttribute("aria-activedescendant", /.+/);
     await supplierInput.press("Enter");
+    await expect(itemDialog).toBeVisible();
     await expect(supplierInput).toHaveValue(createdSupplierName);
     await expect(supplierId).toHaveValue(createdSupplierId);
   });

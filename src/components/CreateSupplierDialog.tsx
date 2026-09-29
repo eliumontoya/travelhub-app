@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Supplier } from "@/types";
 import { SUPPLIER_TYPES, type SupplierType } from "@/lib/constants";
@@ -34,8 +34,11 @@ export function CreateSupplierDialog({
   const [lat, setLat] = useState(supplier?.lat?.toString() ?? "");
   const [lng, setLng] = useState(supplier?.lng?.toString() ?? "");
   const [googlePlaceId, setGooglePlaceId] = useState(supplier?.googlePlaceId ?? "");
-  const [mounted, setMounted] = useState(false);
-
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const isEditing = Boolean(supplier);
 
   useEffect(() => {
@@ -43,10 +46,6 @@ export function CreateSupplierDialog({
       dialogRef.current.showModal();
     }
   }, [mounted, open]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handlePlaceSelect = useCallback((place: SupplierPlaceSelection) => {
     if (place.name) setName(place.name);
@@ -63,6 +62,7 @@ export function CreateSupplierDialog({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    e.stopPropagation();
     setError(null);
     const formData = new FormData(e.currentTarget);
 

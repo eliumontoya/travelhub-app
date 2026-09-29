@@ -372,6 +372,7 @@ export function ItemFormDialog({
             <div>
               <label className="block text-sm font-medium text-[var(--operator-ink)]">Proveedor</label>
               <SupplierCombobox
+                key={requiredSupplierType}
                 suppliers={suppliers}
                 name="supplierId"
                 requiredSupplierType={requiredSupplierType}

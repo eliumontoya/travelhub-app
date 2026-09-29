@@ -52,11 +52,14 @@ export function SupplierCombobox({
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultSupplier?.id ?? "");
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [allSuppliers, setAllSuppliers] = useState<Supplier[]>(suppliers);
+  const [createdSuppliers, setCreatedSuppliers] = useState<Supplier[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const skipQuerySync = useRef(false);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeIndexRef = useRef(-1);
+  const allSuppliers = useMemo(
+    () => [...createdSuppliers, ...suppliers.filter((supplier) => !createdSuppliers.some(({ id }) => id === supplier.id))],
+    [createdSuppliers, suppliers],
+  );
   const selectedValue = value ?? uncontrolledValue;
   const selectedSupplier = allSuppliers.find((supplier) => supplier.id === selectedValue);
   const results = useMemo(() => {
@@ -64,22 +67,6 @@ export function SupplierCombobox({
     const normalizedQuery = normalize(query.trim());
     return allSuppliers.filter((supplier) => !normalizedQuery || normalize(supplier.name).includes(normalizedQuery));
   }, [allSuppliers, query, requiredSupplierType]);
-
-  useEffect(() => {
-    setAllSuppliers((current) => {
-      const created = current.filter((supplier) => !suppliers.some(({ id }) => id === supplier.id));
-      return [...created, ...suppliers];
-    });
-  }, [suppliers]);
-
-  useEffect(() => {
-    if (selectedSupplier) {
-      setQuery(selectedSupplier.name);
-    } else if (value !== undefined && !skipQuerySync.current) {
-      setQuery("");
-    }
-    skipQuerySync.current = false;
-  }, [selectedSupplier, selectedValue, value]);
 
   useEffect(() => {
     return () => {
@@ -117,7 +104,6 @@ export function SupplierCombobox({
   }
 
   function handleChange(nextQuery: string) {
-    skipQuerySync.current = true;
     setQuery(nextQuery);
     activeIndexRef.current = -1;
     setActiveIndex(-1);
@@ -153,12 +139,8 @@ export function SupplierCombobox({
     }
   }
 
-  function handleKeyPress(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") event.preventDefault();
-  }
-
   function handleSupplierCreated(supplier: Supplier) {
-    setAllSuppliers((current) => [supplier, ...current]);
+    setCreatedSuppliers((current) => [supplier, ...current.filter(({ id }) => id !== supplier.id)]);
     setQuery(supplier.name);
     setIsOpen(false);
     activeIndexRef.current = -1;
@@ -177,11 +159,10 @@ export function SupplierCombobox({
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${results[activeIndex]?.id}` : undefined}
-        value={query}
+        value={selectedSupplier?.name ?? query}
         onChange={(event) => handleChange(event.target.value)}
         onFocus={handleFocus}
-        onKeyDown={handleKeyDown}
-        onKeyPress={handleKeyPress}
+        onKeyDownCapture={handleKeyDown}
         onBlur={handleBlur}
         placeholder="Buscar proveedor…"
         className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
