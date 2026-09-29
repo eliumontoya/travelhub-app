@@ -46,6 +46,7 @@ The repository contains a documented Next.js + Supabase runtime with public and 
 - Diagram contains 12 core components, one solid primary path, two bounded dotted relationships, explicit trust-boundary subgraphs, and external-dependency cards.
 - `git diff --check -- odd/tasks/runtime-architecture-diagram.md docs/runtime-architecture.md` passed.
 - No application source or runtime behavior changed.
+- Work-unit commit: `fa8768f` (`docs: add runtime architecture diagram`).
 
 ## Next step
 None for this documentation slice; future work may reconcile the documented architecture drift called out in the artifact.
