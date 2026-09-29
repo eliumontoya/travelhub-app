@@ -56,6 +56,7 @@ export function SupplierCombobox({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const skipQuerySync = useRef(false);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeIndexRef = useRef(-1);
   const selectedValue = value ?? uncontrolledValue;
   const selectedSupplier = allSuppliers.find((supplier) => supplier.id === selectedValue);
   const results = useMemo(() => {
@@ -88,6 +89,7 @@ export function SupplierCombobox({
 
   function open() {
     setIsOpen(true);
+    activeIndexRef.current = -1;
     setActiveIndex(-1);
   }
 
@@ -109,6 +111,7 @@ export function SupplierCombobox({
   function handleSelect(supplier: Supplier) {
     setQuery(supplier.name);
     setIsOpen(false);
+    activeIndexRef.current = -1;
     setActiveIndex(-1);
     notifyChange(supplier);
   }
@@ -116,6 +119,7 @@ export function SupplierCombobox({
   function handleChange(nextQuery: string) {
     skipQuerySync.current = true;
     setQuery(nextQuery);
+    activeIndexRef.current = -1;
     setActiveIndex(-1);
     setIsOpen(true);
     if (selectedValue) notifyChange(null);
@@ -124,6 +128,7 @@ export function SupplierCombobox({
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") {
       setIsOpen(false);
+      activeIndexRef.current = -1;
       setActiveIndex(-1);
       return;
     }
@@ -133,20 +138,30 @@ export function SupplierCombobox({
       if (!isOpen) open();
       if (results.length === 0) return;
       const offset = event.key === "ArrowDown" ? 1 : -1;
-      setActiveIndex((index) => (index + offset + results.length) % results.length);
+      const nextIndex = (activeIndexRef.current + offset + results.length) % results.length;
+      activeIndexRef.current = nextIndex;
+      setActiveIndex(nextIndex);
       return;
     }
 
-    if (event.key === "Enter" && isOpen && activeIndex >= 0) {
+    if (event.key === "Enter") {
       event.preventDefault();
-      handleSelect(results[activeIndex]);
+      const selectedIndex = activeIndexRef.current;
+      if (selectedIndex >= 0 && results[selectedIndex]) {
+        handleSelect(results[selectedIndex]);
+      }
     }
+  }
+
+  function handleKeyPress(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") event.preventDefault();
   }
 
   function handleSupplierCreated(supplier: Supplier) {
     setAllSuppliers((current) => [supplier, ...current]);
     setQuery(supplier.name);
     setIsOpen(false);
+    activeIndexRef.current = -1;
     setActiveIndex(-1);
     onSupplierCreated?.(supplier);
     notifyChange(supplier);
@@ -166,6 +181,7 @@ export function SupplierCombobox({
         onChange={(event) => handleChange(event.target.value)}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
+        onKeyPress={handleKeyPress}
         onBlur={handleBlur}
         placeholder="Buscar proveedor…"
         className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"

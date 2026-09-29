@@ -30,7 +30,23 @@ test.describe("supplier discovery", () => {
 
     await supplierInput.press("ArrowDown");
     await itemDialog.getByRole("button", { name: "+ Crear nuevo proveedor" }).click();
-    await expect(page.locator('dialog[open] #supplier-type')).toHaveValue("tour_operator");
+    const createSupplierDialog = page.locator('dialog[open]').filter({ hasText: "Crear proveedor" });
+    await expect(createSupplierDialog.locator("#supplier-type")).toHaveValue("tour_operator");
+
+    const createdSupplierName = "Same Session Tour Operator";
+    await createSupplierDialog.locator("#supplier-name").fill(createdSupplierName);
+    await createSupplierDialog.getByRole("button", { name: "Crear", exact: true }).click();
+
+    await expect(itemDialog).toBeVisible();
+    await expect(supplierInput).toHaveValue(createdSupplierName);
+    const createdSupplierId = await supplierId.inputValue();
+    expect(createdSupplierId).not.toBe("");
+
+    await supplierInput.press("ArrowDown");
+    await expect(supplierInput).toHaveAttribute("aria-activedescendant", /.+/);
+    await supplierInput.press("Enter");
+    await expect(supplierInput).toHaveValue(createdSupplierName);
+    await expect(supplierId).toHaveValue(createdSupplierId);
   });
 
   test("keeps supplier state compatible with the selected item type", async ({ page }) => {
@@ -40,7 +56,7 @@ test.describe("supplier discovery", () => {
     await page.getByRole("button", { name: "+ Agregar item a este día" }).first().click();
 
     const itemDialog = page.locator("dialog[open]").filter({ hasText: "Agregar item" });
-    const itemType = itemDialog.locator('select[name="type"]');
+    const itemType = itemDialog.locator('select[name="type"]:not(#supplier-type)');
     const supplierId = itemDialog.locator('input[type="hidden"][name="supplierId"]');
 
     await itemType.selectOption("hotel");

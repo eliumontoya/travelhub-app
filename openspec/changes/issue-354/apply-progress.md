@@ -13,6 +13,13 @@
 - [x] 3.3 RED — MCP add/update contract
 - [x] 3.4 GREEN — MCP schema and safe mapping
 - [x] 3.5 REFACTOR — thin adapters
+- [x] 4.1 RED — discovery interaction
+- [x] 4.2 GREEN — category-filtered combobox
+- [x] 4.3 GREEN — typed quick-create default
+- [x] 4.4 REFACTOR — native combobox semantics
+- [x] 5.1 RED — stale-selection and preservation cases
+- [x] 5.2 GREEN — item type owns supplier compatibility
+- [x] 5.3 REFACTOR — controlled state and form contract
 
 ## TDD Cycle Evidence
 
@@ -55,33 +62,38 @@
 - PR boundary: shared data-layer validation and explicit nullable supplier clearing in `src/lib/data/trips.ts` with focused persistence tests only.
 - Work unit: PR 3 — Dashboard and MCP Adapters
 - PR boundary: dashboard action nullable semantics plus MCP schema/error adapters and their focused tests only.
+- Work unit: combined implementation boundary — Work Units 4 and 5
+- Commit: `99ec183` (`fix(items): control supplier compatibility`)
+- Provenance: the previously uncommitted Work Unit 4 source/test slice was necessarily included with Work Unit 5 integration in this commit; it is one rollback boundary, not a separate Work Unit 4 commit.
+- Rollback file set: `src/components/SupplierCombobox.tsx`, `src/components/CreateSupplierDialog.tsx`, `src/components/CreateTravelAgentDialog.tsx`, `src/components/ItemFormDialog.tsx`, `src/components/__tests__/SupplierCombobox.test.ts`, and `e2e/mock/supplier-item-compatibility.spec.ts`. No public route, service, migration, or data-facade file changed.
+- Corrective follow-up boundary: the final supplier keyboard fix changes `src/components/SupplierCombobox.tsx` and `e2e/mock/supplier-item-compatibility.spec.ts`; this file and `tasks.md` record its evidence. The same commit persists the pre-existing proposal, design, exploration, and delta-spec files; they do not change runtime behavior. Reverting the corrective source/test change leaves `99ec183` as the intact combined WU4/WU5 implementation boundary.
 
 ## Remaining Tasks
 
-- [ ] 4.1–4.4 Supplier Discovery Combobox
+- [x] 4.1–4.4 Supplier Discovery Combobox
 - [x] 5.1–5.3 Item Form State Integration
 - [ ] 6.1–6.4 Full Verification and Handoff
 
-## Work Unit 4 In-Progress Evidence
+## Work Unit 4 TDD Cycle Evidence
 
 | Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 4.1 | `src/components/__tests__/SupplierCombobox.test.ts`, `e2e/mock/supplier-item-compatibility.spec.ts` | Component unit and Playwright mock runtime | No existing SupplierCombobox test suite existed. | Added category-filter and empty-query cases first; `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` failed with `TypeError: getSupplierOptions is not a function` (2 failed). | The focused component test now passes: 1 file, 2 tests. The Playwright scenario is present but has not produced a valid app-runtime result because the configured port is occupied by unrelated local services. | Covers empty compatible catalog, accent-insensitive query, and same-name incompatible supplier exclusion. | Replaced the local supplier predicate with the typed component contract; added listbox semantics, keyboard navigation, bounded scrolling, and quick-create default propagation. |
-| 4.2–4.4 | `src/components/__tests__/SupplierCombobox.test.ts`, `e2e/mock/supplier-item-compatibility.spec.ts` | Controlled combobox and quick-create UI | Focused component test passed before final typecheck. | The component helper was absent before implementation. | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 file, 2 tests. `npx tsc --noEmit --pretty false --incremental false` — exit 0. | The unit cases prove both empty-query/full-catalog and normalized query paths. | No UI dependency added; existing supplier management/quick-create remains available and edit mode retains the persisted supplier type. |
+| 4.1 | `src/components/__tests__/SupplierCombobox.test.ts`, `e2e/mock/supplier-item-compatibility.spec.ts` | Component unit and Playwright mock runtime | No existing SupplierCombobox test suite existed. | Added category-filter and empty-query cases first; `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` failed with `TypeError: getSupplierOptions is not a function` (2 failed). | Focused component test passed: 1 file, 2 tests. After Work Unit 5 supplied the controlled caller, the safe supplier Playwright run passed 2 tests, including discovery and mapped quick-create. | Covers empty compatible catalog, accent-insensitive query, same-name incompatible supplier exclusion, and activity mapping. | Replaced the local supplier predicate with the typed component contract; added listbox semantics, keyboard navigation, bounded scrolling, and quick-create default propagation. |
+| 4.2–4.4 | `src/components/__tests__/SupplierCombobox.test.ts`, `e2e/mock/supplier-item-compatibility.spec.ts` | Controlled combobox and quick-create UI | Focused component test passed before final typecheck. | The component helper was absent before implementation. | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 file, 2 tests. `npx tsc --noEmit --pretty false --incremental false` — exit 0. Safe supplier Playwright run passed 2 tests. | The unit cases prove empty-query/full-catalog and normalized query paths; the route run proves the caller integration and activity default. | No UI dependency added; existing supplier management/quick-create remains available and edit mode retains the persisted supplier type. |
 
 | Evidence | Observed result |
 | --- | --- |
 | Work Unit 4 focused component test command and exact result | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 test file, 2 tests passed. |
 | Work Unit 4 narrow typecheck command and exact result | `npx tsc --noEmit --pretty false --incremental false` — exit 0. |
-| Work Unit 4 runtime harness command/scenario and exact result | `npm run test:e2e -- --grep "supplier"` — failed before application assertions because Playwright reused `http://localhost:3000`, which served Forgejo rather than TravelHub. An isolated retry on port 3001 also failed before application assertions when that port was occupied by Uptime Kuma; the test timed out waiting for the TravelHub draft control. The hanging attempt was stopped; no runtime pass is claimed. |
-| Work Unit 4 corrective runtime harness command and exact result | Repository config inspection confirmed no environment-based mock-port override. Using Playwright's documented temporary `--config` override with a verified-free port 43127 reached TravelHub: `npx playwright test --config=/tmp/travelhub-issue-354-safe.playwright.config.ts --grep "supplier"` — exit 1; 1 test failed because the activity form had no supplier hidden input. The owned server was stopped; unrelated services were not touched. |
-| Work Unit 4 rollback boundary | Revert `src/components/SupplierCombobox.tsx`, `src/components/CreateSupplierDialog.tsx`, `src/components/__tests__/SupplierCombobox.test.ts`, and `e2e/mock/supplier-item-compatibility.spec.ts`; keep the shared compatibility/data-layer work intact. |
+| Work Unit 4 runtime harness command/scenario and exact result | Historical default-port attempts failed before application assertions because Playwright reused `http://localhost:3000`, which served Forgejo; port 3001 was also occupied by Uptime Kuma. Those attempts were stopped without touching unrelated services. The final integrated route evidence is recorded below. |
+| Work Unit 4 corrective runtime harness command and exact result | Repository config inspection confirmed no environment-based mock-port override. The first port-43127 attempt exited 1 because the activity form had no `supplierId` hidden input and exposed nested-form hydration. After the integrated caller/connected-dialog fix, `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier"` — exit 0; 2 tests passed in 4.9s on verified-free port 43127. The owned server was stopped; unrelated services were not touched. |
+| Work Unit 4 rollback boundary | Revert the combined six-file implementation/test boundary listed in Delivery: `SupplierCombobox.tsx`, `CreateSupplierDialog.tsx`, `CreateTravelAgentDialog.tsx`, `ItemFormDialog.tsx`, `SupplierCombobox.test.ts`, and `supplier-item-compatibility.spec.ts`; keep the shared compatibility/data-layer work intact. |
 
 ## Work Unit 4 Status
 
-- The combobox and quick-create component work is implemented with focused component/type checks complete; ItemFormDialog integration remains deferred to Work Unit 5 as required by task scope.
-- Tasks 4.1–4.4 remain unchecked: the safe rerun reached TravelHub but failed at the Work Unit 5 route-level caller dependency. Task 4.4's focused runtime acceptance cannot be claimed until that controlled caller exists.
-- No Work Unit 4 commit was created because the required runtime evidence is blocked.
+- The combobox and quick-create component work is complete with focused component/type checks and integrated supplier-route evidence.
+- Tasks 4.1–4.4 are checked off only after the final integrated supplier Playwright run passed; the route-level caller dependency was supplied by Work Unit 5.
+- No separate Work Unit 4 commit exists: its previously uncommitted source/test slice is part of combined implementation commit `99ec183` with the six-file rollback boundary recorded above.
 
 ## Work Unit 5 TDD Cycle Evidence
 
@@ -89,7 +101,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 5.1 | `e2e/mock/supplier-item-compatibility.spec.ts` | Playwright mock runtime | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 file, 2 tests passed. | The initial isolated run on verified-free port 43127 failed because the default activity form had no `supplierId` hidden input. | Route assertions passed after wiring: the final supplier E2E run passed 2 tests. | Covers hotel selection, title-only preservation, incompatible restaurant clearing, and supplier-free flight/note forms. | Assertions inspect the hidden submitted reference as well as visible combobox state. |
 | 5.2 | `src/components/ItemFormDialog.tsx` | Client form state and Playwright mock runtime | Supplier combobox unit baseline passed before item-form edits. | The route RED established that the activity caller did not render a supplier hidden input. | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 file, 2 tests. `npx tsc --noEmit --pretty false --incremental false` — exit 0. Final supplier E2E passed 2 tests. | Controlled selection is exercised across compatible hotel retention, incompatible restaurant clearing, supplier-free removal, and activity mapping. | Item type owns compatibility; supplier selection no longer rewrites item type; metadata autofill remains intact. |
-| 5.3 | `src/components/SupplierCombobox.tsx`, `src/components/CreateSupplierDialog.tsx`, `src/components/CreateTravelAgentDialog.tsx` | Connected dialog/combobox integration | The first rerun reproduced the exact nested-form hydration failure in `CreateTravelAgentDialog` / `TravelAgentCombobox`. | Existing route RED plus the hydration failure constrained the portal correction. | Final supplier E2E passed 2 tests; focused unit and typecheck remained green. | The final route covers quick-create, category transitions, visible context, and keyboard reopening. | Portaled nested dialogs out of outer forms; synchronized portal mount before `showModal`; cleared controlled visible query on incompatible type changes; canceled stale blur timers; made quick-create activation reliable. |
+| 5.3 | `src/components/SupplierCombobox.tsx`, `src/components/CreateSupplierDialog.tsx`, `src/components/CreateTravelAgentDialog.tsx`, `e2e/mock/supplier-item-compatibility.spec.ts` | Connected dialog/combobox integration | The first rerun reproduced the exact nested-form hydration failure in `CreateTravelAgentDialog` / `TravelAgentCombobox`. | The corrective same-session assertion failed after ArrowDown set `aria-activedescendant`: Enter selected the supplier but also submitted the outer item form and closed it. | The keypress guard now consumes Enter's form-submit default after keyboard selection. The focused unit and typecheck passed; the 45-second safe supplier E2E passed 2 tests. | The final route covers quick-create, same-session re-selection, category transitions, visible context, and keyboard reopening. | Kept quick-create as a native body-level modal, preserved combobox ARIA state, cleared controlled visible query on incompatible type changes, canceled stale blur timers, and prevented outer-form submission after Enter selection. |
 
 ## Work Unit 5 Runtime Evidence
 
@@ -97,13 +109,27 @@
 | --- | --- |
 | Safe runtime harness setup | Verified port 43127 was free. Created a temporary local Playwright config with `localhost:3000` replaced by `localhost:43127`; the owned `npm run dev -- --port 43127` server was stopped after checks. No unrelated service was touched. |
 | RED runtime command and exact result | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier"` — exit 1. Before item-form wiring, the activity-form assertion failed because no `input[type="hidden"][name="supplierId"]` existed; the same run also exposed nested-form hydration in the dashboard. |
-| Corrective runtime command and exact result | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier"` — exit 0; 2 tests passed in 4.3s on verified-free port 43127. |
+| Corrective runtime command and exact result | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier" --timeout=45000` — exit 0; 2 tests passed in 4.6s on verified-free port 43127. |
+| Direct same-session quick-create evidence | The discovery test created `Same Session Tour Operator` as `tour_operator`, observed a non-empty hidden supplier id, then reselected it with ArrowDown/Enter and observed the same visible name and hidden id in the same item dialog session. |
 | Work Unit 5 focused component command and exact result | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` — exit 0; 1 test file, 2 tests passed. |
 | Work Unit 5 typecheck command and exact result | `npx tsc --noEmit --pretty false --incremental false` — exit 0. |
-| Work Unit 5 rollback boundary | Revert `src/components/ItemFormDialog.tsx`, `src/components/CreateSupplierDialog.tsx`, and the Work Unit 5 additions in `e2e/mock/supplier-item-compatibility.spec.ts`; retain Work Units 1–4. |
+| Work Unit 5 rollback boundary | The implementation commit is the combined WU4+WU5 six-file boundary listed in Delivery. The corrective runtime rollback is only `src/components/SupplierCombobox.tsx` and `e2e/mock/supplier-item-compatibility.spec.ts`; `tasks.md`, `apply-progress.md`, and the persisted planning artifacts are documentation only. Reverting the corrective source/test change restores the prior combined behavior. |
 
 ## Work Unit 5 Status
 
 - Tasks 5.1–5.3 are complete on observed green evidence.
-- Work Unit 5 is ready for its required work-unit commit; Phase 6 verification and archive remain out of scope.
+- Work Unit 5 implementation is recorded at combined commit `99ec183`; this corrective rerun adds the direct same-session evidence and reconciles the artifacts in one follow-up Conventional Commit. Phase 6 verification and archive remain out of scope.
 - The temporary Playwright config is intentionally not part of the repository.
+
+## Corrective Slice Terminal Result — 2026-09-28
+
+Status: **complete for the corrective WU4/WU5 slice**. The focused supplier flow is green; Phase 6, archive, and PR work remain intentionally out of scope.
+
+| Check | Exact command | Observed terminal result |
+| --- | --- | --- |
+| RED — focused same-session assertion | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "shows and selects" --timeout=45000` | **exit 1**. After ArrowDown set `aria-activedescendant`, Enter submitted the outer item form; the dialog-scoped supplier locator disappeared. |
+| Focused component unit | `npm run test -- src/components/__tests__/SupplierCombobox.test.ts` | **exit 0**; 1 test file and 2 tests passed in 335ms. |
+| Typecheck | `npx tsc --noEmit --pretty false --incremental false` | **exit 0**. |
+| Safe supplier runtime harness | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier" --timeout=45000` | **exit 0**; 2 tests passed in 4.6s on verified-free port `43127`. No unrelated service was stopped or modified. |
+
+The temporary `.playwright.issue-354-safe.config.ts` was removed after the green terminal result. Phase 6 verification, archive, and PR work remain out of scope.
