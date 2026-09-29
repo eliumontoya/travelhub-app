@@ -154,3 +154,7 @@ The route-level regression now explicitly asserts that the original item dialog 
 | Full lint | **PARTIAL** | `npm run lint` still exits 1 solely for pre-existing `src/app/layout.tsx:46` `@next/next/no-sync-scripts`; it also reports 11 unrelated warnings. No issue-354 lint errors remain. |
 
 The temporary safe Playwright config was deleted after its terminal run. Full unit and build were intentionally not rerun in this correction; their prior out-of-scope status remains unchanged. This correction is ready for its requested corrective commit; archive and PR remain out of scope.
+
+## Corrective Commit Provenance — `c58dd6b`
+
+The corrective commit includes these runtime/test paths: `src/components/CreateSupplierDialog.tsx`, `src/components/CreateTravelAgentDialog.tsx`, `src/components/ItemFormDialog.tsx`, `src/components/SupplierCombobox.tsx`, and `e2e/mock/supplier-item-compatibility.spec.ts`. It also updates this report and `openspec/changes/issue-354/apply-progress.md` as documentation-only files. The rollback boundary is the five runtime/test paths; no public route, service, migration, or data-facade file is included. This reconciles the prior combined `99ec183` WU4/WU5 implementation boundary and `2526ed2` follow-up evidence.

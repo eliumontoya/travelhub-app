@@ -155,4 +155,11 @@ The remaining unmount came from React synthetic event bubbling across the body-l
 | Full lint | `npm run lint` | **exit 1** only for pre-existing `src/app/layout.tsx:46` `@next/next/no-sync-scripts`; 11 unrelated warnings were also reported. |
 | Safe supplier runtime harness | `npx playwright test --config=.playwright.issue-354-safe.config.ts --grep "supplier" --timeout=45000` | **exit 0**; 2 tests passed in 4.3s using an owned `localhost:43127` server after verifying the port was free. |
 
-The temporary `.playwright.issue-354-safe.config.ts` was removed after verification. Rollback boundary for this correction: `src/components/CreateSupplierDialog.tsx` and `e2e/mock/supplier-item-compatibility.spec.ts`; it does not change public routes, services, migrations, or the supplier catalog contract.
+The temporary `.playwright.issue-354-safe.config.ts` was removed after verification. The corrective commit `c58dd6b` contains the complete runtime/test correction boundary: `src/components/CreateSupplierDialog.tsx`, `src/components/CreateTravelAgentDialog.tsx`, `src/components/ItemFormDialog.tsx`, `src/components/SupplierCombobox.tsx`, and `e2e/mock/supplier-item-compatibility.spec.ts`. Its documentation-only files are `openspec/changes/issue-354/apply-progress.md` and `openspec/changes/issue-354/verify-report.md`. Reverting those five runtime/test paths restores `2526ed2`; reverting `2526ed2` restores the combined `99ec183` WU4/WU5 implementation boundary. No public route, service, migration, or supplier catalog contract changed.
+
+## Corrective Commit Provenance — `c58dd6b`
+
+- Purpose: isolate quick-create submit events from the logical parent item form and preserve same-session supplier reselection.
+- Runtime/test paths changed: `src/components/CreateSupplierDialog.tsx`, `src/components/CreateTravelAgentDialog.tsx`, `src/components/ItemFormDialog.tsx`, `src/components/SupplierCombobox.tsx`, and `e2e/mock/supplier-item-compatibility.spec.ts`.
+- Documentation paths changed: `openspec/changes/issue-354/apply-progress.md` and `openspec/changes/issue-354/verify-report.md`.
+- Rollback: revert the five runtime/test paths above; retain the prior combined WU4/WU5 implementation at `2526ed2`.
