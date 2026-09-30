@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Web Request Cache-Miss Sequence",
+    "output": ".archify/sequence-web-request-cache-miss-20260929-060250/web-request-cache-miss.html",
+    "viewBox": [
+      1080,
+      600
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "client request"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API",
+      "sublabel": "request handler"
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "cache"
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "source of truth"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 235,
+      "label": "Request"
+    },
+    {
+      "from": 245,
+      "to": 385,
+      "label": "Cache miss fallback"
+    },
+    {
+      "from": 395,
+      "to": 495,
+      "label": "Fill + respond"
+    }
+  ],
+  "messages": [
+    {
+      "id": "request",
+      "from": "browser",
+      "to": "api",
+      "y": 170,
+      "label": "HTTP request",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-read",
+      "from": "api",
+      "to": "redis",
+      "y": 220,
+      "label": "GET cache key",
+      "variant": "default"
+    },
+    {
+      "id": "cache-miss",
+      "from": "redis",
+      "to": "api",
+      "y": 268,
+      "label": "cache miss",
+      "variant": "return"
+    },
+    {
+      "id": "db-query",
+      "from": "api",
+      "to": "postgres",
+      "y": 320,
+      "label": "query rows",
+      "variant": "emphasis"
+    },
+    {
+      "id": "db-result",
+      "from": "postgres",
+      "to": "api",
+      "y": 368,
+      "label": "result set",
+      "variant": "return"
+    },
+    {
+      "id": "cache-fill",
+      "from": "api",
+      "to": "redis",
+      "y": 420,
+      "label": "SET cache key + TTL",
+      "variant": "dashed"
+    },
+    {
+      "id": "response",
+      "from": "api",
+      "to": "browser",
+      "y": 472,
+      "label": "HTTP 200 response",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "browser",
+      "from": 165,
+      "to": 478,
+      "type": "frontend"
+    },
+    {
+      "participant": "api",
+      "from": 170,
+      "to": 474,
+      "type": "backend"
+    },
+    {
+      "participant": "redis",
+      "from": 215,
+      "to": 274,
+      "type": "database"
+    },
+    {
+      "participant": "postgres",
+      "from": 315,
+      "to": 374,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Fast path first",
+      "items": [
+        "The API checks Redis before touching PostgreSQL.",
+        "A cache hit would skip the database branch entirely."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Miss behavior",
+      "items": [
+        "The cache miss makes PostgreSQL the authoritative fallback.",
+        "The API fills Redis after reading the source of truth."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Response boundary",
+      "items": [
+        "The browser waits for the API response, not for a separate background worker.",
+        "The cache write is shown before the response in this synchronous variant."
+      ]
+    }
+  ]
+}
