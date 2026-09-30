@@ -1,0 +1,802 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "TravelHub Code Structure",
+    "output": ".archify/architecture-travelhub-code-structure-20260929-212438/travelhub-code-structure.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/eliumontoya/travelhub-app.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "6365c3b73d675d1f23aaa4b6c13add4680f0d371"
+    },
+    "views": [
+      {
+        "id": "requestFlow",
+        "label": "Request flow",
+        "focus": [
+          "agentBrowser",
+          "travelerBrowser",
+          "middleware",
+          "dashboardRoutes",
+          "publicRoutes",
+          "serverActions",
+          "dataFacade",
+          "domainModules",
+          "supabaseAdapter",
+          "postgres",
+          "storage"
+        ],
+        "note": "How routes reach domain data and persistence."
+      },
+      {
+        "id": "domainLayer",
+        "label": "Domain layer",
+        "focus": [
+          "dataFacade",
+          "domainModules",
+          "sharedHelpers",
+          "domainTypes",
+          "mockStore"
+        ],
+        "note": "Facade, module ownership, shared helpers, and fallback data."
+      },
+      {
+        "id": "security",
+        "label": "Security",
+        "focus": [
+          "middleware",
+          "roles",
+          "supabaseAdapter",
+          "supabaseAuth",
+          "postgres"
+        ],
+        "note": "Dashboard protection, server role checks, sessions, and RLS."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "agentBrowser",
+      "type": "external",
+      "label": "Travel Agent Browser",
+      "sublabel": "Authenticated /dashboard user",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        165,
+        62
+      ],
+      "sources": [
+        {
+          "path": "project.md",
+          "line": 29,
+          "end_line": 36,
+          "label": "Business user"
+        },
+        {
+          "path": "architecture.md",
+          "line": 20,
+          "end_line": 24,
+          "label": "Dashboard path"
+        }
+      ]
+    },
+    {
+      "id": "travelerBrowser",
+      "type": "external",
+      "label": "Traveler Browser",
+      "sublabel": "Public itinerary URL",
+      "pos": [
+        40,
+        520
+      ],
+      "size": [
+        165,
+        62
+      ],
+      "sources": [
+        {
+          "path": "project.md",
+          "line": 35,
+          "end_line": 38,
+          "label": "Public URL"
+        },
+        {
+          "path": "architecture.md",
+          "line": 26,
+          "end_line": 28,
+          "label": "Public route"
+        }
+      ]
+    },
+    {
+      "id": "middleware",
+      "type": "security",
+      "label": "Route Middleware",
+      "sublabel": "Protects /dashboard/**",
+      "pos": [
+        300,
+        90
+      ],
+      "size": [
+        175,
+        70
+      ],
+      "sources": [
+        {
+          "path": "src/middleware.ts",
+          "line": 23,
+          "end_line": 60,
+          "label": "Guard"
+        },
+        {
+          "path": "architecture.md",
+          "line": 34,
+          "end_line": 38,
+          "label": "Contract"
+        }
+      ]
+    },
+    {
+      "id": "dashboardRoutes",
+      "type": "frontend",
+      "label": "Dashboard Route Tree",
+      "sublabel": "Server Components for agent UI",
+      "pos": [
+        300,
+        220
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/app/dashboard/page.tsx",
+          "line": 1,
+          "end_line": 52,
+          "label": "Dashboard reads"
+        },
+        {
+          "path": "src/app/dashboard/trips/[id]/page.tsx",
+          "line": 136,
+          "end_line": 170,
+          "label": "Trip editor"
+        },
+        {
+          "path": "architecture.md",
+          "line": 80,
+          "end_line": 93,
+          "label": "Routes"
+        }
+      ]
+    },
+    {
+      "id": "publicRoutes",
+      "type": "frontend",
+      "label": "Public Travel Routes",
+      "sublabel": "/t/[slug] read-only itinerary",
+      "pos": [
+        300,
+        520
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/app/t/[slug]/page.tsx",
+          "line": 71,
+          "end_line": 115,
+          "label": "Public page"
+        },
+        {
+          "path": "architecture.md",
+          "line": 26,
+          "end_line": 38,
+          "label": "Published only"
+        }
+      ]
+    },
+    {
+      "id": "uiComponents",
+      "type": "frontend",
+      "label": "Reusable UI Components",
+      "sublabel": "Dialogs, cards, calendar, documents",
+      "pos": [
+        300,
+        370
+      ],
+      "size": [
+        190,
+        70
+      ],
+      "sources": [
+        {
+          "path": "architecture.md",
+          "line": 92,
+          "end_line": 93,
+          "label": "Components"
+        },
+        {
+          "path": "src/components/TripDocuments.tsx",
+          "line": 9,
+          "end_line": 51,
+          "label": "Client component"
+        }
+      ]
+    },
+    {
+      "id": "serverActions",
+      "type": "backend",
+      "label": "Server Actions",
+      "sublabel": "Route-local mutations + revalidation",
+      "pos": [
+        620,
+        220
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/app/dashboard/trips/[id]/actions.ts",
+          "line": 1,
+          "end_line": 54,
+          "label": "Action boundary"
+        },
+        {
+          "path": "src/app/dashboard/trips/[id]/actions.ts",
+          "line": 125,
+          "end_line": 215,
+          "label": "Trip mutations"
+        },
+        {
+          "path": "architecture.md",
+          "line": 31,
+          "end_line": 33,
+          "label": "No REST API"
+        }
+      ]
+    },
+    {
+      "id": "roles",
+      "type": "security",
+      "label": "Role + Feature Guards",
+      "sublabel": "admin/agent authorization",
+      "pos": [
+        620,
+        90
+      ],
+      "size": [
+        190,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/lib/auth/roles.ts",
+          "line": 35,
+          "end_line": 44,
+          "label": "Role checks"
+        },
+        {
+          "path": "src/lib/auth/roles.ts",
+          "line": 92,
+          "end_line": 118,
+          "label": "Require role/feature"
+        }
+      ]
+    },
+    {
+      "id": "dataFacade",
+      "type": "backend",
+      "label": "Data Facade",
+      "sublabel": "@/lib/data compatibility exports",
+      "pos": [
+        620,
+        370
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/lib/data.ts",
+          "line": 1,
+          "end_line": 11,
+          "label": "Exports"
+        },
+        {
+          "path": "architecture.md",
+          "line": 40,
+          "end_line": 45,
+          "label": "Facade rule"
+        }
+      ]
+    },
+    {
+      "id": "domainModules",
+      "type": "backend",
+      "label": "Domain Data Modules",
+      "sublabel": "clients, trips, documents, suppliers...",
+      "pos": [
+        930,
+        370
+      ],
+      "size": [
+        215,
+        86
+      ],
+      "sources": [
+        {
+          "path": "architecture.md",
+          "line": 47,
+          "end_line": 56,
+          "label": "Module map"
+        },
+        {
+          "path": "src/lib/data/clients.ts",
+          "line": 20,
+          "end_line": 40,
+          "label": "Client reads"
+        },
+        {
+          "path": "src/lib/data/trips.ts",
+          "line": 1103,
+          "end_line": 1160,
+          "label": "Trip writes"
+        }
+      ]
+    },
+    {
+      "id": "sharedHelpers",
+      "type": "backend",
+      "label": "Shared Data Helpers",
+      "sublabel": "Supabase switch, pagination, sanitizers",
+      "pos": [
+        930,
+        160
+      ],
+      "size": [
+        205,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/lib/data/shared.ts",
+          "line": 1,
+          "end_line": 34,
+          "label": "Shared exports"
+        },
+        {
+          "path": "architecture.md",
+          "line": 49,
+          "end_line": 49,
+          "label": "Responsibility"
+        }
+      ]
+    },
+    {
+      "id": "domainTypes",
+      "type": "backend",
+      "label": "Domain Types",
+      "sublabel": "Client, Trip, documents, services",
+      "pos": [
+        930,
+        610
+      ],
+      "size": [
+        215,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/types/index.ts",
+          "line": 43,
+          "end_line": 58,
+          "label": "Client"
+        },
+        {
+          "path": "src/types/index.ts",
+          "line": 97,
+          "end_line": 132,
+          "label": "Trip"
+        },
+        {
+          "path": "src/types/index.ts",
+          "line": 151,
+          "end_line": 210,
+          "label": "Documents/services"
+        }
+      ]
+    },
+    {
+      "id": "supabaseAdapter",
+      "type": "backend",
+      "label": "Supabase Adapter",
+      "sublabel": "Server/browser clients + cookies",
+      "pos": [
+        1260,
+        370
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/lib/supabase/server.ts",
+          "line": 5,
+          "end_line": 53,
+          "label": "Server client"
+        },
+        {
+          "path": "src/lib/supabase/client.ts",
+          "line": 3,
+          "end_line": 17,
+          "label": "Browser client"
+        },
+        {
+          "path": "src/lib/supabase/middleware.ts",
+          "line": 5,
+          "end_line": 47,
+          "label": "Session refresh"
+        }
+      ]
+    },
+    {
+      "id": "mockStore",
+      "type": "database",
+      "label": "Mock Data Store",
+      "sublabel": "Local fallback when Supabase is off",
+      "pos": [
+        930,
+        760
+      ],
+      "size": [
+        215,
+        70
+      ],
+      "sources": [
+        {
+          "path": "architecture.md",
+          "line": 58,
+          "end_line": 65,
+          "label": "Fallback rule"
+        },
+        {
+          "path": "src/lib/data/clients.ts",
+          "line": 20,
+          "end_line": 40,
+          "label": "Mock branch"
+        },
+        {
+          "path": "src/lib/data/trips.ts",
+          "line": 1103,
+          "end_line": 1136,
+          "label": "Mock writes"
+        }
+      ]
+    },
+    {
+      "id": "supabaseAuth",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "Session + profile role",
+      "pos": [
+        1260,
+        90
+      ],
+      "size": [
+        180,
+        70
+      ],
+      "sources": [
+        {
+          "path": "architecture.md",
+          "line": 10,
+          "end_line": 13,
+          "label": "Auth stack"
+        },
+        {
+          "path": "src/lib/supabase/middleware.ts",
+          "line": 30,
+          "end_line": 44,
+          "label": "User + role"
+        }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "Postgres + RLS",
+      "sublabel": "clients \u2192 trips \u2192 days \u2192 items",
+      "pos": [
+        1260,
+        545
+      ],
+      "size": [
+        180,
+        76
+      ],
+      "sources": [
+        {
+          "path": "architecture.md",
+          "line": 120,
+          "end_line": 128,
+          "label": "Data model"
+        },
+        {
+          "path": "src/lib/data/trips.ts",
+          "line": 1137,
+          "end_line": 1160,
+          "label": "SQL update"
+        }
+      ]
+    },
+    {
+      "id": "storage",
+      "type": "cloud",
+      "label": "Supabase Storage",
+      "sublabel": "trip-documents + trip-photos",
+      "pos": [
+        1260,
+        710
+      ],
+      "size": [
+        180,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/lib/data/documents.ts",
+          "line": 10,
+          "end_line": 80,
+          "label": "Private docs"
+        },
+        {
+          "path": "src/lib/data/documents.ts",
+          "line": 278,
+          "end_line": 335,
+          "label": "Trip docs"
+        },
+        {
+          "path": "architecture.md",
+          "line": 13,
+          "end_line": 13,
+          "label": "Storage stack"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Next.js app: UI + server code in one repository",
+      "wraps": [
+        "middleware",
+        "dashboardRoutes",
+        "publicRoutes",
+        "uiComponents",
+        "serverActions",
+        "roles",
+        "dataFacade",
+        "domainModules",
+        "sharedHelpers",
+        "domainTypes",
+        "supabaseAdapter",
+        "mockStore"
+      ],
+      "pad": 28
+    },
+    {
+      "kind": "security-group",
+      "label": "Authenticated dashboard boundary",
+      "wraps": [
+        "middleware",
+        "dashboardRoutes",
+        "serverActions",
+        "roles"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "region",
+      "label": "Supabase managed services",
+      "wraps": [
+        "supabaseAuth",
+        "postgres",
+        "storage"
+      ],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "agent-to-middleware",
+      "from": "agentBrowser",
+      "to": "middleware",
+      "label": "GET /dashboard/**",
+      "variant": "security"
+    },
+    {
+      "id": "middleware-to-auth",
+      "from": "middleware",
+      "to": "supabaseAuth",
+      "label": "user + role",
+      "variant": "security"
+    },
+    {
+      "id": "middleware-to-dashboard",
+      "from": "middleware",
+      "to": "dashboardRoutes",
+      "label": "allow / redirect",
+      "variant": "security"
+    },
+    {
+      "id": "traveler-to-public",
+      "from": "travelerBrowser",
+      "to": "publicRoutes",
+      "label": "GET /t/{slug}",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dashboard-uses-ui",
+      "from": "dashboardRoutes",
+      "to": "uiComponents",
+      "label": "compose UI",
+      "variant": "default"
+    },
+    {
+      "id": "public-uses-ui",
+      "from": "publicRoutes",
+      "to": "uiComponents",
+      "label": "render UI",
+      "variant": "default"
+    },
+    {
+      "id": "dashboard-to-actions",
+      "from": "dashboardRoutes",
+      "to": "serverActions",
+      "label": "call actions",
+      "variant": "emphasis"
+    },
+    {
+      "id": "actions-to-roles",
+      "from": "serverActions",
+      "to": "roles",
+      "label": "requireRole / feature guard",
+      "variant": "security"
+    },
+    {
+      "id": "dashboard-to-data",
+      "from": "dashboardRoutes",
+      "to": "dataFacade",
+      "label": "reads",
+      "variant": "default"
+    },
+    {
+      "id": "public-to-data",
+      "from": "publicRoutes",
+      "to": "dataFacade",
+      "label": "published read",
+      "variant": "default"
+    },
+    {
+      "id": "actions-to-data",
+      "from": "serverActions",
+      "to": "dataFacade",
+      "label": "mutations",
+      "variant": "emphasis"
+    },
+    {
+      "id": "facade-to-modules",
+      "from": "dataFacade",
+      "to": "domainModules",
+      "label": "exports",
+      "variant": "emphasis"
+    },
+    {
+      "id": "modules-to-shared",
+      "from": "domainModules",
+      "to": "sharedHelpers",
+      "label": "helpers",
+      "variant": "default"
+    },
+    {
+      "id": "modules-to-types",
+      "from": "domainModules",
+      "to": "domainTypes",
+      "label": "models",
+      "variant": "default"
+    },
+    {
+      "id": "ui-to-types",
+      "from": "uiComponents",
+      "to": "domainTypes",
+      "label": "typed props",
+      "variant": "dashed"
+    },
+    {
+      "id": "modules-to-adapter",
+      "from": "domainModules",
+      "to": "supabaseAdapter",
+      "label": "client",
+      "variant": "default"
+    },
+    {
+      "id": "modules-to-mock",
+      "from": "domainModules",
+      "to": "mockStore",
+      "label": "mock fallback",
+      "variant": "dashed"
+    },
+    {
+      "id": "adapter-to-auth",
+      "from": "supabaseAdapter",
+      "to": "supabaseAuth",
+      "label": "auth session",
+      "variant": "security"
+    },
+    {
+      "id": "adapter-to-postgres",
+      "from": "supabaseAdapter",
+      "to": "postgres",
+      "label": "SQL + RLS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "adapter-to-storage",
+      "from": "supabaseAdapter",
+      "to": "storage",
+      "label": "files + URLs",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Good structure already present",
+      "items": [
+        "The app uses a clear route \u2192 action \u2192 data facade \u2192 domain module path.",
+        "src/lib/data.ts is intentionally a compatibility facade, not a logic dump.",
+        "Domain modules own mapping and persistence for their area."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Architectural style",
+      "items": [
+        "This is closer to layered modular architecture than classic OO class architecture.",
+        "Next.js Server Components own reads; Server Actions own mutations.",
+        "Types define the domain contracts consumed across UI and data modules."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Boundaries to protect",
+      "items": [
+        "Pages and actions should keep going through @/lib/data, never direct Supabase.",
+        "Storage logic belongs in data/documents.ts, not trips or pages.",
+        "Dashboard authorization is split between middleware and server-side role guards.",
+        "Public itinerary visibility is enforced by route logic plus database RLS assumptions."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Local development fallback",
+      "items": [
+        "Most data modules branch on isSupabaseConfigured().",
+        "Mock data lets the app run without Supabase, but should remain behind the data facade.",
+        "Public itinerary visibility is enforced by route logic plus database RLS assumptions."
+      ]
+    }
+  ]
+}

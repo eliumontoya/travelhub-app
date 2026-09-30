@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "faafeb9c-0fed-4164-9ef1-3c8755b1b3ce",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.archify/sequence-web-request-cache-miss-20260929-060250/candidate.json",
+  "output": "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.archify/sequence-web-request-cache-miss-20260929-060250/web-request-cache-miss.html",
+  "specification": {
+    "sha256": "1f75843ad35019d6ab4e09c0afb796aece44db2435928d8d2bb0773487b59efc",
+    "bytes": 3377
+  },
+  "artifact": {
+    "sha256": "33e23337cd4cefb6196f782a494647efeea6b2e83ea973de931aa6d9ce1ddf09",
+    "bytes": 753222
+  }
+}

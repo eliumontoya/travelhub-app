@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "b7900578-bfa0-4ccf-bc60-9bb2690d497f",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.archify/architecture-travelhub-code-structure-20260929-212438/candidate.json",
+  "output": "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.archify/architecture-travelhub-code-structure-20260929-212438/travelhub-code-structure.html",
+  "specification": {
+    "sha256": "cfdbbd5d271d8143500dad9d6b72d16029094c4182f920b2b714ff8e1501a1f2",
+    "bytes": 17953
+  },
+  "artifact": {
+    "sha256": "af3675275679f1378cc28bef82731bd2462f1065f7dae47c96300486bcdd92de",
+    "bytes": 799668
+  }
+}
