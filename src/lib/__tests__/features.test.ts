@@ -14,16 +14,17 @@ const EXPECTED_FEATURES: Feature[] = [
   "travel-agents",
   "whatsapp",
   "settings",
+  "visas",
 ];
 
 describe("feature catalog", () => {
-  it("exposes exactly the six features in the documented order", () => {
+  it("exposes exactly the seven features in the documented order", () => {
     expect(AVAILABLE_FEATURES).toEqual(EXPECTED_FEATURES);
-    expect(AVAILABLE_FEATURES).toHaveLength(6);
+    expect(AVAILABLE_FEATURES).toHaveLength(7);
   });
 
   it("maps every feature to a unique href and a Spanish label", () => {
-    expect(FEATURE_DEFINITIONS).toHaveLength(6);
+    expect(FEATURE_DEFINITIONS).toHaveLength(7);
 
     const hrefByFeature = Object.fromEntries(
       FEATURE_DEFINITIONS.map((def) => [def.feature, { href: def.href, label: def.label }]),
@@ -38,6 +39,7 @@ describe("feature catalog", () => {
     });
     expect(hrefByFeature.whatsapp).toEqual({ href: "/dashboard/wcc", label: "WhatsApp C.C." });
     expect(hrefByFeature.settings).toEqual({ href: "/dashboard/settings", label: "Ajustes" });
+    expect(hrefByFeature.visas).toEqual({ href: "/dashboard/visas", label: "Visas" });
 
     // No two features share the same href (single source of truth).
     const hrefs = FEATURE_DEFINITIONS.map((def) => def.href);
