@@ -17,6 +17,8 @@ import {
   Service,
   ServiceChecklistItem,
   ServiceUpload,
+  Visa,
+  VisaStatusHistoryEntry,
 } from "@/types";
 
 // Mock source of truth for client PIN hashes (issue #302) — mirrors clients.pin_hash.
@@ -768,5 +770,62 @@ export const mockServiceUploads: ServiceUpload[] = [
     fileRemoved: false,
     uploadedAt: "2026-07-02T09:00:00Z",
     updatedAt: "2026-07-02T09:00:00Z",
+  },
+];
+
+// Fuente de verdad mock para visas (servicio de visas), espejo de las tablas
+// visas, visa_clients y visa_status_history.
+export const mockVisas: Visa[] = [
+  {
+    id: "v1",
+    clientId: "c1",
+    country: "France",
+    visaType: "Tourist",
+    deadline: "2026-12-01",
+    price: 150,
+    notes: "Honeymoon visa",
+    status: "pending",
+    createdAt: "2026-09-30T10:00:00Z",
+    updatedAt: "2026-09-30T10:00:00Z",
+  },
+  {
+    id: "v2",
+    clientId: "c2",
+    country: "Japan",
+    visaType: "Business",
+    deadline: "2026-11-15",
+    price: 200,
+    status: "in_progress",
+    createdAt: "2026-09-29T10:00:00Z",
+    updatedAt: "2026-09-29T10:00:00Z",
+  },
+];
+
+export const mockVisaClients: { visaId: string; clientId: string; createdAt: string }[] = [
+  { visaId: "v1", clientId: "c1", createdAt: "2026-09-30T10:00:00Z" },
+  { visaId: "v2", clientId: "c2", createdAt: "2026-09-29T10:00:00Z" },
+];
+
+export const mockVisaStatusHistory: VisaStatusHistoryEntry[] = [
+  {
+    id: "vsh1",
+    visaId: "v1",
+    fromStatus: null,
+    toStatus: "pending",
+    changedAt: "2026-09-30T10:00:00Z",
+  },
+  {
+    id: "vsh2",
+    visaId: "v2",
+    fromStatus: null,
+    toStatus: "pending",
+    changedAt: "2026-09-29T10:00:00Z",
+  },
+  {
+    id: "vsh3",
+    visaId: "v2",
+    fromStatus: "pending",
+    toStatus: "in_progress",
+    changedAt: "2026-09-29T11:00:00Z",
   },
 ];
