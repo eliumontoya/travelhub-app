@@ -66,7 +66,9 @@ export default async function LandingPage({
           className="relative isolate flex flex-col justify-between overflow-hidden rounded-[1.25rem] border border-white/40 bg-[var(--operator-brand)]/72 p-6 text-white shadow-[var(--operator-shadow-panel)] backdrop-blur-md sm:p-8"
           style={{
             backgroundImage:
-              "linear-gradient(155deg, color-mix(in srgb, var(--operator-brand-strong) 78%, transparent), color-mix(in srgb, var(--operator-brand) 64%, transparent) 60%, color-mix(in srgb, var(--operator-brand) 38%, transparent))",
+              "linear-gradient(155deg, color-mix(in srgb, var(--operator-brand-strong) 78%, transparent), color-mix(in srgb, var(--operator-brand) 64%, transparent) 60%, color-mix(in srgb, var(--operator-brand) 38%, transparent)), url('/login_agente.jpeg')",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
           }}
         >
           <div>
@@ -96,7 +98,9 @@ export default async function LandingPage({
           className="relative isolate flex flex-col justify-between overflow-hidden rounded-[1.25rem] border border-white/40 bg-[var(--operator-accent)]/72 p-6 text-[var(--operator-accent-foreground)] shadow-[var(--operator-shadow-panel)] backdrop-blur-md sm:p-8"
           style={{
             backgroundImage:
-              "linear-gradient(155deg, color-mix(in srgb, var(--operator-gold) 88%, transparent), color-mix(in srgb, var(--operator-accent) 70%, transparent) 60%, color-mix(in srgb, var(--operator-accent) 44%, transparent))",
+              "linear-gradient(155deg, color-mix(in srgb, var(--operator-gold) 88%, transparent), color-mix(in srgb, var(--operator-accent) 70%, transparent) 60%, color-mix(in srgb, var(--operator-accent) 44%, transparent)), url('/login_viajero.jpeg')",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
           }}
         >
           <div>

@@ -63,6 +63,11 @@ describe("/page source assertions", () => {
     expect(page).toContain('data-testid="landing-agent-cta"');
     expect(page).toContain('data-testid="landing-traveler-cta"');
 
+    // Each login box carries its own photo: agent -> login_agente.jpeg,
+    // traveler -> login_viajero.jpeg (both served from /public).
+    expect(page).toContain("url('/login_agente.jpeg')");
+    expect(page).toContain("url('/login_viajero.jpeg')");
+
     // Wine agent side uses the brand token; gold traveler side uses the
     // accent token (both are committed `--operator-*` tokens, no new color).
     expect(page).toContain("var(--operator-brand)");
