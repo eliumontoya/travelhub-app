@@ -17,6 +17,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Inicio", icon: "⌂" },
   { href: "/dashboard/trips", label: "Viajes", icon: "▢" },
+  { href: "/dashboard/visas", label: "Visas", icon: "▦" },
   { href: "/dashboard/clients", label: "Clientes", icon: "◎" },
   { href: "/dashboard/suppliers", label: "Proveedores", icon: "▤" },
   { href: "/dashboard/travel-agents", label: "Agentes", icon: "◇", adminOnly: true },
