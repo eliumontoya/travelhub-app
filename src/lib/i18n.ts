@@ -23,6 +23,12 @@ export const dictionary = {
       note: "Nota",
     } satisfies Record<ItemType, string>,
     packingList: "Checklist de equipaje",
+    landingHeadline: "Planifica. Gestiona. Viaja.",
+    landingSubhead: "La plataforma para agentes y viajeros que planifican, gestionan y viven cada viaje.",
+    landingAgentLabel: "Acceder Agentes",
+    landingAgentHint: "Acceso para agencias de viajes",
+    landingTravelerLabel: "Ingresar Viajeros",
+    landingTravelerHint: "Acceso para viajeros",
   },
   en: {
     calendarButton: "+ Calendar",
@@ -40,6 +46,12 @@ export const dictionary = {
       note: "Note",
     } satisfies Record<ItemType, string>,
     packingList: "Packing checklist",
+    landingHeadline: "Plan. Manage. Travel.",
+    landingSubhead: "The platform for agents and travelers who plan, manage, and live every trip.",
+    landingAgentLabel: "Agent Login",
+    landingAgentHint: "For travel agencies",
+    landingTravelerLabel: "Traveler Login",
+    landingTravelerHint: "For travelers",
   },
 } satisfies Record<Lang, unknown>;
 

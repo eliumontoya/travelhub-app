@@ -173,11 +173,12 @@ test.describe("Dashboard", () => {
     await expect(page.getByRole("heading", { name: "Luna de miel en Italia" })).toBeVisible();
   });
 
-  test("/ resuelve a la experiencia Dashboard", async ({ page }) => {
+  test("/ renderiza la landing pública con split agente/viajero", async ({ page }) => {
     await page.goto("/");
-    await skipIfLogin(page);
 
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page).not.toHaveURL(/dashboard/);
+    await expect(page.getByRole("heading", { name: "Planifica. Gestiona. Viaja." })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Acceder Agentes" })).toHaveAttribute("href", "/login");
+    await expect(page.getByRole("link", { name: "Ingresar Viajeros" })).toHaveAttribute("href", "/client/login");
   });
 });
