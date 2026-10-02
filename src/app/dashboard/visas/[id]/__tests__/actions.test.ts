@@ -165,7 +165,7 @@ describe("dashboard visa detail actions — updateVisaAction happy path", () => 
     formData.set("price", "100");
     const result = await actions.updateVisaAction("visa-1", formData);
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/country/i);
+    expect(result.error).toMatch(/pa\u00eds/i);
     expect(updateVisaMock).not.toHaveBeenCalled();
   });
 
@@ -177,7 +177,7 @@ describe("dashboard visa detail actions — updateVisaAction happy path", () => 
     formData.set("price", "not-a-number");
     const result = await actions.updateVisaAction("visa-1", formData);
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/price/i);
+    expect(result.error).toMatch(/precio/i);
     expect(updateVisaMock).not.toHaveBeenCalled();
   });
 
@@ -276,7 +276,7 @@ describe("dashboard visa detail actions — document actions", () => {
   it("requestVisaDocumentAction rejects an empty description before the data layer", async () => {
     const result = await actions.requestVisaDocumentAction("visa-1", "c1", "   ");
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/description/i);
+    expect(result.error).toMatch(/descripci\u00f3n/i);
     expect(requestVisaDocumentMock).not.toHaveBeenCalled();
   });
 
@@ -304,7 +304,7 @@ describe("dashboard visa detail actions — document actions", () => {
   it("requestVisaDocumentReUploadAction rejects an empty comment before the data layer", async () => {
     const result = await actions.requestVisaDocumentReUploadAction("doc-1", "   ");
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/comment/i);
+    expect(result.error).toMatch(/comentario/i);
     expect(requestVisaDocumentReUploadMock).not.toHaveBeenCalled();
   });
 

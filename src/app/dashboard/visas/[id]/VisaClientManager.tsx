@@ -42,7 +42,7 @@ export function VisaClientManager({
     startTransition(async () => {
       const result = await setVisaClientsAction(visaId, next);
       if (!result.ok) {
-        setError(result.error ?? "Could not update assigned clients.");
+        setError(result.error ?? "No se pudieron actualizar los clientes asignados.");
         return;
       }
       setAssignedIds(next);
@@ -67,7 +67,7 @@ export function VisaClientManager({
     <div className="space-y-4" data-testid="visa-client-manager">
       {assignedClients.length === 0 ? (
         <p className="text-sm text-[var(--operator-ink-muted)]">
-          No clients assigned yet.
+          Sin clientes asignados todavía.
         </p>
       ) : (
         <ul className="flex flex-wrap gap-2">
@@ -80,7 +80,7 @@ export function VisaClientManager({
               <button
                 type="button"
                 onClick={() => removeClient(client.id)}
-                aria-label={`Remove ${client.name}`}
+                aria-label={`Eliminar ${client.name}`}
                 disabled={isPending}
                 className="ml-1 text-xs text-[var(--operator-coral)] hover:underline disabled:opacity-60"
               >
@@ -97,7 +97,7 @@ export function VisaClientManager({
             htmlFor="visa-client-picker"
             className="block text-xs font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]"
           >
-            Add client
+            Agregar cliente
           </label>
           <select
             id="visa-client-picker"
@@ -107,7 +107,7 @@ export function VisaClientManager({
             className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
           >
             <option value="">
-              {availableClients.length === 0 ? "All clients are assigned" : "Select a client"}
+              {availableClients.length === 0 ? "Todos los clientes están asignados" : "Selecciona un cliente"}
             </option>
             {availableClients.map((client) => (
               <option key={client.id} value={client.id}>
@@ -122,7 +122,7 @@ export function VisaClientManager({
           disabled={isPending || !pickerValue}
           className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-60"
         >
-          {isPending ? "Saving…" : "Assign"}
+          {isPending ? "Guardando…" : "Asignar"}
         </button>
       </div>
 

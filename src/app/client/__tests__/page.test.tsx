@@ -309,8 +309,8 @@ describe("/client home page", () => {
 
     expect(findElements(element, (node) => node.props["data-testid"] === "client-visas-surface")).toHaveLength(1);
     expect(findElements(element, (node) => node.props["data-testid"] === "client-visas-empty")).toHaveLength(1);
-    expect(text).toContain("My visa applications");
-    expect(text).toContain("You don't have any visa applications yet.");
+    expect(text).toContain("Mis trámites de visa");
+    expect(text).toContain("Todavía no tienes trámites de visa.");
   });
 
   it("renders a visa entry with status badge and a Documents link to the traveler portal", async () => {
@@ -348,10 +348,10 @@ describe("/client home page", () => {
     expect(findElements(element, (node) => node.props["data-testid"] === "client-visa-status-in_progress")).toHaveLength(1);
     const docsLink = links.find((l) => l.href === "/client/visas/v1/documents");
     expect(docsLink).toBeDefined();
-    expect(docsLink?.text).toContain("Documents");
+    expect(docsLink?.text).toContain("Documentos");
     expect(text).toContain("France");
     expect(text).toContain("Tourist");
-    expect(text).toContain("In progress");
-    expect(text).toContain("Deadline");
+    expect(text).toContain("En trámite");
+    expect(text).toContain("Fecha límite");
   });
 });
