@@ -50,3 +50,5 @@ file" list only updates after a full page refresh.
 - 2026-10-09: Translated remaining dashboard detail surfaces, actions errors,
   loading/not-found, and the client portal documents page (`es-MX` formatters). Commit `34cd3b5`.
 - 2026-10-09: Verified: 61 visa tests pass, `tsc --noEmit` clean. Closing.
+- 2026-10-09: Pushed branch and opened PR #370 (`type:bug`) targeting `main`.
+  https://github.com/eliumontoya/travelhub-app/pull/370
