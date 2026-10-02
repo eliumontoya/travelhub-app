@@ -14,6 +14,7 @@ vi.mock("@/lib/client-auth", () => ({
 vi.mock("@/lib/data", () => ({
   getClientProfileForHome: vi.fn(),
   getClientHomeTrips: vi.fn(),
+  getVisasByClientId: vi.fn(),
 }));
 
 vi.mock("@/lib/data/services", () => ({
@@ -27,7 +28,11 @@ vi.mock("../login/actions", () => ({
 
 import { redirect } from "next/navigation";
 import { getClientSession } from "@/lib/client-auth";
-import { getClientHomeTrips, getClientProfileForHome } from "@/lib/data";
+import {
+  getClientHomeTrips,
+  getClientProfileForHome,
+  getVisasByClientId,
+} from "@/lib/data";
 import {
   getServiceForClientTrip,
   getServicesProgressForClient,
@@ -112,6 +117,7 @@ function findElements(node: ReactNode, predicate: (element: TestElement) => bool
 describe("/client home page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getVisasByClientId).mockResolvedValue([]);
   });
 
   it("redirects to login when there is no session", async () => {
@@ -281,5 +287,71 @@ describe("/client home page", () => {
     expect(docsLink).toBeDefined();
     expect(docsLink?.text).toContain("Documentos");
     expect(text).toContain("2/5");
+  });
+
+  it("renders the visa surface in its empty state when the traveler has no visas", async () => {
+    vi.mocked(getClientSession).mockResolvedValue({ clientId: "c1", expiresAt: Date.now() + 10000 });
+    vi.mocked(getClientProfileForHome).mockResolvedValue({
+      name: "Ana",
+      email: "ana@example.com",
+      phone: "",
+      whatsapp: "",
+      birthDate: "",
+      notes: "",
+      referralSource: null,
+    });
+    vi.mocked(getClientHomeTrips).mockResolvedValue([]);
+    vi.mocked(getVisasByClientId).mockResolvedValue([]);
+
+    const { default: ClientHomePage } = await import("../page");
+    const element = await ClientHomePage();
+    const text = getText(element);
+
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-visas-surface")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-visas-empty")).toHaveLength(1);
+    expect(text).toContain("My visa applications");
+    expect(text).toContain("You don't have any visa applications yet.");
+  });
+
+  it("renders a visa entry with status badge and a Documents link to the traveler portal", async () => {
+    vi.mocked(getClientSession).mockResolvedValue({ clientId: "c1", expiresAt: Date.now() + 10000 });
+    vi.mocked(getClientProfileForHome).mockResolvedValue({
+      name: "Ana",
+      email: "ana@example.com",
+      phone: "",
+      whatsapp: "",
+      birthDate: "",
+      notes: "",
+      referralSource: null,
+    });
+    vi.mocked(getClientHomeTrips).mockResolvedValue([]);
+    vi.mocked(getVisasByClientId).mockResolvedValue([
+      {
+        id: "v1",
+        clientId: "c1",
+        country: "France",
+        visaType: "Tourist",
+        deadline: "2026-12-01",
+        price: 150,
+        status: "in_progress",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+
+    const { default: ClientHomePage } = await import("../page");
+    const element = await ClientHomePage();
+    const links = findLinks(element);
+    const text = getText(element);
+
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-visa-v1")).toHaveLength(1);
+    expect(findElements(element, (node) => node.props["data-testid"] === "client-visa-status-in_progress")).toHaveLength(1);
+    const docsLink = links.find((l) => l.href === "/client/visas/v1/documents");
+    expect(docsLink).toBeDefined();
+    expect(docsLink?.text).toContain("Documents");
+    expect(text).toContain("France");
+    expect(text).toContain("Tourist");
+    expect(text).toContain("In progress");
+    expect(text).toContain("Deadline");
   });
 });

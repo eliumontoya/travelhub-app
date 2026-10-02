@@ -9,3 +9,5 @@ export * from "@/lib/data/services";
 export * from "@/lib/data/dashboard";
 export * from "@/lib/data/settings";
 export * from "@/lib/data/feedback";
+export * from "@/lib/data/visas";
+export * from "@/lib/data/visa-documents";
