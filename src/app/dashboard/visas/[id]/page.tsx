@@ -21,16 +21,16 @@ import { VisaDocumentsPanel } from "./VisaDocumentsPanel";
 
 const STATUS_META: Record<VisaStatus, { label: string; classes: string }> = {
   pending: {
-    label: "Pending",
+    label: "Pendiente",
     classes:
       "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]",
   },
   in_progress: {
-    label: "In progress",
+    label: "En trámite",
     classes: "bg-amber-100 text-amber-800",
   },
   completed: {
-    label: "Completed",
+    label: "Completada",
     classes: "bg-green-100 text-green-800",
   },
 };
@@ -44,7 +44,7 @@ const VISA_TRANSITIONS: Record<VisaStatus, VisaStatus[]> = {
 function formatDate(value: string): string {
   const date = value.length === 10 ? new Date(`${value}T00:00:00.000Z`) : new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-MX", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -54,7 +54,7 @@ function formatDate(value: string): string {
 function formatDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-MX", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -64,7 +64,7 @@ function formatDateTime(value: string): string {
 }
 
 function formatPrice(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -101,7 +101,7 @@ export default async function VisaDetailPage({
         href="/dashboard/visas"
         className="text-sm text-[var(--operator-ink-muted)] hover:underline"
       >
-        ← Back to visas
+        ← Volver a visas
       </Link>
 
       <header className="mt-4 mb-6">
@@ -117,20 +117,20 @@ export default async function VisaDetailPage({
           </span>
         </div>
         <p className="mt-1 text-sm text-[var(--operator-ink-muted)]">
-          Deadline {formatDate(visa.deadline)} · Price {formatPrice(visa.price)}
+          Fecha límite {formatDate(visa.deadline)} · Precio {formatPrice(visa.price)}
         </p>
       </header>
 
       <section className="mb-6 overflow-hidden rounded-2xl border border-[var(--operator-border)] bg-[var(--operator-surface)] p-5">
         <h2 className="mb-3 text-base font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">
-          Editable fields
+          Campos editables
         </h2>
         <VisaDetailEditor visa={visa} />
       </section>
 
       <section className="mb-6 overflow-hidden rounded-2xl border border-[var(--operator-border)] bg-[var(--operator-surface)] p-5">
         <h2 className="mb-3 text-base font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">
-          Assigned clients
+          Clientes asignados
         </h2>
         <VisaClientManager
           visaId={visa.id}
@@ -141,7 +141,7 @@ export default async function VisaDetailPage({
 
       <section className="mb-6 overflow-hidden rounded-2xl border border-[var(--operator-border)] bg-[var(--operator-surface)] p-5">
         <h2 className="mb-3 text-base font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">
-          Status
+          Estado
         </h2>
         <VisaStatusControl
           visaId={visa.id}
@@ -149,14 +149,14 @@ export default async function VisaDetailPage({
           allowedTransitions={VISA_TRANSITIONS[visa.status]}
         />
         <h3 className="mt-5 mb-2 text-sm font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]">
-          Status history
+          Historial de estado
         </h3>
         <StatusHistoryTimeline entries={statusHistory} />
       </section>
 
       <section className="mb-6 overflow-hidden rounded-2xl border border-[var(--operator-border)] bg-[var(--operator-surface)] p-5">
         <h2 className="mb-3 text-base font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">
-          Documents
+          Documentos
         </h2>
         <VisaDocumentsPanel
           visaId={visa.id}
@@ -172,7 +172,7 @@ function StatusHistoryTimeline({ entries }: { entries: VisaStatusHistoryEntry[] 
   if (entries.length === 0) {
     return (
       <p className="text-sm text-[var(--operator-ink-muted)]">
-        No status changes yet.
+        Sin cambios de estado todavía.
       </p>
     );
   }
@@ -184,7 +184,7 @@ function StatusHistoryTimeline({ entries }: { entries: VisaStatusHistoryEntry[] 
           className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--operator-border-subtle)] bg-[var(--operator-surface-subtle)] px-3 py-2 text-sm"
         >
           <span className="font-medium text-[var(--operator-ink)]">
-            {entry.fromStatus ? STATUS_META[entry.fromStatus].label : "Created"}
+            {entry.fromStatus ? STATUS_META[entry.fromStatus].label : "Creada"}
           </span>
           <span aria-hidden="true" className="text-[var(--operator-ink-subtle)]">
             →

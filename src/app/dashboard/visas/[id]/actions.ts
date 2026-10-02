@@ -40,17 +40,17 @@ export async function updateVisaAction(
   const notes = String(formData.get("notes") ?? "").trim() || undefined;
 
   if (!country) {
-    return { ok: false, error: "Country is required." };
+    return { ok: false, error: "El país es obligatorio." };
   }
   if (!visaType) {
-    return { ok: false, error: "Visa type is required." };
+    return { ok: false, error: "El tipo de visa es obligatorio." };
   }
   if (!deadline) {
-    return { ok: false, error: "Deadline is required." };
+    return { ok: false, error: "La fecha límite es obligatoria." };
   }
   const price = Number(priceRaw);
   if (!Number.isFinite(price) || price < 0) {
-    return { ok: false, error: "Price must be a non-negative number." };
+    return { ok: false, error: "El precio debe ser un número no negativo." };
   }
 
   try {
@@ -66,7 +66,7 @@ export async function updateVisaAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not update visa.",
+      error: error instanceof Error ? error.message : "No se pudo actualizar la visa.",
     };
   }
 }
@@ -89,7 +89,7 @@ export async function setVisaClientsAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not update assigned clients.",
+      error: error instanceof Error ? error.message : "No se pudieron actualizar los clientes asignados.",
     };
   }
 }
@@ -118,7 +118,7 @@ export async function transitionVisaStatusAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not transition visa status.",
+      error: error instanceof Error ? error.message : "No se pudo cambiar el estado de la visa.",
     };
   }
 }
@@ -142,7 +142,7 @@ export async function uploadVisaDocumentAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not upload document.",
+      error: error instanceof Error ? error.message : "No se pudo subir el documento.",
     };
   }
 }
@@ -162,7 +162,7 @@ export async function requestVisaDocumentAction(
 
   const trimmed = description.trim();
   if (!trimmed) {
-    return { ok: false, error: "Description is required." };
+    return { ok: false, error: "La descripción es obligatoria." };
   }
 
   try {
@@ -172,7 +172,7 @@ export async function requestVisaDocumentAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not request document.",
+      error: error instanceof Error ? error.message : "No se pudo solicitar el documento.",
     };
   }
 }
@@ -192,7 +192,7 @@ export async function markVisaDocumentReviewedAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not mark document as reviewed.",
+      error: error instanceof Error ? error.message : "No se pudo marcar el documento como revisado.",
     };
   }
 }
@@ -212,7 +212,7 @@ export async function markVisaDocumentProcessedAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not mark document as processed.",
+      error: error instanceof Error ? error.message : "No se pudo marcar el documento como procesado.",
     };
   }
 }
@@ -230,7 +230,7 @@ export async function requestVisaDocumentReUploadAction(
 
   const trimmed = comment.trim();
   if (!trimmed) {
-    return { ok: false, error: "Comment is required." };
+    return { ok: false, error: "El comentario es obligatorio." };
   }
 
   try {
@@ -239,7 +239,7 @@ export async function requestVisaDocumentReUploadAction(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not request re-upload.",
+      error: error instanceof Error ? error.message : "No se pudo solicitar la resubida.",
     };
   }
 }

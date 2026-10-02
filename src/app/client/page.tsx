@@ -12,15 +12,15 @@ import { clientLogout } from "./login/actions";
 
 const VISA_STATUS_META: Record<VisaStatus, { label: string; classes: string }> = {
   pending: {
-    label: "Pending",
+    label: "Pendiente",
     classes: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]",
   },
   in_progress: {
-    label: "In progress",
+    label: "En trámite",
     classes: "bg-amber-100 text-amber-800",
   },
   completed: {
-    label: "Completed",
+    label: "Completada",
     classes: "bg-green-100 text-green-800",
   },
 };
@@ -28,7 +28,7 @@ const VISA_STATUS_META: Record<VisaStatus, { label: string; classes: string }> =
 function formatVisaDate(value: string): string {
   const date = value.length === 10 ? new Date(`${value}T00:00:00.000Z`) : new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-MX", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -190,10 +190,10 @@ export default async function ClientHomePage() {
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">
-                My visa applications
+                Mis trámites de visa
               </h2>
               <span className="text-sm text-[var(--operator-ink-muted)]">
-                {visas.length} {visas.length === 1 ? "application" : "applications"}
+                {visas.length} {visas.length === 1 ? "trámite" : "trámites"}
               </span>
             </div>
 
@@ -202,7 +202,7 @@ export default async function ClientHomePage() {
                 data-testid="client-visas-empty"
                 className="mt-8 border-t border-[var(--operator-border-subtle)] pt-5 text-sm leading-6 text-[var(--operator-ink-muted)]"
               >
-                You don&apos;t have any visa applications yet.
+                Todavía no tienes trámites de visa.
               </p>
             ) : (
               <ul
@@ -223,8 +223,8 @@ export default async function ClientHomePage() {
                             {visa.country} — {visa.visaType}
                           </span>
                           <p className="mt-2 text-sm leading-6 text-[var(--operator-ink-muted)]">
-                            Deadline {formatVisaDate(visa.deadline)} ·{" "}
-                            {new Intl.NumberFormat("en-US", {
+                            Fecha límite {formatVisaDate(visa.deadline)} ·{" "}
+                            {new Intl.NumberFormat("es-MX", {
                               style: "currency",
                               currency: "USD",
                               maximumFractionDigits: 0,
@@ -243,7 +243,7 @@ export default async function ClientHomePage() {
                           href={`/client/visas/${visa.id}/documents`}
                           className="font-semibold text-[var(--operator-brand)] underline decoration-[var(--operator-accent)] decoration-2 underline-offset-4 transition hover:text-[var(--operator-brand-strong)]"
                         >
-                          Documents
+                          Documentos
                         </a>
                       </div>
                     </li>

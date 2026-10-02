@@ -7,15 +7,15 @@ import { uploadVisaDocumentForRequestAction } from "./actions";
 
 const STATUS_META: Record<VisaStatus, { label: string; classes: string }> = {
   pending: {
-    label: "Pending",
+    label: "Pendiente",
     classes: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]",
   },
   in_progress: {
-    label: "In progress",
+    label: "En trámite",
     classes: "bg-amber-100 text-amber-800",
   },
   completed: {
-    label: "Completed",
+    label: "Completada",
     classes: "bg-green-100 text-green-800",
   },
 };
@@ -26,27 +26,27 @@ const DOCUMENT_STATUS_META: Record<
 > = {
   requested: {
     icon: "□",
-    label: "Pending upload",
+    label: "Pendiente de subir",
     classes: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]",
   },
   uploaded: {
     icon: "↻",
-    label: "Pending review",
+    label: "Pendiente de revisión",
     classes: "bg-blue-100 text-blue-800",
   },
   reviewed: {
     icon: "✓",
-    label: "Reviewed",
+    label: "Revisado",
     classes: "bg-emerald-100 text-emerald-800",
   },
   processed: {
     icon: "✓",
-    label: "Processed",
+    label: "Procesado",
     classes: "bg-green-100 text-green-800",
   },
   re_upload_requested: {
     icon: "!",
-    label: "Re-upload requested",
+    label: "Resubida solicitada",
     classes: "bg-rose-100 text-rose-800",
   },
 };
@@ -58,7 +58,7 @@ function canUpload(status: VisaDocumentStatus): boolean {
 function formatDate(value: string): string {
   const date = value.length === 10 ? new Date(`${value}T00:00:00.000Z`) : new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-MX", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -66,7 +66,7 @@ function formatDate(value: string): string {
 }
 
 function formatPrice(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -115,7 +115,7 @@ export default async function ClientVisaDocumentsPage({
               href="/client"
               className="text-white/82 hover:text-[var(--operator-brand)] hover:underline"
             >
-              ← Back to my account
+              ← Volver a mi cuenta
             </Link>
           </div>
           <h1 className="mt-4 font-serif text-3xl font-semibold tracking-[-0.04em] text-white">
@@ -129,12 +129,12 @@ export default async function ClientVisaDocumentsPage({
               {statusMeta.label}
             </span>
             <span>·</span>
-            <span>Deadline {formatDate(visa.deadline)}</span>
+            <span>Fecha límite {formatDate(visa.deadline)}</span>
             <span>·</span>
-            <span>Price {formatPrice(visa.price)}</span>
+            <span>Precio {formatPrice(visa.price)}</span>
           </div>
           <p className="mt-1 text-sm text-white/76">
-            {completedCount}/{travelerDocs.length} completed · {pendingCount} pending
+            {completedCount}/{travelerDocs.length} completados · {pendingCount} pendientes
           </p>
         </header>
 
@@ -143,7 +143,7 @@ export default async function ClientVisaDocumentsPage({
             data-testid="visa-no-documents"
             className="rounded-2xl border border-[var(--operator-border)] bg-white/94 p-5 text-sm text-[var(--operator-ink-muted)] shadow-[0_18px_42px_rgba(81,0,52,0.07)]"
           >
-            No documents have been requested for this visa yet.
+            Todavía no se ha solicitado ningún documento para esta visa.
           </p>
         ) : (
           <ul className="space-y-4">
@@ -174,7 +174,7 @@ export default async function ClientVisaDocumentsPage({
                           {meta.icon}
                         </span>
                         <span className="font-semibold text-[var(--operator-brand)]">
-                          {doc.description ?? "Untitled document"}
+                          {doc.description ?? "Documento sin título"}
                         </span>
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${meta.classes}`}
@@ -184,12 +184,12 @@ export default async function ClientVisaDocumentsPage({
                       </div>
                       {doc.status === "re_upload_requested" && doc.agentComment && (
                         <p className="mt-2 text-sm text-[var(--operator-brand)]">
-                          Agent comment: {doc.agentComment}
+                          Comentario del agente: {doc.agentComment}
                         </p>
                       )}
                       {doc.filePath && (
                         <p className="mt-1 text-xs text-[var(--operator-ink-muted)]">
-                          File: {doc.filename ?? doc.filePath.split("/").pop()}
+                          Archivo: {doc.filename ?? doc.filePath.split("/").pop()}
                         </p>
                       )}
                     </div>
@@ -202,7 +202,7 @@ export default async function ClientVisaDocumentsPage({
                           className="sr-only"
                           htmlFor={`file-${doc.id}`}
                         >
-                          Upload file for {doc.description ?? doc.id}
+                          Subir archivo para {doc.description ?? doc.id}
                         </label>
                         <input
                           id={`file-${doc.id}`}
@@ -215,7 +215,7 @@ export default async function ClientVisaDocumentsPage({
                           type="submit"
                           className="rounded-xl bg-[var(--operator-brand)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--operator-brand-strong)]"
                         >
-                          Upload
+                          Subir
                         </button>
                       </form>
                     )}

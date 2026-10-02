@@ -31,10 +31,10 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
     startTransition(async () => {
       const result = await updateVisaAction(visa.id, formData);
       if (!result.ok) {
-        setError(result.error ?? "Could not update visa.");
+        setError(result.error ?? "No se pudo actualizar la visa.");
         return;
       }
-      setSuccess("Visa updated.");
+      setSuccess("Visa actualizada.");
       router.refresh();
     });
   }
@@ -47,7 +47,7 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
             htmlFor="visa-detail-country"
             className="block text-xs font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]"
           >
-            Country / consulate
+            País / consulado
           </label>
           <input
             id="visa-detail-country"
@@ -62,7 +62,7 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
             htmlFor="visa-detail-type"
             className="block text-xs font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]"
           >
-            Visa type
+            Tipo de visa
           </label>
           <input
             id="visa-detail-type"
@@ -80,7 +80,7 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
             htmlFor="visa-detail-deadline"
             className="block text-xs font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]"
           >
-            Deadline
+            Fecha límite
           </label>
           <input
             id="visa-detail-deadline"
@@ -96,7 +96,7 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
             htmlFor="visa-detail-price"
             className="block text-xs font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]"
           >
-            Price
+            Precio
           </label>
           <input
             id="visa-detail-price"
@@ -116,7 +116,7 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
           htmlFor="visa-detail-notes"
           className="block text-xs font-semibold uppercase tracking-wider text-[var(--operator-ink-muted)]"
         >
-          Notes
+          Notas
         </label>
         <textarea
           id="visa-detail-notes"
@@ -148,7 +148,7 @@ export function VisaDetailEditor({ visa }: { visa: Visa }) {
           disabled={isPending}
           className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-60"
         >
-          {isPending ? "Saving…" : "Save changes"}
+          {isPending ? "Guardando…" : "Guardar cambios"}
         </button>
       </div>
     </form>
