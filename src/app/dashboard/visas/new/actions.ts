@@ -12,7 +12,7 @@ import { requireFeature, requireRole } from "@/lib/auth/roles";
  * - On validation error, redirects back to the form with an error query param.
  */
 export async function createVisaAction(formData: FormData) {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   const country = String(formData.get("country") ?? "").trim();

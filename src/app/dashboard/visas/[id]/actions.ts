@@ -30,7 +30,7 @@ export async function updateVisaAction(
   id: string,
   formData: FormData,
 ): Promise<{ ok: boolean; visa?: Visa; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   const country = String(formData.get("country") ?? "").trim();
@@ -79,7 +79,7 @@ export async function setVisaClientsAction(
   id: string,
   clientIds: string[],
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   try {
@@ -104,7 +104,7 @@ export async function transitionVisaStatusAction(
   id: string,
   toStatus: VisaStatus,
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   if (!isVisaStatus(toStatus)) {
@@ -132,7 +132,7 @@ export async function uploadVisaDocumentAction(
   visaId: string,
   file: File,
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   try {
@@ -157,7 +157,7 @@ export async function requestVisaDocumentAction(
   clientId: string,
   description: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   const trimmed = description.trim();
@@ -183,7 +183,7 @@ export async function requestVisaDocumentAction(
 export async function markVisaDocumentReviewedAction(
   documentId: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   try {
@@ -203,7 +203,7 @@ export async function markVisaDocumentReviewedAction(
 export async function markVisaDocumentProcessedAction(
   documentId: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   try {
@@ -225,7 +225,7 @@ export async function requestVisaDocumentReUploadAction(
   documentId: string,
   comment: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  await requireRole("agent");
+  await requireRole("admin", "agent");
   await requireFeature("visas");
 
   const trimmed = comment.trim();
