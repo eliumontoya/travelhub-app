@@ -144,7 +144,7 @@ describe("dashboard visa detail actions — updateVisaAction happy path", () => 
 
     const result = await actions.updateVisaAction("visa-1", formData);
 
-    expect(requireRoleMock).toHaveBeenCalledWith("agent");
+    expect(requireRoleMock).toHaveBeenCalledWith("admin", "agent");
     expect(requireFeatureMock).toHaveBeenCalledWith("visas");
     expect(updateVisaMock).toHaveBeenCalledWith("visa-1", {
       country: "France",

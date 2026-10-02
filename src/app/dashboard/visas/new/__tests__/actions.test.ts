@@ -60,9 +60,9 @@ beforeEach(() => {
 });
 
 describe("createVisaAction", () => {
-  it("guards with requireRole('agent') + requireFeature('visas')", async () => {
+  it("guards with requireRole('admin', 'agent') + requireFeature('visas')", async () => {
     await expect(createVisaAction(sampleForm())).rejects.toThrow(/__redirect__/);
-    expect(requireRole).toHaveBeenCalledWith("agent");
+    expect(requireRole).toHaveBeenCalledWith("admin", "agent");
     expect(requireFeature).toHaveBeenCalledWith("visas");
   });
 
