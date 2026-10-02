@@ -17,6 +17,9 @@ import {
   Service,
   ServiceChecklistItem,
   ServiceUpload,
+  Visa,
+  VisaDocument,
+  VisaStatusHistoryEntry,
 } from "@/types";
 
 // Mock source of truth for client PIN hashes (issue #302) — mirrors clients.pin_hash.
@@ -770,3 +773,95 @@ export const mockServiceUploads: ServiceUpload[] = [
     updatedAt: "2026-07-02T09:00:00Z",
   },
 ];
+
+// Fuente de verdad mock para visas (servicio de visas), espejo de las tablas
+// visas, visa_clients y visa_status_history.
+export const mockVisas: Visa[] = [
+  {
+    id: "v1",
+    clientId: "c1",
+    country: "France",
+    visaType: "Tourist",
+    deadline: "2026-12-01",
+    price: 150,
+    notes: "Honeymoon visa",
+    status: "pending",
+    createdAt: "2026-09-30T10:00:00Z",
+    updatedAt: "2026-09-30T10:00:00Z",
+  },
+  {
+    id: "v2",
+    clientId: "c2",
+    country: "Japan",
+    visaType: "Business",
+    deadline: "2026-11-15",
+    price: 200,
+    status: "in_progress",
+    createdAt: "2026-09-29T10:00:00Z",
+    updatedAt: "2026-09-29T10:00:00Z",
+  },
+];
+
+export const mockVisaClients: { visaId: string; clientId: string; createdAt: string }[] = [
+  { visaId: "v1", clientId: "c1", createdAt: "2026-09-30T10:00:00Z" },
+  { visaId: "v2", clientId: "c2", createdAt: "2026-09-29T10:00:00Z" },
+];
+
+export const mockVisaStatusHistory: VisaStatusHistoryEntry[] = [
+  {
+    id: "vsh1",
+    visaId: "v1",
+    fromStatus: null,
+    toStatus: "pending",
+    changedAt: "2026-09-30T10:00:00Z",
+  },
+  {
+    id: "vsh2",
+    visaId: "v2",
+    fromStatus: null,
+    toStatus: "pending",
+    changedAt: "2026-09-29T10:00:00Z",
+  },
+  {
+    id: "vsh3",
+    visaId: "v2",
+    fromStatus: "pending",
+    toStatus: "in_progress",
+    changedAt: "2026-09-29T11:00:00Z",
+  },
+];
+
+// Fuente de verdad mock para documentos de visa (servicio de visas), espejo de
+// la tabla visa_documents. NOTA: a diferencia de trips, los documentos de visa
+// viven en su propia tabla y bucket privados — no reutilizan ni la tabla
+// `service_uploads` ni el bucket `trip-documents`.
+export const mockVisaDocuments: VisaDocument[] = [
+  {
+    id: "vd1",
+    visaId: "v1",
+    // Documento cargado directamente por el agente: sin `targetClientId` y con
+    // archivo físico bajo el bucket privado `visa-documents`.
+    targetClientId: null,
+    description: "Visa application form (signed)",
+    filePath: "visas/v1/vd1-application-form.pdf",
+    filename: "application-form.pdf",
+    mimeType: "application/pdf",
+    status: "uploaded",
+    uploadedAt: "2026-09-30T10:00:00Z",
+    createdAt: "2026-09-30T10:00:00Z",
+    updatedAt: "2026-09-30T10:00:00Z",
+  },
+  {
+    id: "vd2",
+    visaId: "v2",
+    // Solicitud al viajero asignado: `targetClientId` apunta al cliente y el
+    // archivo aún no se ha subido (`filePath: null`).
+    targetClientId: "c2",
+    description: "Passport scan",
+    filePath: null,
+    status: "requested",
+    createdAt: "2026-09-29T10:00:00Z",
+    updatedAt: "2026-09-29T10:00:00Z",
+  },
+];
+

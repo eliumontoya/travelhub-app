@@ -11,6 +11,7 @@ export const AVAILABLE_FEATURES: Feature[] = [
   "travel-agents",
   "whatsapp",
   "settings",
+  "visas",
 ];
 
 export interface FeatureDefinition {
@@ -32,6 +33,7 @@ export const FEATURE_DEFINITIONS: readonly FeatureDefinition[] = [
   { feature: "travel-agents", href: "/dashboard/travel-agents", label: "Agentes" },
   { feature: "whatsapp", href: "/dashboard/wcc", label: "WhatsApp C.C." },
   { feature: "settings", href: "/dashboard/settings", label: "Ajustes" },
+  { feature: "visas", href: "/dashboard/visas", label: "Visas" },
 ];
 
 /** Type guard: narrows `unknown` to a catalog `Feature`. */

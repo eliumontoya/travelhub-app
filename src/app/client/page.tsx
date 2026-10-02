@@ -2,12 +2,38 @@ import { redirect } from "next/navigation";
 import { OperatorButton } from "@/components/ui/OperatorButton";
 import { OperatorSurface } from "@/components/ui/OperatorSurface";
 import { getClientSession } from "@/lib/client-auth";
-import { getClientHomeTrips, getClientProfileForHome } from "@/lib/data";
+import { getClientHomeTrips, getClientProfileForHome, getVisasByClientId } from "@/lib/data";
 import {
   getServiceForClientTrip,
   getServicesProgressForClient,
 } from "@/lib/data/services";
+import type { VisaStatus } from "@/types";
 import { clientLogout } from "./login/actions";
+
+const VISA_STATUS_META: Record<VisaStatus, { label: string; classes: string }> = {
+  pending: {
+    label: "Pending",
+    classes: "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)]",
+  },
+  in_progress: {
+    label: "In progress",
+    classes: "bg-amber-100 text-amber-800",
+  },
+  completed: {
+    label: "Completed",
+    classes: "bg-green-100 text-green-800",
+  },
+};
+
+function formatVisaDate(value: string): string {
+  const date = value.length === 10 ? new Date(`${value}T00:00:00.000Z`) : new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  }).format(date);
+}
 
 export default async function ClientHomePage() {
   const session = await getClientSession();
@@ -17,6 +43,7 @@ export default async function ClientHomePage() {
 
   const profile = await getClientProfileForHome(session.clientId);
   const trips = await getClientHomeTrips(session.clientId);
+  const visas = await getVisasByClientId(session.clientId);
   const progressByServiceId = await getServicesProgressForClient(
     session.clientId
   );
@@ -155,6 +182,77 @@ export default async function ClientHomePage() {
             )}
           </OperatorSurface>
         </div>
+
+        <section className="mt-6">
+          <OperatorSurface
+            className="p-5 sm:p-6"
+            data-testid="client-visas-surface"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-xl font-semibold tracking-[-0.02em] text-[var(--operator-ink)]">
+                My visa applications
+              </h2>
+              <span className="text-sm text-[var(--operator-ink-muted)]">
+                {visas.length} {visas.length === 1 ? "application" : "applications"}
+              </span>
+            </div>
+
+            {visas.length === 0 ? (
+              <p
+                data-testid="client-visas-empty"
+                className="mt-8 border-t border-[var(--operator-border-subtle)] pt-5 text-sm leading-6 text-[var(--operator-ink-muted)]"
+              >
+                You don&apos;t have any visa applications yet.
+              </p>
+            ) : (
+              <ul
+                data-testid="client-visas-list"
+                className="mt-5 divide-y divide-[var(--operator-border-subtle)] border-t border-[var(--operator-border-subtle)]"
+              >
+                {visas.map((visa) => {
+                  const meta = VISA_STATUS_META[visa.status];
+                  return (
+                    <li
+                      key={visa.id}
+                      data-testid={`client-visa-${visa.id}`}
+                      className="py-5 first:pt-5 last:pb-0"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <span className="text-base font-semibold text-[var(--operator-ink)]">
+                            {visa.country} — {visa.visaType}
+                          </span>
+                          <p className="mt-2 text-sm leading-6 text-[var(--operator-ink-muted)]">
+                            Deadline {formatVisaDate(visa.deadline)} ·{" "}
+                            {new Intl.NumberFormat("en-US", {
+                              style: "currency",
+                              currency: "USD",
+                              maximumFractionDigits: 0,
+                            }).format(visa.price)}
+                          </p>
+                        </div>
+                        <span
+                          data-testid={`client-visa-status-${visa.status}`}
+                          className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${meta.classes}`}
+                        >
+                          {meta.label}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
+                        <a
+                          href={`/client/visas/${visa.id}/documents`}
+                          className="font-semibold text-[var(--operator-brand)] underline decoration-[var(--operator-accent)] decoration-2 underline-offset-4 transition hover:text-[var(--operator-brand-strong)]"
+                        >
+                          Documents
+                        </a>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </OperatorSurface>
+        </section>
       </div>
     </main>
   );
