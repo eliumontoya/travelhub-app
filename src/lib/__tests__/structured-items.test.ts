@@ -1,7 +1,81 @@
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+
+/**
+ * Contract test (migration pattern "a" — see helpers/db.ts) for the
+ * persistence half: the Supabase client is mocked and
+ * `isSupabaseConfigured()` returns true, so the real Supabase branch of
+ * `src/lib/data/trip-items.ts` runs. The pure validation/serialization halves
+ * below do not touch Supabase.
+ */
+const itemsStore = vi.hoisted(() => {
+  interface Call {
+    table: string;
+    method: string;
+    args: unknown[];
+  }
+
+  const calls: Call[] = [];
+  let row: Record<string, unknown> | null = null;
+
+  function createBuilder() {
+    const builder = {
+      select(...args: unknown[]) {
+        calls.push({ table: "items", method: "select", args });
+        return builder;
+      },
+      eq(...args: unknown[]) {
+        calls.push({ table: "items", method: "eq", args });
+        return builder;
+      },
+      is(...args: unknown[]) {
+        calls.push({ table: "items", method: "is", args });
+        return builder;
+      },
+      insert(...args: unknown[]) {
+        calls.push({ table: "items", method: "insert", args });
+        const input = args[0] as Record<string, unknown>;
+        row = { id: "item-1", ...input };
+        return builder;
+      },
+      update(...args: unknown[]) {
+        calls.push({ table: "items", method: "update", args });
+        const patch = args[0] as Record<string, unknown>;
+        row = { ...(row ?? {}), ...patch };
+        return builder;
+      },
+      async maybeSingle() {
+        calls.push({ table: "items", method: "maybeSingle", args: [] });
+        return { data: row, error: null };
+      },
+      async single() {
+        calls.push({ table: "items", method: "single", args: [] });
+        return { data: row, error: null };
+      },
+      then(resolve: (value: unknown) => unknown) {
+        return Promise.resolve({ data: row, error: null }).then(resolve);
+      },
+    };
+    return builder;
+  }
+
+  const client = { from: () => createBuilder() };
+
+  return {
+    calls,
+    client,
+    reset() {
+      calls.length = 0;
+      row = null;
+    },
+    setRow(next: Record<string, unknown>) {
+      row = next;
+    },
+  };
+});
+
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
-  createClient: vi.fn(),
+  isSupabaseConfigured: () => true,
+  createClient: async () => itemsStore.client,
 }));
 
 import { appendSerializedMetadata } from "@/components/ItemFormDialog";
@@ -38,20 +112,32 @@ describe("structured item metadata validation", () => {
 });
 
 describe("structured item metadata persistence", () => {
-  it("clears stale metadata when an edit sends empty metadata", async () => {
+  beforeEach(() => itemsStore.reset());
+
+  it("inserts metadata and clears stale metadata when an edit sends empty metadata", async () => {
+    const hotelMetadata = {
+      hotelName: "Hotel Demo",
+      address: "Calle 1",
+      checkIn: "2026-09-10",
+      checkOut: "2026-09-11",
+      roomType: "Suite",
+      boardBasis: "Todo incluido",
+    };
+
     const created = await createItem({
       tripDayId: "d1",
       type: "hotel",
       title: "Hotel con metadata",
-      metadata: {
-        hotelName: "Hotel Demo",
-        address: "Calle 1",
-        checkIn: "2026-09-10",
-        checkOut: "2026-09-11",
-        roomType: "Suite",
-        boardBasis: "Todo incluido",
-      },
+      metadata: hotelMetadata,
     });
+
+    const insertCall = itemsStore.calls.find((call) => call.method === "insert");
+    expect(insertCall?.args[0]).toMatchObject({
+      trip_day_id: "d1",
+      type: "hotel",
+      item_metadata: hotelMetadata,
+    });
+    expect(created.metadata).toEqual(hotelMetadata);
 
     const updated = await updateItem(created.id, {
       type: "flight",
@@ -59,8 +145,39 @@ describe("structured item metadata persistence", () => {
       metadata: null,
     });
 
+    const updateCall = itemsStore.calls.find((call) => call.method === "update");
+    expect(updateCall?.args[0]).toMatchObject({ type: "flight", item_metadata: null });
     expect(updated.type).toBe("flight");
     expect(updated.metadata).toBeNull();
+  });
+
+  it("reads the current item before applying the update patch", async () => {
+    itemsStore.setRow({
+      id: "item-9",
+      trip_day_id: "d1",
+      type: "hotel",
+      title: "Old",
+      start_time: null,
+      end_time: null,
+      location: null,
+      lat: null,
+      lng: null,
+      confirmation_code: null,
+      notes: null,
+      cost: null,
+      supplier_id: null,
+      created_by_client_id: null,
+      sort_order: 0,
+      item_metadata: null,
+    });
+
+    await updateItem("item-9", { title: "New" });
+
+    const readIndex = itemsStore.calls.findIndex((call) => call.method === "maybeSingle");
+    const updateIndex = itemsStore.calls.findIndex((call) => call.method === "update");
+    expect(readIndex).toBeGreaterThanOrEqual(0);
+    expect(updateIndex).toBeGreaterThan(readIndex);
+    expect(itemsStore.calls.some((call) => call.method === "eq" && call.args[0] === "id")).toBe(true);
   });
 });
 

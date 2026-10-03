@@ -1,104 +1,222 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * Contract test (migration pattern "a" — see helpers/db.ts): the Supabase
+ * client is mocked and `isSupabaseConfigured()` returns true, so the real
+ * Supabase branch of `src/lib/data/trip-items.ts` runs. We assert the read →
+ * count → insert query shapes `duplicateItem` issues, plus the field mapping.
+ */
+const state = vi.hoisted(() => {
+  interface Call {
+    table: string;
+    method: string;
+    args: unknown[];
+  }
+
+  const calls: Call[] = [];
+  let sourceRow: Record<string, unknown> | null = null;
+  let countValue = 0;
+  let queryError: unknown = null;
+  let insertError: unknown = null;
+  let insertedRow: Record<string, unknown> | null = null;
+  let mode: "source" | "count" | "insert" = "source";
+
+  function createBuilder() {
+    const builder = {
+      select(...args: unknown[]) {
+        calls.push({ table: "items", method: "select", args });
+        const options = args[1] as { count?: string } | undefined;
+        if (options?.count) mode = "count";
+        return builder;
+      },
+      eq(...args: unknown[]) {
+        calls.push({ table: "items", method: "eq", args });
+        return builder;
+      },
+      is(...args: unknown[]) {
+        calls.push({ table: "items", method: "is", args });
+        return builder;
+      },
+      insert(...args: unknown[]) {
+        calls.push({ table: "items", method: "insert", args });
+        const input = args[0] as Record<string, unknown>;
+        insertedRow = {
+          id: "copy-1",
+          ...input,
+          item_metadata: input.item_metadata ?? null,
+          sort_order: input.sort_order ?? 0,
+        };
+        mode = "insert";
+        return builder;
+      },
+      async maybeSingle() {
+        calls.push({ table: "items", method: "maybeSingle", args: [] });
+        return { data: sourceRow, error: queryError };
+      },
+      async single() {
+        calls.push({ table: "items", method: "single", args: [] });
+        return { data: insertedRow, error: insertError };
+      },
+      then(resolve: (value: unknown) => unknown) {
+        const result =
+          mode === "count"
+            ? { data: null, error: queryError, count: countValue }
+            : { data: null, error: queryError };
+        return Promise.resolve(result).then(resolve);
+      },
+    };
+    return builder;
+  }
+
+  const client = { from: () => createBuilder() };
+
+  return {
+    calls,
+    client,
+    reset() {
+      calls.length = 0;
+      sourceRow = null;
+      countValue = 0;
+      queryError = null;
+      insertError = null;
+      insertedRow = null;
+      mode = "source";
+    },
+    setSource(row: Record<string, unknown> | null) {
+      sourceRow = row;
+    },
+    getSource() {
+      return sourceRow;
+    },
+    setCount(value: number) {
+      countValue = value;
+    },
+    setQueryError(error: unknown) {
+      queryError = error;
+    },
+    setInsertError(error: unknown) {
+      insertError = error;
+    },
+  };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
-  createClient: vi.fn(),
+  isSupabaseConfigured: () => true,
+  createClient: async () => state.client,
 }));
 
-import {
-  createTripDay,
-  createItem,
-  duplicateItem,
-  getItemById,
-  createDocument,
-  getItemDocuments,
-} from "@/lib/data";
+import { duplicateItem } from "@/lib/data";
 
-describe("duplicateItem (mock mode)", () => {
-  it("creates a copy in the target day preserving fields and metadata", async () => {
-    const sourceDay = await createTripDay({ tripId: "trip-dup", date: "2030-01-01" });
-    const targetDay = await createTripDay({ tripId: "trip-dup", date: "2030-01-02" });
+const sourceRow = {
+  id: "src-1",
+  trip_day_id: "day-A",
+  type: "activity",
+  title: "Tour guiado",
+  start_time: "09:00",
+  end_time: null,
+  location: "Centro",
+  lat: null,
+  lng: null,
+  confirmation_code: null,
+  notes: null,
+  cost: 100,
+  supplier_id: null,
+  created_by_client_id: null,
+  sort_order: 0,
+  item_metadata: { activityName: "Tour" },
+};
 
-    const source = await createItem({
-      tripDayId: sourceDay.id,
+beforeEach(() => state.reset());
+
+describe("duplicateItem (Supabase contract)", () => {
+  it("reads the source, counts the destination items and inserts the copy preserving fields", async () => {
+    state.setSource({ ...sourceRow });
+    state.setCount(2);
+
+    const copy = await duplicateItem("src-1", "day-B");
+
+    const insertCall = state.calls.find((call) => call.method === "insert");
+    const inserted = insertCall?.args[0] as Record<string, unknown>;
+    expect(inserted).toMatchObject({
+      trip_day_id: "day-B",
       type: "activity",
       title: "Tour guiado",
-      startTime: "09:00",
+      start_time: "09:00",
       location: "Centro",
       cost: 100,
-      metadata: { activityName: "Tour", provider: "Acme", address: "Calle 1", startTime: "09:00", endTime: "11:00" },
+      supplier_id: null,
+      created_by_client_id: null,
+      sort_order: 2,
+      item_metadata: { activityName: "Tour" },
     });
+    expect(inserted.end_time).toBeNull();
 
-    const copy = await duplicateItem(source.id, targetDay.id);
-
-    expect(copy.id).not.toBe(source.id);
-    expect(copy.tripDayId).toBe(targetDay.id);
-    expect(copy.title).toBe("Tour guiado");
+    expect(copy.id).toBe("copy-1");
+    expect(copy.tripDayId).toBe("day-B");
     expect(copy.type).toBe("activity");
-    expect(copy.startTime).toBe("09:00");
-    expect(copy.location).toBe("Centro");
-    expect(copy.cost).toBe(100);
-    expect(copy.metadata).toMatchObject({ activityName: "Tour" });
-
-    const fetched = await getItemById(copy.id);
-    expect(fetched).not.toBeNull();
-    expect(fetched!.tripDayId).toBe(targetDay.id);
+    expect(copy.metadata).toEqual({ activityName: "Tour" });
   });
 
-  it("appends the copy at the end of the destination day", async () => {
-    const day = await createTripDay({ tripId: "trip-dup-2", date: "2030-02-01" });
-    const first = await createItem({ tripDayId: day.id, type: "note", title: "Uno" });
-    const second = await createItem({ tripDayId: day.id, type: "note", title: "Dos" });
+  it("appends the copy at the end of the destination day (sort_order = count)", async () => {
+    state.setSource({ ...sourceRow });
+    state.setCount(5);
 
-    const copy = await duplicateItem(first.id, day.id);
-    expect(copy.sortOrder).toBeGreaterThanOrEqual(second.sortOrder);
+    await duplicateItem("src-1", "day-B");
+
+    const insertCall = state.calls.find((call) => call.method === "insert");
+    const inserted = insertCall?.args[0] as Record<string, unknown>;
+    expect(inserted.sort_order).toBe(5);
+
+    const countCall = state.calls.find(
+      (call) => call.method === "select" && (call.args[1] as { count?: string })?.count === "exact"
+    );
+    expect(countCall?.args).toEqual(["id", { count: "exact", head: true }]);
+    expect(state.calls.some((call) => call.method === "eq" && call.args[0] === "trip_day_id")).toBe(true);
   });
 
-  it("returns null-safe error when source is missing", async () => {
-    const day = await createTripDay({ tripId: "trip-dup-3", date: "2030-03-01" });
-    await expect(duplicateItem("does-not-exist", day.id)).rejects.toThrow();
-  });
+  it("duplicates to the same day, preserving the original row", async () => {
+    state.setSource({ ...sourceRow });
+    state.setCount(1);
 
-  it("duplicates to the same day, preserving the original", async () => {
-    const day = await createTripDay({ tripId: "trip-dup-same", date: "2030-04-01" });
-    const source = await createItem({ tripDayId: day.id, type: "note", title: "Original" });
+    const copy = await duplicateItem("src-1", "day-A");
 
-    const copy = await duplicateItem(source.id, day.id);
-
-    expect(copy.id).not.toBe(source.id);
-    expect(copy.tripDayId).toBe(day.id);
-    expect(copy.title).toBe("Original");
-
-    // Original is preserved and both copies live in the same day.
-    const original = await getItemById(source.id);
-    const fetchedCopy = await getItemById(copy.id);
-    expect(original).not.toBeNull();
-    expect(fetchedCopy).not.toBeNull();
-    expect(original!.id).toBe(source.id);
-    expect(fetchedCopy!.tripDayId).toBe(day.id);
-    // The duplicate is appended after the original.
-    expect(copy.sortOrder).toBeGreaterThanOrEqual(source.sortOrder);
+    const insertCall = state.calls.find((call) => call.method === "insert");
+    const inserted = insertCall?.args[0] as Record<string, unknown>;
+    expect(inserted.trip_day_id).toBe("day-A");
+    expect(copy.tripDayId).toBe("day-A");
+    expect(state.getSource()).toEqual(sourceRow);
   });
 
   it("does not copy attached documents", async () => {
-    const sourceDay = await createTripDay({ tripId: "trip-dup-docs", date: "2030-05-01" });
-    const targetDay = await createTripDay({ tripId: "trip-dup-docs", date: "2030-05-02" });
-    const source = await createItem({ tripDayId: sourceDay.id, type: "note", title: "Con doc" });
+    state.setSource({ ...sourceRow });
+    state.setCount(0);
 
-    // Attach a document to the source item (mock mode returns an in-memory doc).
-    const doc = await createDocument({
-      itemId: source.id,
-      fileUrl: "s3://bucket/x.pdf",
-      fileName: "x.pdf",
-    });
-    expect(doc.itemId).toBe(source.id);
+    await duplicateItem("src-1", "day-B");
 
-    const copy = await duplicateItem(source.id, targetDay.id);
+    // duplicateItem never reads the `documents` table — documents attached to
+    // the source item are deliberately not duplicated.
+    expect(state.calls.every((call) => call.table === "items")).toBe(true);
+  });
 
-    // The duplicate must not inherit the source's documents.
-    // (Mock mode has no document store; this pins the contract that documents
-    // are not copied. Full document-exclusion proof requires Supabase integration.)
-    const copyDocs = await getItemDocuments(copy.id);
-    expect(copyDocs).toHaveLength(0);
+  it("rejects when the source item is missing, without inserting", async () => {
+    state.setSource(null);
+
+    await expect(duplicateItem("missing", "day-B")).rejects.toThrow("Item no encontrado");
+    expect(state.calls.some((call) => call.method === "insert")).toBe(false);
+  });
+
+  it("propagates a source read error", async () => {
+    state.setSource(null);
+    state.setQueryError(new Error("source read failed"));
+
+    await expect(duplicateItem("src-1", "day-B")).rejects.toThrow("source read failed");
+  });
+
+  it("propagates an insert error", async () => {
+    state.setSource({ ...sourceRow });
+    state.setCount(0);
+    state.setInsertError(new Error("insert failed"));
+
+    await expect(duplicateItem("src-1", "day-B")).rejects.toThrow("insert failed");
   });
 });
