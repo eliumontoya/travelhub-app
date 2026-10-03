@@ -28,7 +28,11 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
+          # Supply-chain hardening: pin the external repo to an immutable,
+          # reviewed commit (full 40-char SHA) and drop persisted credentials.
           repository: ${{ vars.SANITY_KIT_REPO }}
+          ref: ${{ vars.SANITY_KIT_SHA }}
+          persist-credentials: false
           path: sanity-kit
 
       - uses: actions/setup-node@v4
