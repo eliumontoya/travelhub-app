@@ -32,14 +32,44 @@ Referencias:
   `db reset` en CI en fases 2–3.
 
 ### Fase 2 — Migrar tests unitarios fuera de fixtures mock
-- [ ] Estado: pendiente
-- Inventariar tests de `src/lib/__tests__/`, `src/lib/data/__tests__/` y
-  similares que usan `mock-data` (imports directos o comportamiento mock).
-- Clasificar: (a) test de lógica pura → reexpresar contra contrato sin mock;
-  (b) test que necesita base → correr contra Supabase local (vitest con env
-  apuntando a local) o cliente Supabase mockeado.
-- CI: job de unit tests con `supabase start` + `db reset` si hace falta base.
-- PR 2.
+- [x] Estado: completada (3 lotes, suite 807 tests verde, tsc limpio)
+- Inventario: 22 archivos de test afectados (15 con import directo de
+  mock-data, 7 forzando isSupabaseConfigured=false), 4 de frontera (fase 5),
+  3 falsos positivos.
+- Estrategia: contrato con cliente Supabase mockeado (patrón default,
+  exemplar site-settings.test.ts); base real local solo donde un mock no
+  prueba semántica (auto-create: cascadas FK vía getTestSupabaseClient +
+  mock de @/lib/supabase/server). Helper: src/lib/__tests__/helpers/db.ts.
+- Batch 1: helper + site-settings, trip/client-cover-image, move-item,
+  duplicate-item, structured-items, item-supplier-persistence,
+  public-trip-details (sin cambios, falso positivo).
+- Batch 2: visas, visa-documents, services, client-portal, client-pin,
+  visa-domain-contracts, traveler-activities, client-home-data, profiles,
+  data-domain-contracts.
+- Batch 3: data.test.ts (fachada: superficie + routing), auto-create.test.ts
+  (base real: cascadas FK verificadas con limpieza por marcador), CI: setup
+  Supabase CLI + start + db reset antes de Unit Tests con TEST_SUPABASE_*.
+- Sin cambios (fase 5): roles.test, client-auth.test, accounts actions.test.
+- Hallazgos:
+  - Divergencia producción: clients.ts aplica effectiveWhatsapp(whatsapp,
+    phone) solo en la rama mock — al eliminar el switch (fase 4) hay que
+    computar el fallback también en la rama Supabase. Follow-up fase 4.
+  - move-item-to-day: la rama mock tenía un no-op (item inexistente) que no
+    existe en el path Supabase real — divergencia del modo dual confirmada.
+  - Semánticas RLS/security-definer (traveler activities, ownership de
+    documentos) quedan como cobertura de e2e local (fase 3).
+- Commits encadenados (candidato dividido por presupuesto de lente):
+  - `5fd053b` test(data): migrate small CRUD tests off mock fixtures
+  - `251dcfb` test(data): migrate visa domain and traveler activity tests
+  - `db5a9d6` test(data): migrate services, client portal, profiles tests
+  - `870e00d` test(data): facade contracts, real-DB cascade tests, CI wiring
+- Review nativo: C1 (review-1a006a27b98d2bd2), C2 (review-dfd117164edb932c),
+  C3 (review-251321c6d5ac0938) aprobados; C4 (review-a74ea29b4be58b20, tier
+  high, 4 lentes) aprobado. Autoridades quemadas.
+- Follow-ups informativos del review: comentar/anonimizar el JWT local en
+  ci.yml (R1-001/R2-inline-local-jwt/R3-CI-2), deduplicar fake client de
+  data.test.ts (R2-inline-fake-dup), revisar nombres de marcador de test
+  (R2-batch-marker-name), cobertura de superficie de fachada (R3-SURF-1).
 
 ### Fase 3 — Reexpresar el e2e proyecto `mock`
 - [ ] Estado: pendiente
