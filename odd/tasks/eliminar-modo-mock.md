@@ -92,7 +92,9 @@ Referencias:
 - Unit tests afectados actualizados: playwright-config (proyecto local),
   env SUPABASE_SERVICE_ROLE_KEY en visas.test.ts y data.test.ts (patrón de
   client-portal/services tests).
-- Commit: (ver abajo, fase 3).
+- Commit: `38a64ce` — test(e2e): re-express mock project as seeded local
+  Supabase suite (issue #372 phase 3). PR #390 (apilado sobre #389).
+  Review nativo: review-565e651b77c3967a (tier high, 4 lentes) aprobado.
 
 ### Fase 4 — Eliminar el switch por módulo en `data/`
 - [ ] Estado: pendiente
