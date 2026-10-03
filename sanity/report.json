@@ -1,0 +1,140 @@
+{
+  "project": "travelhub-app",
+  "runDate": "2026-10-03T18:01:29.947Z",
+  "overall": {
+    "score": 45,
+    "status": "fail"
+  },
+  "checks": [
+    {
+      "id": "types",
+      "label": "Types",
+      "status": "pass",
+      "score": 100,
+      "summary": "0 type errors",
+      "details": [],
+      "raw": {
+        "count": 0,
+        "scanner": "local"
+      }
+    },
+    {
+      "id": "lint",
+      "label": "Lint",
+      "status": "warn",
+      "score": 0,
+      "summary": "0 errors, 199 warnings across 409 files",
+      "details": [
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.agents/skills/impeccable/scripts/modern-screenshot.umd.js (0e/78w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.github/skills/impeccable/scripts/modern-screenshot.umd.js (0e/78w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.agents/skills/impeccable/scripts/live-browser.js (0e/16w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.github/skills/impeccable/scripts/live-browser.js (0e/16w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/app/t/[slug]/actions.ts (0e/2w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/lib/__tests__/client-auth.test.ts (0e/2w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/lib/data/__tests__/services.test.ts (0e/2w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/playwright.config.ts (0e/1w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/sanity.config.mts (0e/1w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/app/dashboard/trips/[id]/__tests__/actions.test.ts (0e/1w)"
+      ],
+      "raw": {
+        "errors": 0,
+        "warnings": 199,
+        "files": 409
+      }
+    },
+    {
+      "id": "deadCode",
+      "label": "Dead code",
+      "status": "fail",
+      "score": 0,
+      "summary": "73 issues: 4 files, 0 dependencies, 0 devDependencies, 0 optionalPeerDependencies, 1 unlisted, 0 binaries, 0 unresolved, 32 exports, 36 types, 0 duplicates",
+      "details": [
+        "src/components/ClientCombobox.tsx",
+        "src/components/CreateClientDialog.tsx",
+        "src/app/dashboard/DashboardExplorer.tsx",
+        "src/lib/supabase/client.ts",
+        "agent/channels/whatsapp.ts",
+        "src/lib/mock-data.ts",
+        "src/lib/item-meta.ts",
+        "src/lib/data/documents.ts",
+        "src/app/dashboard/trips/[id]/actions.ts",
+        "src/lib/item-metadata-schemas.ts"
+      ],
+      "raw": {
+        "total": 73,
+        "categories": {
+          "files": 4,
+          "dependencies": 0,
+          "devDependencies": 0,
+          "optionalPeerDependencies": 0,
+          "unlisted": 1,
+          "binaries": 0,
+          "unresolved": 0,
+          "exports": 32,
+          "types": 36,
+          "duplicates": 0
+        }
+      }
+    },
+    {
+      "id": "audit",
+      "label": "Dependencies",
+      "status": "fail",
+      "score": 0,
+      "summary": "13 vulnerabilities (critical: 1, high: 8, moderate: 4, low: 0)",
+      "details": [],
+      "raw": {
+        "critical": 1,
+        "high": 8,
+        "moderate": 4,
+        "low": 0
+      }
+    },
+    {
+      "id": "coverage",
+      "label": "Coverage",
+      "status": "pass",
+      "score": 100,
+      "summary": "lines 52.26%/50%, branches 43.14%/40%, functions 52.58%/50%, statements 48.54%/48%",
+      "details": [],
+      "raw": {
+        "metrics": [
+          {
+            "name": "lines",
+            "pct": 52.26,
+            "threshold": 50
+          },
+          {
+            "name": "branches",
+            "pct": 43.14,
+            "threshold": 40
+          },
+          {
+            "name": "functions",
+            "pct": 52.58,
+            "threshold": 50
+          },
+          {
+            "name": "statements",
+            "pct": 48.54,
+            "threshold": 48
+          }
+        ]
+      }
+    },
+    {
+      "id": "secrets",
+      "label": "Secrets",
+      "status": "pass",
+      "score": 100,
+      "summary": "no secrets found (scanner: fallback-regex)",
+      "details": [],
+      "raw": {
+        "findings": [],
+        "scanner": "fallback-regex"
+      }
+    }
+  ],
+  "fast": false,
+  "scanner": "fallback-regex"
+}
