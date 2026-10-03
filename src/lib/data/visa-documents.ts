@@ -1,6 +1,5 @@
 import { VisaDocument } from "@/types";
-import { mockVisaClients, mockVisaDocuments, mockVisas } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured, sanitizeStorageKey, uid } from "@/lib/data/shared";
+import { createServerSupabase, sanitizeStorageKey, uid } from "@/lib/data/shared";
 
 // Bucket privado para documentos de visa (servicio de visas), espejo del
 // patrón `trip-documents`. Es creado por
@@ -35,12 +34,6 @@ export function rowToVisaDocument(row: Record<string, unknown>): VisaDocument {
 }
 
 async function ensureVisaExists(visaId: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    if (!mockVisas.find((v) => v.id === visaId)) {
-      throw new Error(`Visa ${visaId} not found`);
-    }
-    return;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("visas")
@@ -57,23 +50,6 @@ export async function uploadVisaDocument(
 ): Promise<VisaDocument> {
   await ensureVisaExists(visaId);
   const now = nowIso();
-
-  if (!isSupabaseConfigured()) {
-    const doc: VisaDocument = {
-      id: uid(),
-      visaId,
-      targetClientId: null,
-      filePath: buildStoragePath(visaId, file.name),
-      filename: file.name,
-      mimeType: file.type || undefined,
-      status: "uploaded",
-      uploadedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockVisaDocuments.push(doc);
-    return doc;
-  }
 
   const supabase = await createServerSupabase();
   const path = buildStoragePath(visaId, file.name);
@@ -113,53 +89,27 @@ export async function requestVisaDocument(
 ): Promise<VisaDocument> {
   await ensureVisaExists(visaId);
 
-  // Validar que el cliente está asignado al visa. En el modo Supabase, la
-  // presencia de `target_client_id` no implica asignación — debe coincidir con
-  // una fila real en `visa_clients`.
-  if (!isSupabaseConfigured()) {
-    const assigned = mockVisaClients.some(
-      (vc) => vc.visaId === visaId && vc.clientId === clientId
-    );
-    if (!assigned) {
-      throw new Error(`Client ${clientId} is not assigned to visa ${visaId}`);
-    }
-  } else {
-    const supabase = await createServerSupabase();
-    const { data, error } = await supabase
-      .from("visa_clients")
-      .select("client_id")
-      .eq("visa_id", visaId)
-      .eq("client_id", clientId)
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) {
-      throw new Error(`Client ${clientId} is not assigned to visa ${visaId}`);
-    }
+  // Validar que el cliente está asignado al visa. La presencia de
+  // `target_client_id` no implica asignación — debe coincidir con una fila
+  // real en `visa_clients`.
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("visa_clients")
+    .select("client_id")
+    .eq("visa_id", visaId)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    throw new Error(`Client ${clientId} is not assigned to visa ${visaId}`);
   }
 
   const trimmedDescription = description.trim();
   if (!trimmedDescription) {
     throw new Error("Document description is required");
   }
-  const now = nowIso();
 
-  if (!isSupabaseConfigured()) {
-    const doc: VisaDocument = {
-      id: uid(),
-      visaId,
-      targetClientId: clientId,
-      description: trimmedDescription,
-      filePath: null,
-      status: "requested",
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockVisaDocuments.push(doc);
-    return doc;
-  }
-
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data: insertData, error: insertError } = await supabase
     .from("visa_documents")
     .insert({
       visa_id: visaId,
@@ -170,19 +120,13 @@ export async function requestVisaDocument(
     })
     .select()
     .single();
-  if (error) throw error;
-  return rowToVisaDocument(data);
+  if (insertError) throw insertError;
+  return rowToVisaDocument(insertData);
 }
 
 export async function getVisaDocuments(
   visaId: string
 ): Promise<(VisaDocument & { url: string | null })[]> {
-  if (!isSupabaseConfigured()) {
-    return mockVisaDocuments
-      .filter((d) => d.visaId === visaId)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((d) => ({ ...d, url: null }));
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("visa_documents")
@@ -202,13 +146,12 @@ export async function getVisaDocuments(
 }
 
 // Genera una URL firmada de corta duración para descargar/ver un documento de
-// visa privado. Devuelve null si Supabase no está configurado o si falla.
+// visa privado. Devuelve null si el firmado falla.
 // Nunca retorna una URL pública — el bucket es privado por diseño
 // (servicio-de-visas / `20260930000000_visas.sql`).
 export async function getSignedVisaDocumentUrl(
   path: string
 ): Promise<string | null> {
-  if (!isSupabaseConfigured()) return null;
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.storage
     .from(VISA_DOCUMENTS_BUCKET)
@@ -219,9 +162,9 @@ export async function getSignedVisaDocumentUrl(
 
 /**
  * Helper que aplica la lógica común de los flujos de transición de estado
- * sobre los documentos de visa (mock + Supabase). La función sólo muta el
- * estado cuando el estado actual es uno de los `allowedStatuses` esperados
- * y lanza un error descriptivo en caso contrario.
+ * sobre los documentos de visa. La función sólo muta el estado cuando el estado
+ * actual es uno de los `allowedStatuses` esperados y lanza un error descriptivo
+ * en caso contrario.
  */
 async function transitionVisaDocument(
   id: string,
@@ -235,24 +178,6 @@ async function transitionVisaDocument(
     uploadedAt: string;
   }>
 ): Promise<VisaDocument> {
-  if (!isSupabaseConfigured()) {
-    const doc = mockVisaDocuments.find((d) => d.id === id);
-    if (!doc) throw new Error(`Visa document ${id} not found`);
-    if (!allowedStatuses.includes(doc.status)) {
-      throw new Error(
-        `Cannot transition visa document ${id}: current status "${doc.status}" not in [${allowedStatuses.join(", ")}]`
-      );
-    }
-    if (patch.status !== undefined) doc.status = patch.status;
-    if (patch.agentComment !== undefined) doc.agentComment = patch.agentComment;
-    if (patch.filePath !== undefined) doc.filePath = patch.filePath;
-    if (patch.filename !== undefined) doc.filename = patch.filename;
-    if (patch.mimeType !== undefined) doc.mimeType = patch.mimeType;
-    if (patch.uploadedAt !== undefined) doc.uploadedAt = patch.uploadedAt;
-    doc.updatedAt = nowIso();
-    return doc;
-  }
-
   const supabase = await createServerSupabase();
   // Verify current status before applying the transition (optimistic check;
   // the UPDATE also asserts via WHERE).
@@ -293,19 +218,14 @@ export async function uploadVisaDocumentForRequest(
   clientId: string,
   file: File
 ): Promise<VisaDocument> {
-  let currentDoc: VisaDocument | undefined = !isSupabaseConfigured()
-    ? mockVisaDocuments.find((d) => d.id === documentId)
-    : undefined;
-  if (!currentDoc) {
-    const supabase = await createServerSupabase();
-    const { data, error } = await supabase
-      .from("visa_documents")
-      .select("*")
-      .eq("id", documentId)
-      .maybeSingle();
-    if (error) throw error;
-    if (data) currentDoc = rowToVisaDocument(data);
-  }
+  const supabase = await createServerSupabase();
+  const { data: docRow, error: docError } = await supabase
+    .from("visa_documents")
+    .select("*")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (docError) throw docError;
+  const currentDoc: VisaDocument | undefined = docRow ? rowToVisaDocument(docRow) : undefined;
   if (!currentDoc) throw new Error(`Visa document ${documentId} not found`);
   if (currentDoc.targetClientId !== clientId) {
     throw new Error(
@@ -321,19 +241,6 @@ export async function uploadVisaDocumentForRequest(
   const newPath = buildStoragePath(currentDoc.visaId, file.name);
   const now = nowIso();
 
-  if (!isSupabaseConfigured()) {
-    // Mock mode: no actual storage object to remove. Patch in place.
-    const updated = await transitionVisaDocument(documentId, ["requested", "re_upload_requested"], {
-      status: "uploaded",
-      filePath: newPath,
-      filename: file.name,
-      mimeType: file.type || undefined,
-      uploadedAt: now,
-    });
-    return updated;
-  }
-
-  const supabase = await createServerSupabase();
   // 1) Subir el nuevo archivo.
   const { error: uploadError } = await supabase.storage
     .from(VISA_DOCUMENTS_BUCKET)
@@ -402,13 +309,6 @@ export async function assertVisaDocumentMutable(
   documentId: string,
   visaId: string
 ): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const doc = mockVisaDocuments.find((d) => d.id === documentId);
-    if (!doc || doc.visaId !== visaId) {
-      throw new Error(`Visa document ${documentId} not found`);
-    }
-    return;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("visa_documents")
