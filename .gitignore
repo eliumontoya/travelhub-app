@@ -20,6 +20,10 @@ next-env.d.ts
 
 # vitest
 test-results/
+coverage/
+
+# sanity-kit
+sanity-hub/
 
 # playwright
 test-results/
