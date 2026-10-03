@@ -339,10 +339,27 @@ están documentadas en `doc/whatsapp-inbound-agent-architecture.md`.
 
 - **Producción**: Vercel, deploy automático en cada push a `main` (no hay
   ambiente de staging separado por ahora).
-- **Local**: `npm run dev` (puerto 3000). Funciona sin Supabase configurado
-  (modo mock).
+- **Local**: `npm run dev` (puerto 3000). El modo mock sigue disponible, pero
+  la base recomendada es Supabase local (ver abajo).
 - Verificación antes de commitear: `npx tsc --noEmit` y `npm run build`
   deben pasar limpios.
+
+### Entorno local con Supabase CLI
+
+El desarrollo local usa un stack de Supabase gestionado por la CLI
+(`supabase/config.toml`), reproducible sin credenciales de producción:
+
+```bash
+npm run db:start   # levanta Postgres/Auth/Storage local (requiere Docker)
+npm run db:reset   # reaplica migraciones + seed (supabase/seed.sql)
+npm run db:stop    # detiene el stack
+```
+
+Con el stack arriba, apuntar `.env.local` a los valores locales que imprime
+`npm run db:start` (`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321` y la
+anon key local correspondiente). `supabase/seed.sql` carga datos de prueba
+(cuentas admin/agent, clientes, viajes) equivalentes a los fixtures que la app
+necesita para funcionar en local.
 
 ## Convenciones de código
 

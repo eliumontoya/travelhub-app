@@ -12,6 +12,9 @@
     "test:e2e": "playwright test --project=mock",
     "test:e2e:mock": "playwright test --project=mock",
     "test:e2e:preview": "playwright test --project=preview",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
     "test:e2e:ui": "playwright test --ui",
     "whatsapp:simulate": "node scripts/whatsapp-simulate-inbound.mjs"
   },
