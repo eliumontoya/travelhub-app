@@ -97,12 +97,30 @@ Referencias:
   Review nativo: review-565e651b77c3967a (tier high, 4 lentes) aprobado.
 
 ### Fase 4 — Eliminar el switch por módulo en `data/`
-- [ ] Estado: pendiente
-- Quitar `isSupabaseConfigured()` y ramas mock de los 13 módulos de
-  `src/lib/data/` (incluye documents/services/etc.).
-- Mantener degradación elegante solo para API keys opcionales (Google Maps,
-  Resend, Aviationstack) — mecanismo distinto, sigue vigente.
-- PR 4.
+- [x] Estado: completada (3 lotes, `src/lib/data/` libre de mock-data)
+- Lote A `8d3cd24`: 14 módulos medianos (clients, suppliers, travel-agents,
+  profiles, settings, feedback, trip-templates, trip-packing,
+  trip-reminders, trip-history, trip-days, services, service-shared,
+  dashboard) + fix `effectiveWhatsapp` en clients.ts (createClient escribe
+  el fallback; updateClient lee el phone actual solo si el patch lo omite).
+- Lote B `be6e1a7`: trips (6), trip-items (12), trip-queries (6),
+  documents (20); Storage mocks eliminados; page test de documents sincronizado
+  vía boundary mock de getTripById.
+- Lote C `7e81da7`: visas (9), visa-documents (11), service-documents (6),
+  service-checklist (8); criterio de salida: `git grep mock-data` en
+  src/lib/data/ sin resultados.
+- No-ports deliberados (stance Supabase como requisito): updateVisa ya no
+  recorta notes; updateChecklistItem con id inexistente es no-op; guards de
+  env no configurado eliminados de lecturas/URLs firmadas; createItem
+  mantiene `sort_order ?? 0` (el default por count del mock no se porta).
+- Tests: 799/808 (solo client-auth.test.ts en rojo conocido, fase 5);
+  tsc limpio; note-write-sanitization migrado a contrato.
+- Commits revisados y quemados: lote A review-d39830959bd8d784, lote B
+  review-5231efaa12584fda, lote C review-1ce0892b0100dd7e.
+- Follow-ups informativos: extra read en updateClient para el fallback de
+  whatsapp; service-shared ya no pre-chequea el switch; barrel
+  importActual en el page test; guards de degradación eliminados en
+  trip-queries/trip-items/trips/documents/visa-documents/service-documents.
 
 ### Fase 5 — Limpiar importaciones directas de `mock-data`
 - [ ] Estado: pendiente
