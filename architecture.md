@@ -295,6 +295,9 @@ dos convenciones de nombres coexistiendo:
 - Timestamp: `YYYYMMDDHHMMSS_…` (una excepción usa solo fecha:
   `20260918_traveler_activities.sql`).
 
+Para **migraciones nuevas usar siempre timestamp** `YYYYMMDDHHMMSS_descripcion.sql`:
+la numeración secuencial está deprecada y no debe extenderse.
+
 Cada migración lleva comentarios SQL explicando qué política hace qué; al
 tocar el modelo, agregar una migración nueva en lugar de editar las existentes.
 
