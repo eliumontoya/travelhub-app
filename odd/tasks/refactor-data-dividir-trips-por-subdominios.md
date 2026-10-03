@@ -32,7 +32,7 @@ Estrategia acordada: **un PR por subdominio, uno a la vez**, moviendo código y 
 ## Tareas
 
 - [x] 1. PR1: extraer `trip-packing.ts` de `trips.ts` (sección #24, líneas ~1474–1553), reexportar desde `trips.ts`. Commit `refactor(data): extract trip-packing module from trips.ts` → `197b3db` (rama `refactor/data-trips-packing`). Verificación: tsc 0 errores, 822 tests en verde, build OK, diff solo en trips.ts + trip-packing.ts.
-- [ ] 2. PR2: extraer `trip-reminders.ts`.
+- [x] 2. PR2: extraer `trip-reminders.ts`. Commit `refactor(data): extract trip-reminders module from trips.ts` → `2cfddab` (rama `refactor/data-trips-reminders`, apilada sobre `refactor/data-trips-packing`). Verificación: tsc 0, 822 tests, build OK, movimiento verbatim. Nota: gap preexistente — sin test unitario directo de las funciones movidas (solo route test con mock de la fachada).
 - [ ] 3. PR3: extraer `trip-history.ts`.
 - [ ] 4. PR4: extraer `trip-days.ts`.
 - [ ] 5. PR5: extraer `trip-items.ts` (incluye traveler activities).
