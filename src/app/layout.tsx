@@ -42,10 +42,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <Analytics />
-      {/* impeccable-live-start */}
-<script src="http://localhost:8400/live.js?token=171922e5-1da8-48c6-b9e5-d140862971f2"></script>
-{/* impeccable-live-end */}
-</body>
+      </body>
     </html>
   );
 }
