@@ -1,4 +1,4 @@
-import { Client, ClientHomeTrip, Item, ItemWithSupplier, PackingItem, Supplier, Tag, Trip, TripDay, TripFilters, TripStatusHistoryEntry, TripWithDetails } from "@/types";
+import { Client, ClientHomeTrip, Item, ItemWithSupplier, Supplier, Tag, Trip, TripDay, TripFilters, TripStatusHistoryEntry, TripWithDetails } from "@/types";
 import { mockClients, mockItems, mockPackingItems, mockServiceChecklistItems, mockServices, mockTags, mockTravelAgents, mockTripClients, mockTripDays, mockTripFeedback, mockTripInternalNotes, mockTripPhotos, mockTripStatusHistory, mockTripTags, mockTrips, getTripWithDetails as mockGetTripWithDetails } from "@/lib/mock-data";
 import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, hasActiveTripFilters, isSupabaseConfigured, paginationBounds, sanitizeNote, tripMatchesFilters, uid } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
@@ -7,6 +7,9 @@ import { DOCUMENTS_BUCKET, PHOTOS_BUCKET, getSignedDocumentUrl, rowToDocument, r
 import { deleteChecklistItem, ensureServiceForAssignment } from "@/lib/data/services";
 import { getSupplierById } from "@/lib/data/suppliers";
 import { ItemSupplierCompatibilityError, isSupplierTypeCompatible } from "@/lib/item-supplier-compatibility";
+import { rowToPackingItem } from "@/lib/data/trip-packing";
+
+export * from "@/lib/data/trip-packing";
 
 // ---------- Trips ----------
 
@@ -1468,86 +1471,6 @@ export function rowToTrip(row: Record<string, unknown>): Trip {
       row.commission_rate !== null && row.commission_rate !== undefined
         ? Number(row.commission_rate)
         : undefined,
-  };
-}
-
-// ---------- Packing list (issue #24) ----------
-
-export type CreatePackingItemInput = { tripId: string; label: string; sortOrder?: number };
-export type UpdatePackingItemInput = Partial<{ label: string; checked: boolean; sortOrder: number }>;
-
-export async function createPackingItem(input: CreatePackingItemInput): Promise<PackingItem> {
-  if (!isSupabaseConfigured()) {
-    const item: PackingItem = {
-      id: uid(),
-      tripId: input.tripId,
-      label: input.label,
-      checked: false,
-      sortOrder:
-        input.sortOrder ?? mockPackingItems.filter((p) => p.tripId === input.tripId).length,
-    };
-    mockPackingItems.push(item);
-    return item;
-  }
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("packing_items")
-    .insert({
-      trip_id: input.tripId,
-      label: input.label,
-      sort_order: input.sortOrder ?? 0,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return rowToPackingItem(data);
-}
-
-export async function updatePackingItem(
-  id: string,
-  input: UpdatePackingItemInput
-): Promise<PackingItem> {
-  if (!isSupabaseConfigured()) {
-    const item = mockPackingItems.find((p) => p.id === id);
-    if (!item) throw new Error("Item de equipaje no encontrado");
-    if (input.label !== undefined) item.label = input.label;
-    if (input.checked !== undefined) item.checked = input.checked;
-    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
-    return item;
-  }
-  const supabase = await createServerSupabase();
-  const patch: Record<string, unknown> = {};
-  if (input.label !== undefined) patch.label = input.label;
-  if (input.checked !== undefined) patch.checked = input.checked;
-  if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
-  const { data, error } = await supabase
-    .from("packing_items")
-    .update(patch)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return rowToPackingItem(data);
-}
-
-export async function deletePackingItem(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const idx = mockPackingItems.findIndex((p) => p.id === id);
-    if (idx >= 0) mockPackingItems.splice(idx, 1);
-    return;
-  }
-  const supabase = await createServerSupabase();
-  const { error } = await supabase.from("packing_items").delete().eq("id", id);
-  if (error) throw error;
-}
-
-export function rowToPackingItem(row: Record<string, unknown>): PackingItem {
-  return {
-    id: row.id as string,
-    tripId: row.trip_id as string,
-    label: row.label as string,
-    checked: row.checked as boolean,
-    sortOrder: row.sort_order as number,
   };
 }
 
