@@ -1,79 +1,137 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  addChecklistItem,
-  ensureServiceForAssignment,
-  getServicesProgressForClient,
-  markUploadReviewed,
-  uploadServiceDocument,
-} from "@/lib/data/services";
-import {
-  mockServiceChecklistItems,
-  mockServices,
-  mockServiceUploads,
-} from "@/lib/mock-data";
+
+/**
+ * Contract tests (migration pattern "a" — see helpers/db.ts): the Supabase
+ * client is mocked and `isSupabaseConfigured()` returns true, so the real
+ * Supabase branch of `src/lib/data/services.ts` runs. We assert the exact
+ * client-portal query shapes: checklist ownership, progress totals, and the
+ * reviewed/processed completion filter.
+ */
+const state = vi.hoisted(() => {
+  type Response = { data: unknown; error: unknown };
+  const calls: { table: string; method: string; args: unknown[] }[] = [];
+  const responses: Record<string, Response> = {};
+
+  function createBuilder(table: string) {
+    const builder = {
+      select(...args: unknown[]) {
+        calls.push({ table, method: "select", args });
+        return builder;
+      },
+      eq(...args: unknown[]) {
+        calls.push({ table, method: "eq", args });
+        return builder;
+      },
+      in(...args: unknown[]) {
+        calls.push({ table, method: "in", args });
+        return builder;
+      },
+      order(...args: unknown[]) {
+        calls.push({ table, method: "order", args });
+        return builder;
+      },
+      async maybeSingle() {
+        calls.push({ table, method: "maybeSingle", args: [] });
+        return responses[table] ?? { data: null, error: null };
+      },
+      then(resolve: (value: Response) => unknown) {
+        return Promise.resolve(responses[table] ?? { data: null, error: null }).then(resolve);
+      },
+    };
+    return builder;
+  }
+
+  const client = { from: (table: string) => createBuilder(table) };
+
+  return {
+    calls,
+    client,
+    reset() {
+      calls.length = 0;
+      for (const key of Object.keys(responses)) delete responses[key];
+    },
+    respond(table: string, response: Response) {
+      responses[table] = response;
+    },
+    callsFor(table: string, method: string) {
+      return calls.filter((call) => call.table === table && call.method === method);
+    },
+  };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
-  createClient: vi.fn(),
-  getSupabaseAdmin: vi.fn(),
+  isSupabaseConfigured: () => true,
+  createClient: async () => state.client,
+  getSupabaseAdmin: () => state.client,
 }));
 
-function resetServiceMocks() {
-  mockServices.length = 0;
-  mockServiceChecklistItems.length = 0;
-  mockServiceUploads.length = 0;
-}
+import {
+  getServicesProgressForClient,
+  uploadServiceDocument,
+} from "@/lib/data/services";
 
-beforeEach(resetServiceMocks);
+beforeEach(() => {
+  state.reset();
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+});
 
-describe("client portal data layer (mock mode)", () => {
+describe("client portal data layer (Supabase contract)", () => {
   it("uploadServiceDocument rejects a checklist item that belongs to another service", async () => {
-    const serviceForClientA = await ensureServiceForAssignment("t1", "c1");
-    const serviceForClientB = await ensureServiceForAssignment("t1", "c2");
-    const itemForClientA = await addChecklistItem(serviceForClientA.id, {
-      label: "Passport",
-      required: true,
-    });
+    state.respond("service_checklist_items", { data: null, error: null });
     const file = new File(["x"], "passport.pdf", { type: "application/pdf" });
 
-    await expect(
-      uploadServiceDocument(serviceForClientB.id, itemForClientA.id, file)
-    ).rejects.toThrow("El item no pertenece al servicio");
+    await expect(uploadServiceDocument("service-2", "item-1", file)).rejects.toThrow(
+      "El item no pertenece al servicio"
+    );
+
+    expect(state.callsFor("service_checklist_items", "select")[0].args).toEqual(["id, service_id"]);
+    expect(state.callsFor("service_checklist_items", "eq")).toEqual([
+      { table: "service_checklist_items", method: "eq", args: ["id", "item-1"] },
+      { table: "service_checklist_items", method: "eq", args: ["service_id", "service-2"] },
+    ]);
+    // Ownership is checked before any storage or upload write.
+    expect(state.callsFor("service_uploads", "upsert")).toHaveLength(0);
   });
 
-  it("getServicesProgressForClient returns {completed, total} keyed by service", async () => {
-    const service = await ensureServiceForAssignment("t1", "c1");
-    await addChecklistItem(service.id, { label: "A", required: true });
-    await addChecklistItem(service.id, { label: "B", required: true });
+  it("getServicesProgressForClient returns {completed,total} keyed by service", async () => {
+    state.respond("services", { data: [{ id: "service-1" }], error: null });
+    state.respond("service_checklist_items", {
+      data: [{ service_id: "service-1" }, { service_id: "service-1" }],
+      error: null,
+    });
+    state.respond("service_uploads", { data: [], error: null });
 
     const progress = await getServicesProgressForClient("c1");
 
-    expect(progress.get(service.id)).toEqual({ completed: 0, total: 2 });
+    expect(progress.get("service-1")).toEqual({ completed: 0, total: 2 });
+    expect(state.callsFor("services", "eq")).toEqual([
+      { table: "services", method: "eq", args: ["client_id", "c1"] },
+      { table: "services", method: "eq", args: ["service_type", "trip_documents"] },
+    ]);
+    expect(state.callsFor("service_checklist_items", "in")).toContainEqual(
+      expect.objectContaining({ args: ["service_id", ["service-1"]] })
+    );
   });
 
-  it("progress count treats reviewed and processed uploads as completed", async () => {
-    const service = await ensureServiceForAssignment("t1", "c1");
-    const itemA = await addChecklistItem(service.id, { label: "A", required: true });
-    const itemB = await addChecklistItem(service.id, { label: "B", required: true });
-    const itemC = await addChecklistItem(service.id, { label: "C", required: true });
-
-    const processedFile = new File(["x"], "a.pdf", { type: "application/pdf" });
-    const uploadedFile = new File(["x"], "b.pdf", { type: "application/pdf" });
-    const reUploadFile = new File(["x"], "c.pdf", { type: "application/pdf" });
-
-    const reviewedUpload = await uploadServiceDocument(service.id, itemA.id, processedFile);
-    await uploadServiceDocument(service.id, itemB.id, uploadedFile);
-    const reUploadUpload = await uploadServiceDocument(service.id, itemC.id, reUploadFile);
-    await markUploadReviewed(reviewedUpload.id);
-    // Simulate agent requesting re-upload without mutating checklist
-    const stored = mockServiceUploads.find((u) => u.id === reUploadUpload.id);
-    if (stored) {
-      stored.status = "re_upload_requested";
-      stored.agentComment = "File is blurry";
-    }
+  it("progress counts reviewed and processed uploads as completed", async () => {
+    state.respond("services", { data: [{ id: "service-1" }], error: null });
+    state.respond("service_checklist_items", {
+      data: [
+        { service_id: "service-1" },
+        { service_id: "service-1" },
+        { service_id: "service-1" },
+      ],
+      error: null,
+    });
+    // The real query filters status in (reviewed, processed); a
+    // `re_upload_requested` upload is excluded from the completed count.
+    state.respond("service_uploads", { data: [{ service_id: "service-1" }], error: null });
 
     const progress = await getServicesProgressForClient("c1");
 
-    expect(progress.get(service.id)).toEqual({ completed: 1, total: 3 });
+    expect(progress.get("service-1")).toEqual({ completed: 1, total: 3 });
+    expect(state.callsFor("service_uploads", "in")).toContainEqual(
+      expect.objectContaining({ args: ["status", ["reviewed", "processed"]] })
+    );
   });
 });

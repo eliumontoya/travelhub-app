@@ -11,13 +11,28 @@ insert into storage.buckets (id, name, public)
 values ('site-assets', 'site-assets', true)
 on conflict (id) do nothing;
 
--- Solo el dueño autenticado (mono-usuario) escribe/borra objetos del bucket.
-create policy if not exists "site_assets_owner_all" on storage.objects
-  for all
-  using (bucket_id = 'site-assets' and auth.uid() is not null)
-  with check (bucket_id = 'site-assets' and auth.uid() is not null);
+do $$
+begin
+  -- Compatibilidad PG17: CREATE POLICY IF NOT EXISTS solo existe en PG 18+.
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects'
+      and policyname = 'site_assets_owner_all'
+  ) then
+    create policy "site_assets_owner_all" on storage.objects
+      for all
+      using (bucket_id = 'site-assets' and auth.uid() is not null)
+      with check (bucket_id = 'site-assets' and auth.uid() is not null);
+  end if;
 
--- Lectura pública: el logo se renderiza en la vista pública del itinerario.
-create policy if not exists "site_assets_public_read" on storage.objects
-  for select
-  using (bucket_id = 'site-assets');
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects'
+      and policyname = 'site_assets_public_read'
+  ) then
+    create policy "site_assets_public_read" on storage.objects
+      for select
+      using (bucket_id = 'site-assets');
+  end if;
+end
+$$;

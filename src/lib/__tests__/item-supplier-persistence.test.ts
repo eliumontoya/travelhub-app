@@ -18,7 +18,6 @@ type ItemRow = {
 };
 
 const mocks = vi.hoisted(() => ({
-  configured: false,
   suppliers: new Map<string, SupplierRow>(),
   item: null as ItemRow | null,
   insertCalls: [] as Record<string, unknown>[],
@@ -26,7 +25,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => mocks.configured,
+  isSupabaseConfigured: () => true,
   createClient: async () => ({
     from(table: string) {
       if (table === "suppliers") {
@@ -81,7 +80,6 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-import { mockItems, mockSuppliers } from "@/lib/mock-data";
 import { createItem, updateItem } from "@/lib/data/trips";
 
 const hotelSupplierId = "s1";
@@ -102,7 +100,6 @@ function serverItem(overrides: Partial<ItemRow> = {}): ItemRow {
 
 describe("item supplier persistence", () => {
   beforeEach(() => {
-    mocks.configured = false;
     mocks.suppliers = new Map([
       [hotelSupplierId, { id: hotelSupplierId, name: "Hotel", type: "hotel" }],
       [restaurantSupplierId, { id: restaurantSupplierId, name: "Restaurant", type: "restaurant" }],
@@ -110,10 +107,9 @@ describe("item supplier persistence", () => {
     mocks.item = serverItem();
     mocks.insertCalls = [];
     mocks.updateCalls = [];
-    delete mockSuppliers.find((supplier) => supplier.id === hotelSupplierId)?.deletedAt;
   });
 
-  it("persists compatible and supplier-free mock creates", async () => {
+  it("persists compatible and supplier-free creates", async () => {
     await expect(createItem({ tripDayId: "d1", type: "hotel", title: "Hotel", supplierId: hotelSupplierId }))
       .resolves.toMatchObject({ type: "hotel", supplierId: hotelSupplierId });
     await expect(createItem({ tripDayId: "d1", type: "flight", title: "Flight" }))
@@ -124,24 +120,21 @@ describe("item supplier persistence", () => {
     ["missing supplier", "hotel", "missing"],
     ["mismatched supplier", "restaurant", hotelSupplierId],
     ["supplier on a flight", "flight", hotelSupplierId],
-  ])("rejects a mock create with a %s before mutation", async (_label, type, supplierId) => {
-    const itemCount = mockItems.length;
+  ])("rejects a create with a %s before mutation", async (_label, type, supplierId) => {
     await expect(createItem({ tripDayId: "d1", type: type as "hotel", title: "Invalid", supplierId }))
       .rejects.toMatchObject({ code: "ITEM_SUPPLIER_INCOMPATIBLE" });
-    expect(mockItems).toHaveLength(itemCount);
+    expect(mocks.insertCalls).toEqual([]);
   });
 
-  it("rejects a soft-deleted mock supplier before mutation", async () => {
-    const supplier = mockSuppliers.find((candidate) => candidate.id === hotelSupplierId)!;
-    supplier.deletedAt = "2026-01-01T00:00:00.000Z";
-    const itemCount = mockItems.length;
+  it("rejects a soft-deleted supplier before mutation", async () => {
+    mocks.suppliers.get(hotelSupplierId)!.deleted_at = "2026-01-01T00:00:00.000Z";
 
     await expect(createItem({ tripDayId: "d1", type: "hotel", title: "Invalid", supplierId: hotelSupplierId }))
       .rejects.toMatchObject({ code: "ITEM_SUPPLIER_INCOMPATIBLE" });
-    expect(mockItems).toHaveLength(itemCount);
+    expect(mocks.insertCalls).toEqual([]);
   });
 
-  it("validates the resulting mock state and distinguishes null from undefined", async () => {
+  it("validates the resulting state and distinguishes null from undefined", async () => {
     const created = await createItem({
       tripDayId: "d1",
       type: "hotel",
@@ -160,9 +153,7 @@ describe("item supplier persistence", () => {
     await expect(updateItem(created.id, { supplierId: null })).resolves.toMatchObject({ supplierId: undefined });
   });
 
-  it("uses the same pre-mutation compatibility contract in the Supabase branch", async () => {
-    mocks.configured = true;
-
+  it("enforces the compatibility contract before any insert or update mutation", async () => {
     await expect(createItem({ tripDayId: "d1", type: "restaurant", title: "Invalid", supplierId: hotelSupplierId }))
       .rejects.toMatchObject({ code: "ITEM_SUPPLIER_INCOMPATIBLE" });
     expect(mocks.insertCalls).toEqual([]);
