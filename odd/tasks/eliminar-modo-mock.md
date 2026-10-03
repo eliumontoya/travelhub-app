@@ -131,13 +131,16 @@ Referencias:
 - PR 5.
 
 ### Fase 6 — Eliminar `src/lib/mock-data.ts` y actualizar docs
-- [ ] Estado: pendiente
-- Borrar `src/lib/mock-data.ts`; verificar que no queden imports.
-- Actualizar `architecture.md`: modo mock desaparece del contrato; Supabase
-  es requisito de desarrollo.
-- Criterio de cierre: `npx tsc --noEmit`, `npm run test`, `npm run build` y
-  e2e en verde; degradación elegante de API keys opcionales intacta.
-- PR 6.
+- [x] Estado: completada (criterio de cierre íntegro en verde)
+- Borrado `src/lib/mock-data.ts`; `git grep mock-data -- src/` sin resultados.
+- `architecture.md`: modo dual/mock eliminado del contrato (frontera, tabla
+  de módulos, estructura de carpetas, deploy local); Supabase es requisito;
+  referencia al entorno local CLI.
+- Verificación final: `npx tsc --noEmit` limpio; `npm run test` 804/804;
+  `npm run build` verde (requiere env de Supabase: `.env.local` local;
+  el build sin env ya no prerrenderiza — el mock lo hacía posible y el
+  issue lo elimina deliberadamente); `supabase db reset` + e2e local 30/30.
+- Commit: (ver abajo, fase 6).
 
 ## Registro de trabajo (evidencia)
 
