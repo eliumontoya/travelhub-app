@@ -3,11 +3,13 @@ import { mockClients, mockVisaClients, mockVisas, mockVisaStatusHistory } from "
 import {
   PaginationParams,
   PaginatedResult,
+  canUseServiceRole,
   createServerSupabase,
   isSupabaseConfigured,
   paginationBounds,
   uid,
 } from "@/lib/data/shared";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { rowToClient } from "@/lib/data/clients";
 
 export type CreateVisaInput = {
@@ -315,7 +317,14 @@ export async function getVisasByClientId(clientId: string): Promise<Visa[]> {
       .filter((v) => visaIds.has(v.id))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
-  const supabase = await createServerSupabase();
+  // El portal del cliente autentica con una cookie propia (PIN), no con
+  // Supabase Auth, así que createServerSupabase() corre como `anon` y la RLS no
+  // puede acotar filas por usuario. La migración 20260930000000_visas.sql
+  // revoca `visa_clients` para anon, por lo que se usa el service role, igual
+  // que getClientProfileForHome/getClientHomeTrips. Si falta la service key, se
+  // degrada a [] sin romper el home del cliente.
+  if (!canUseServiceRole()) return [];
+  const supabase = getSupabaseAdmin();
   const { data: links, error: linksError } = await supabase
     .from("visa_clients")
     .select("visa_id")

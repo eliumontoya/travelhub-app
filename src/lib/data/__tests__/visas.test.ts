@@ -217,6 +217,11 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdmin: () => db.client,
 }));
 
+// getVisasByClientId usa service role (el portal autentica con PIN propio, no
+// con Supabase Auth); canUseServiceRole() exige esta key, igual que en
+// client-portal.test.ts / services.test.ts.
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+
 import {
   createVisa,
   getVisaById,
