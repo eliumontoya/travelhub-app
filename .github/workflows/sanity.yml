@@ -1,0 +1,55 @@
+name: Sanity
+
+# Deterministic quality dashboard (sanity-kit). Types, lint, dead code,
+# dependency audit, secrets, coverage — thresholds live in sanity.config.mts.
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly: Mondays 13:00 UTC
+    - cron: "0 13 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanity:
+    # Activates once the sanity-kit repo is published and SANITY_KIT_REPO
+    # (e.g. eliumontoya/sanity-kit) is set as a repository variable.
+    if: ${{ vars.SANITY_KIT_REPO != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.SANITY_KIT_REPO }}
+          path: sanity-kit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate coverage summary
+        run: npx vitest run --coverage --coverage.reporter=json-summary
+
+      - name: Run sanity checks
+        run: node sanity-kit/src/cli.ts run --project .
+
+      - name: Upload sanity report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sanity-report
+          path: |
+            SANITY.md
+            sanity/
+          retention-days: 30
