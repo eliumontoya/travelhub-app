@@ -51,7 +51,8 @@ describe("/client/login page", () => {
     expect(inputs.some((node) => node.props.name === "redirectTo" && node.props.value === "/t/italia-perez-2026")).toBe(true);
     expect(labels.some((node) => textContent(node) === "Email" && node.props.htmlFor === "email")).toBe(true);
     expect(labels.some((node) => textContent(node) === "PIN" && node.props.htmlFor === "pin")).toBe(true);
-    expect(text).toContain("Acceso para clientes");
+    expect(text).toContain("Bienvenido");
+    expect(text).toContain("Tu viaje. Más cerca.");
     expect(text).toContain("Entrar");
   });
 
