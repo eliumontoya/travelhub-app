@@ -1,6 +1,5 @@
 import { TravelAgent } from "@/types";
-import { mockTravelAgents, mockTrips } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured, sanitizeNote, uid } from "@/lib/data/shared";
+import { createServerSupabase, sanitizeNote } from "@/lib/data/shared";
 
 export type CreateTravelAgentInput = {
   name: string;
@@ -22,9 +21,6 @@ export function rowToTravelAgent(row: Record<string, unknown>): TravelAgent {
 }
 
 export async function getTravelAgents(): Promise<TravelAgent[]> {
-  if (!isSupabaseConfigured()) {
-    return [...mockTravelAgents];
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("travel_agents")
@@ -35,9 +31,6 @@ export async function getTravelAgents(): Promise<TravelAgent[]> {
 }
 
 export async function getTravelAgentById(id: string): Promise<TravelAgent | null> {
-  if (!isSupabaseConfigured()) {
-    return mockTravelAgents.find((a) => a.id === id) ?? null;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("travel_agents")
@@ -56,20 +49,6 @@ function validateTravelAgentInput(input: CreateTravelAgentInput): void {
 
 export async function createTravelAgent(input: CreateTravelAgentInput): Promise<TravelAgent> {
   validateTravelAgentInput(input);
-  if (!isSupabaseConfigured()) {
-    const now = new Date().toISOString();
-    const agent: TravelAgent = {
-      id: uid(),
-      name: input.name.trim(),
-      email: input.email?.trim() || undefined,
-      phone: input.phone?.trim() || undefined,
-      notes: sanitizeNote(input.notes),
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockTravelAgents.unshift(agent);
-    return agent;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("travel_agents")
@@ -92,16 +71,6 @@ export async function updateTravelAgent(
   if (input.name !== undefined && !input.name.trim()) {
     throw new Error("El nombre es obligatorio");
   }
-  if (!isSupabaseConfigured()) {
-    const agent = mockTravelAgents.find((a) => a.id === id);
-    if (!agent) throw new Error("Agente no encontrado");
-    if (input.name !== undefined) agent.name = input.name.trim();
-    if (input.email !== undefined) agent.email = input.email?.trim() || undefined;
-    if (input.phone !== undefined) agent.phone = input.phone?.trim() || undefined;
-    if (input.notes !== undefined) agent.notes = sanitizeNote(input.notes);
-    agent.updatedAt = new Date().toISOString();
-    return agent;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name.trim();
@@ -120,18 +89,6 @@ export async function updateTravelAgent(
 }
 
 export async function deleteTravelAgent(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const idx = mockTravelAgents.findIndex((a) => a.id === id);
-    if (idx >= 0) {
-      mockTravelAgents.splice(idx, 1);
-      for (const trip of mockTrips) {
-        if (trip.assignedAgentId === id) {
-          delete trip.assignedAgentId;
-        }
-      }
-    }
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase.from("travel_agents").delete().eq("id", id);
   if (error) throw error;
