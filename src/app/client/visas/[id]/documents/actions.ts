@@ -20,23 +20,23 @@ export async function uploadVisaDocumentForRequestAction(
 ): Promise<void> {
   const session = await getClientSession();
   if (!session) {
-    throw new Error("Session required");
+    throw new Error("Sesión requerida");
   }
 
   const visa = await getVisaById(visaId);
   if (!visa) {
-    throw new Error("Visa not found");
+    throw new Error("Visa no encontrada");
   }
   const isAssigned = visa.clients.some((c) => c.id === session.clientId);
   if (!isAssigned) {
     throw new Error(
-      `Client ${session.clientId} is not assigned to visa ${visa.id}`,
+      `El cliente ${session.clientId} no está asignado a la visa ${visa.id}`,
     );
   }
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    throw new Error("No file selected");
+    throw new Error("No se seleccionó ningún archivo");
   }
 
   await uploadVisaDocumentForRequest(documentId, session.clientId, file);

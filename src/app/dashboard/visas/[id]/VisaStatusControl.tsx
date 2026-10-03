@@ -6,15 +6,15 @@ import type { VisaStatus } from "@/types";
 import { transitionVisaStatusAction } from "./actions";
 
 const STATUS_LABEL: Record<VisaStatus, string> = {
-  pending: "Pending",
-  in_progress: "In progress",
-  completed: "Completed",
+  pending: "Pendiente",
+  in_progress: "En trámite",
+  completed: "Completada",
 };
 
 const NEXT_STATUS_LABEL: Record<VisaStatus, string> = {
-  pending: "Advance to in progress",
-  in_progress: "Mark as completed",
-  completed: "Visa completed",
+  pending: "Avanzar a en trámite",
+  in_progress: "Marcar como completada",
+  completed: "Visa completada",
 };
 
 export function VisaStatusControl({
@@ -37,7 +37,7 @@ export function VisaStatusControl({
     startTransition(async () => {
       const result = await transitionVisaStatusAction(visaId, next);
       if (!result.ok) {
-        setError(result.error ?? "Could not transition status.");
+        setError(result.error ?? "No se pudo cambiar el estado.");
         return;
       }
       router.refresh();
@@ -47,7 +47,7 @@ export function VisaStatusControl({
   return (
     <div className="space-y-3" data-testid="visa-status-control">
       <p className="text-sm text-[var(--operator-ink-muted)]">
-        Current status: <span className="font-semibold text-[var(--operator-ink)]">{STATUS_LABEL[currentStatus]}</span>
+        Estado actual: <span className="font-semibold text-[var(--operator-ink)]">{STATUS_LABEL[currentStatus]}</span>
       </p>
       {next ? (
         <button
@@ -57,11 +57,11 @@ export function VisaStatusControl({
           data-testid="visa-advance-button"
           className="rounded-lg bg-[var(--operator-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-60"
         >
-          {isPending ? "Updating…" : NEXT_STATUS_LABEL[next]}
+          {isPending ? "Actualizando…" : NEXT_STATUS_LABEL[next]}
         </button>
       ) : (
         <p className="text-sm text-[var(--operator-ink-muted)]">
-          This visa is in a terminal state; no further transitions are allowed.
+          Esta visa ya está completada; no hay más cambios de estado disponibles.
         </p>
       )}
       {error && (

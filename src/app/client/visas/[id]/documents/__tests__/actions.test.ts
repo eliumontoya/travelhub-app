@@ -87,7 +87,7 @@ describe("client visa documents action surface", () => {
 
     await expect(
       actions.uploadVisaDocumentForRequestAction("visa-1", "doc-1", formData),
-    ).rejects.toThrow(/session required/i);
+    ).rejects.toThrow(/sesi\u00f3n requerida/i);
     expect(uploadVisaDocumentForRequestMock).not.toHaveBeenCalled();
     expect(getVisaByIdMock).not.toHaveBeenCalled();
   });
@@ -104,7 +104,7 @@ describe("client visa documents action surface", () => {
 
     await expect(
       actions.uploadVisaDocumentForRequestAction("visa-1", "doc-1", formData),
-    ).rejects.toThrow(/not assigned/i);
+    ).rejects.toThrow(/no est\u00e1 asignado/i);
     expect(uploadVisaDocumentForRequestMock).not.toHaveBeenCalled();
   });
 
@@ -141,7 +141,7 @@ describe("client visa documents action surface", () => {
 
     await expect(
       actions.uploadVisaDocumentForRequestAction("visa-1", "doc-1", formData),
-    ).rejects.toThrow(/no file selected/i);
+    ).rejects.toThrow(/ning\u00fan archivo/i);
     expect(uploadVisaDocumentForRequestMock).not.toHaveBeenCalled();
   });
 
@@ -157,7 +157,7 @@ describe("client visa documents action surface", () => {
 
     await expect(
       actions.uploadVisaDocumentForRequestAction("visa-1", "doc-1", formData),
-    ).rejects.toThrow(/no file selected/i);
+    ).rejects.toThrow(/ning\u00fan archivo/i);
     expect(uploadVisaDocumentForRequestMock).not.toHaveBeenCalled();
   });
 
@@ -173,7 +173,7 @@ describe("client visa documents action surface", () => {
 
     await expect(
       actions.uploadVisaDocumentForRequestAction("visa-1", "doc-1", formData),
-    ).rejects.toThrow(/visa not found/i);
+    ).rejects.toThrow(/visa no encontrada/i);
     expect(uploadVisaDocumentForRequestMock).not.toHaveBeenCalled();
   });
 
