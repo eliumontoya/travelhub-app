@@ -123,12 +123,7 @@ Referencias:
   trip-queries/trip-items/trips/documents/visa-documents/service-documents.
 
 ### Fase 5 — Limpiar importaciones directas de `mock-data`
-- [ ] Estado: pendiente
-- `src/middleware.ts`: gate por sesión Supabase únicamente.
-- `src/lib/client-auth.ts`: eliminar rama mock.
-- `src/lib/auth/roles.ts`: eliminar resolución de cuenta/rol mock.
-- Ajustar login page/actions y dashboard layout si quedan ramas mock.
-- PR 5.
+- [x] Estado: completada (PR #392 fusionado; verificación posterior 2026-10: `grep mock` en middleware/client-auth/roles sin resultados)
 
 ### Fase 6 — Eliminar `src/lib/mock-data.ts` y actualizar docs
 - [x] Estado: completada (criterio de cierre íntegro en verde)
