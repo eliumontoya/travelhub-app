@@ -27,6 +27,11 @@ usuario viven en `Changes.md`. No se duplican acá.
 - **WhatsApp/IA**: webhook inbound + WCC (ver `doc/whatsapp-inbound-agent-architecture.md`)
 - **Integraciones de agentes IA**: servidor MCP propio expuesto en `/api/mcp`
 - **Testing**: Vitest (unit) + Playwright (E2E)
+- **Dashboard de calidad**: `npm run sanity` (sanity-kit) — chequeos
+  deterministas (types, lint, dead code, audit, secrets, coverage, tests,
+  e2e); los resultados viven en el store central de sanity-kit
+  (`results/<proyecto>/`), nunca versionados en este repo; config en
+  `sanity.config.mts`
 
 ## Arquitectura de alto nivel
 

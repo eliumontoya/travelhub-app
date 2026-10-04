@@ -16,7 +16,9 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "test:e2e:ui": "playwright test --ui",
-    "whatsapp:simulate": "node scripts/whatsapp-simulate-inbound.mjs"
+    "whatsapp:simulate": "node scripts/whatsapp-simulate-inbound.mjs",
+    "sanity": "node ../sanity-kit/src/cli.ts run",
+    "sanity:fast": "node ../sanity-kit/src/cli.ts run --fast"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.48",
@@ -47,8 +49,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "knip": "^6.39.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
