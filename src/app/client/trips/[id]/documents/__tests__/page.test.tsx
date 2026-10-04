@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isValidElement, ReactNode } from "react";
-import type { ServiceChecklistItemWithUpload, ServiceWithChecklist } from "@/types";
+import type { ServiceChecklistItemWithUpload, ServiceWithChecklist, TripWithDetails } from "@/types";
 
 vi.mock("next/navigation", () => ({
   redirect: vi.fn(() => {
@@ -17,12 +17,21 @@ vi.mock("@/lib/data/services", () => ({
   getServiceWithChecklist: vi.fn(),
 }));
 
+vi.mock("@/lib/data", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/data")>("@/lib/data");
+  return {
+    ...actual,
+    getTripById: vi.fn(),
+  };
+});
+
 vi.mock("../actions", () => ({
   uploadDocument: vi.fn(),
 }));
 
 import { redirect } from "next/navigation";
 import { getClientSession } from "@/lib/client-auth";
+import { getTripById } from "@/lib/data";
 import {
   getServiceForClientTrip,
   getServiceWithChecklist,
@@ -75,6 +84,24 @@ function findListItemsByLabel(node: ReactNode): Record<string, string> {
   return map;
 }
 
+function findLinkByText(node: ReactNode, text: string): { href: string } | null {
+  let found: { href: string } | null = null;
+  function walk(n: ReactNode) {
+    if (found) return;
+    if (!isValidElement(n)) return;
+    const props = n.props as Record<string, unknown>;
+    if (typeof props.href === "string" && getText(n).includes(text)) {
+      found = { href: props.href };
+      return;
+    }
+    const children = props.children;
+    if (Array.isArray(children)) children.forEach(walk);
+    else walk(children as ReactNode);
+  }
+  walk(node);
+  return found;
+}
+
 const baseService: ServiceWithChecklist = {
   id: "svc1",
   tripId: "t1",
@@ -85,6 +112,12 @@ const baseService: ServiceWithChecklist = {
   updatedAt: "",
   items: [],
 };
+
+const publishedTrip = {
+  id: "t1",
+  status: "published",
+  slug: "italia-2026",
+} as unknown as TripWithDetails;
 
 function checklistItem(
   id: string,
@@ -124,6 +157,7 @@ function checklistItem(
 describe("/client/trips/[id]/documents page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getTripById).mockResolvedValue(publishedTrip);
   });
 
   it("redirects to login when there is no session", async () => {
@@ -250,5 +284,22 @@ describe("/client/trips/[id]/documents page", () => {
     expect(formTexts).toContain("Comprobante");
     expect(formTexts).not.toContain("Seguro");
     expect(formTexts).not.toContain("Pasaporte");
+  });
+
+  it("links to the public itinerary when the Supabase trip is published", async () => {
+    vi.mocked(getClientSession).mockResolvedValue({
+      clientId: "c1",
+      expiresAt: Date.now() + 10000,
+    });
+    vi.mocked(getServiceForClientTrip).mockResolvedValue(baseService);
+    vi.mocked(getServiceWithChecklist).mockResolvedValue({
+      ...baseService,
+      items: [],
+    });
+
+    const { default: Page } = await import("../page");
+    const element = await Page({ params: Promise.resolve({ id: "t1" }) });
+
+    expect(findLinkByText(element, "Ver itinerario")).toEqual({ href: "/t/italia-2026" });
   });
 });

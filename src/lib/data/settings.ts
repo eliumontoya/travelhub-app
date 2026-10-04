@@ -1,11 +1,9 @@
 import { SiteSettings } from "@/types";
-import { mockSiteSettings } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/data/shared";
+import { createServerSupabase } from "@/lib/data/shared";
 
 // ---------- Site settings (contacto público, fila singleton) ----------
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  if (!isSupabaseConfigured()) return mockSiteSettings;
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("site_settings")
@@ -21,13 +19,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 export async function updateSiteSettings(
   input: Partial<SiteSettings>
 ): Promise<SiteSettings> {
-  if (!isSupabaseConfigured()) {
-    if (input.email !== undefined) mockSiteSettings.email = input.email;
-    if (input.phone !== undefined) mockSiteSettings.phone = input.phone;
-    if (input.agencyName !== undefined) mockSiteSettings.agencyName = input.agencyName;
-    if (input.logoUrl !== undefined) mockSiteSettings.logoUrl = input.logoUrl;
-    return mockSiteSettings;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = { id: 1 };
   if (input.email !== undefined) patch.email = input.email;

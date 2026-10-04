@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { SEED, ensureTripStatus, findSupplierIdByName, loginAsAdmin } from "./helpers";
 
 test.describe("supplier discovery", () => {
-  test("shows and selects only the active category-compatible supplier catalog", async ({ page }) => {
-    await page.goto("/dashboard/trips/t1");
-    const draftButton = page.getByRole("button", { name: "Pasar a borrador" });
-    if (await draftButton.count()) await draftButton.click();
+  test("shows and selects only the active category-compatible supplier catalog", async ({
+    page,
+  }) => {
+    await loginAsAdmin(page);
+    await ensureTripStatus(page, SEED.tripId, "draft");
     await page.getByRole("button", { name: "+ Agregar item a este día" }).first().click();
 
     const itemDialog = page.locator("dialog[open]").filter({ hasText: "Agregar item" });
@@ -26,11 +28,11 @@ test.describe("supplier discovery", () => {
 
     await supplierInput.press("ArrowDown");
     await supplierInput.press("Enter");
-    await expect(supplierId).toHaveValue("s9");
+    await expect(supplierId).toHaveValue(SEED.supplierTourOperatorId);
 
     await supplierInput.press("ArrowDown");
     await itemDialog.getByRole("button", { name: "+ Crear nuevo proveedor" }).click();
-    const createSupplierDialog = page.locator('dialog[open]').filter({ hasText: "Crear proveedor" });
+    const createSupplierDialog = page.locator("dialog[open]").filter({ hasText: "Crear proveedor" });
     await expect(createSupplierDialog.locator("#supplier-type")).toHaveValue("tour_operator");
 
     const createdSupplierName = "Same Session Tour Operator";
@@ -50,24 +52,25 @@ test.describe("supplier discovery", () => {
     await expect(supplierId).toHaveValue(createdSupplierId);
   });
 
-  test("keeps supplier state compatible with the selected item type", async ({ page }) => {
-    await page.goto("/dashboard/trips/t1");
-    const draftButton = page.getByRole("button", { name: "Pasar a borrador" });
-    if (await draftButton.count()) await draftButton.click();
+  test("keeps supplier state compatible with the selected item type", async ({ page, request }) => {
+    await loginAsAdmin(page);
+    await ensureTripStatus(page, SEED.tripId, "draft");
     await page.getByRole("button", { name: "+ Agregar item a este día" }).first().click();
 
     const itemDialog = page.locator("dialog[open]").filter({ hasText: "Agregar item" });
     const itemType = itemDialog.locator('select[name="type"]:not(#supplier-type)');
     const supplierId = itemDialog.locator('input[type="hidden"][name="supplierId"]');
 
+    const hotelSupplierId = await findSupplierIdByName(request, "Grand Fiesta Americana");
+
     await itemType.selectOption("hotel");
     const hotelSupplier = itemDialog.getByRole("combobox", { name: "Buscar proveedor" });
     await hotelSupplier.focus();
     await itemDialog.getByRole("option", { name: /Grand Fiesta Americana/ }).click();
-    await expect(supplierId).toHaveValue("s1");
+    await expect(supplierId).toHaveValue(hotelSupplierId);
 
     await itemDialog.locator('input[name="title"]').fill("Hotel preserved while editing title");
-    await expect(supplierId).toHaveValue("s1");
+    await expect(supplierId).toHaveValue(hotelSupplierId);
 
     await itemType.selectOption("restaurant");
     await expect(supplierId).toHaveValue("");

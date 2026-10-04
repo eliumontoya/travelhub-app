@@ -36,11 +36,25 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Reset Supabase database (migrations + seed)
+        run: supabase db reset
+
       - name: Unit Tests
         run: npm run test
+        env:
+          TEST_SUPABASE_URL: http://127.0.0.1:54321
+          TEST_SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
 
-  e2e-mock:
-    name: E2E Mock (Playwright)
+  e2e-local:
+    name: E2E Local (Playwright)
     needs: lint-build-test
     runs-on: ubuntu-latest
     steps:
@@ -56,14 +70,30 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run Mock Playwright Tests
-        run: npx playwright test --project=mock
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Upload Playwright Mock Report
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Reset Supabase database (migrations + seed)
+        run: supabase db reset
+
+      - name: Run Local Playwright Tests
+        run: npx playwright test --project=local
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          # Public local demo keys emitted by `supabase start` (not secrets).
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+
+      - name: Upload Playwright Local Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-mock
+          name: playwright-report-local
           path: playwright-report/
           retention-days: 14
 

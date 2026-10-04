@@ -1,6 +1,5 @@
 import { Supplier } from "@/types";
-import { mockItems, mockSuppliers } from "@/lib/mock-data";
-import { PaginatedResult, createServerSupabase, isSupabaseConfigured, paginationBounds, sanitizeNote, uid } from "@/lib/data/shared";
+import { PaginatedResult, createServerSupabase, paginationBounds, sanitizeNote } from "@/lib/data/shared";
 
 // ---------- Suppliers ----------
 
@@ -34,23 +33,6 @@ export async function getSuppliers(
 ): Promise<PaginatedResult<Supplier>> {
   const { from, pageSize } = paginationBounds(params);
 
-  if (!isSupabaseConfigured()) {
-    let filtered = [...mockSuppliers];
-    if (params.query) {
-      const q = params.query.toLowerCase();
-      filtered = filtered.filter((s) => s.name.toLowerCase().includes(q));
-    }
-    if (params.type) {
-      filtered = filtered.filter((s) => s.type === params.type);
-    }
-    if (params.tag) {
-      const tag = params.tag.toLowerCase();
-      filtered = filtered.filter((s) => s.tags.some((t) => t.toLowerCase().includes(tag)));
-    }
-    const active = filtered.filter((s) => !s.deletedAt);
-    return { items: active.slice(from, from + pageSize), totalCount: active.length };
-  }
-
   const supabase = await createServerSupabase();
   let query = supabase
     .from("suppliers")
@@ -75,9 +57,6 @@ export async function getSuppliers(
 }
 
 export async function getSupplierById(id: string): Promise<Supplier | null> {
-  if (!isSupabaseConfigured()) {
-    return mockSuppliers.find((s) => s.id === id) ?? null;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("suppliers")
@@ -89,27 +68,6 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
 }
 
 export async function createSupplier(input: CreateSupplierInput): Promise<Supplier> {
-  if (!isSupabaseConfigured()) {
-    const now = new Date().toISOString();
-    const supplier: Supplier = {
-      id: uid(),
-      name: input.name,
-      type: input.type,
-      contactPhone: input.contactPhone,
-      contactEmail: input.contactEmail,
-      website: input.website,
-      address: input.address,
-      lat: input.lat,
-      lng: input.lng,
-      googlePlaceId: input.googlePlaceId,
-      notes: sanitizeNote(input.notes),
-      tags: input.tags ?? [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockSuppliers.unshift(supplier);
-    return supplier;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("suppliers")
@@ -136,23 +94,6 @@ export async function updateSupplier(
   id: string,
   input: Partial<CreateSupplierInput>
 ): Promise<Supplier> {
-  if (!isSupabaseConfigured()) {
-    const supplier = mockSuppliers.find((s) => s.id === id);
-    if (!supplier) throw new Error("Proveedor no encontrado");
-    if (input.name !== undefined) supplier.name = input.name;
-    if (input.type !== undefined) supplier.type = input.type;
-    if (input.contactPhone !== undefined) supplier.contactPhone = input.contactPhone;
-    if (input.contactEmail !== undefined) supplier.contactEmail = input.contactEmail;
-    if (input.website !== undefined) supplier.website = input.website;
-    if (input.address !== undefined) supplier.address = input.address;
-    if (input.lat !== undefined) supplier.lat = input.lat;
-    if (input.lng !== undefined) supplier.lng = input.lng;
-    if (input.googlePlaceId !== undefined) supplier.googlePlaceId = input.googlePlaceId;
-    if (input.notes !== undefined) supplier.notes = sanitizeNote(input.notes);
-    if (input.tags !== undefined) supplier.tags = input.tags;
-    supplier.updatedAt = new Date().toISOString();
-    return supplier;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name;
@@ -178,9 +119,6 @@ export async function updateSupplier(
 }
 
 export async function getSupplierItemCount(id: string): Promise<number> {
-  if (!isSupabaseConfigured()) {
-    return mockItems.filter((i) => i.supplierId === id && !i.deletedAt).length;
-  }
   const supabase = await createServerSupabase();
   const { count, error } = await supabase
     .from("items")
@@ -200,11 +138,6 @@ export async function softDeleteSupplier(
     return { ok: false, itemCount };
   }
 
-  if (!isSupabaseConfigured()) {
-    const supplier = mockSuppliers.find((s) => s.id === id);
-    if (supplier) supplier.deletedAt = new Date().toISOString();
-    return { ok: true };
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("suppliers")
@@ -215,11 +148,6 @@ export async function softDeleteSupplier(
 }
 
 export async function restoreSupplier(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const supplier = mockSuppliers.find((s) => s.id === id);
-    if (supplier) supplier.deletedAt = undefined;
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("suppliers")

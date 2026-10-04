@@ -1,6 +1,5 @@
 import { Trip, TripStatusHistoryEntry } from "@/types";
-import { mockTripInternalNotes, mockTrips, mockTripStatusHistory } from "@/lib/mock-data";
-import { ALL_TRIPS_PAGE_SIZE, createServerSupabase, isSupabaseConfigured, sanitizeNote } from "@/lib/data/shared";
+import { ALL_TRIPS_PAGE_SIZE, createServerSupabase, sanitizeNote } from "@/lib/data/shared";
 import { getTrips } from "@/lib/data/trips";
 
 // ---------- Historial de estados, notas internas y métricas ----------
@@ -8,13 +7,9 @@ import { getTrips } from "@/lib/data/trips";
 // Notas privadas de agente (Tritones), NUNCA visibles en /t/[slug]. Se leen y
 // escriben a propósito por fuera de getTripById/getTripWithDetails/rowToTrip:
 // esa ruta compartida alimenta tanto el dashboard como la vista pública, así
-// que internal_notes jamás se selecciona/mapea ahí. En Supabase se hace un
-// SELECT de una sola columna (nunca select("*") junto al resto del trip); en
-// mock se guarda en un mapa aparte de mockTrips (ver mock-data.ts).
+// que internal_notes jamás se selecciona/mapea ahí. Se hace un SELECT de una
+// sola columna (nunca select("*") junto al resto del trip).
 export async function getTripInternalNotes(id: string): Promise<string | null> {
-  if (!isSupabaseConfigured()) {
-    return mockTripInternalNotes[id] ?? null;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trips")
@@ -26,15 +21,6 @@ export async function getTripInternalNotes(id: string): Promise<string | null> {
 }
 
 export async function updateTripInternalNotes(id: string, internalNotes: string | null): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    if (!mockTrips.some((t) => t.id === id)) throw new Error("Trip no encontrado");
-    if (internalNotes) {
-      mockTripInternalNotes[id] = internalNotes;
-    } else {
-      delete mockTripInternalNotes[id];
-    }
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("trips")
@@ -44,11 +30,6 @@ export async function updateTripInternalNotes(id: string, internalNotes: string 
 }
 
 export async function getTripStatusHistory(tripId: string): Promise<TripStatusHistoryEntry[]> {
-  if (!isSupabaseConfigured()) {
-    return mockTripStatusHistory
-      .filter((h) => h.tripId === tripId)
-      .sort((a, b) => a.changedAt.localeCompare(b.changedAt));
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trip_status_history")
@@ -73,8 +54,7 @@ export type MonthlyTripCount = { label: string; count: number };
 
 // Agrupa trips por mes de creación para los últimos 6 meses (incluyendo el
 // mes actual), rellenando con 0 los meses sin viajes creados. El agrupado se
-// hace en JS (no SQL) para funcionar igual en modo mock y en modo Supabase,
-// reutilizando getTrips() en vez de una query nueva.
+// hace en JS (no SQL) reutilizando getTrips() en vez de una query nueva.
 export async function getTripsPerMonth(): Promise<MonthlyTripCount[]> {
   const { items: trips } = await getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE });
 

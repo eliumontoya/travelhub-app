@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -11,8 +10,6 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getCurrentUserRole } from "@/lib/auth/roles";
 import { ALL_CLIENTS_PAGE_SIZE, ALL_TRIPS_PAGE_SIZE, getClients, getTripsWithClients } from "@/lib/data";
 import { getChangelog } from "@/lib/changelog";
-
-const MOCK_ACCOUNT_COOKIE = "x-mock-account-id";
 
 export default async function DashboardLayout({
   children,
@@ -28,9 +25,7 @@ export default async function DashboardLayout({
     email = user?.email ?? null;
   }
 
-  const cookieStore = await cookies();
-  const mockAccountId = cookieStore.get(MOCK_ACCOUNT_COOKIE)?.value;
-  const role = await getCurrentUserRole(mockAccountId);
+  const role = await getCurrentUserRole();
   const isAdmin = role === "admin";
 
   const changelog = getChangelog();

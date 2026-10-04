@@ -1,10 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  getCurrentAccount,
-  resolveMockAccountId,
-} from "@/lib/auth/roles";
+import { getCurrentAccount } from "@/lib/auth/roles";
 import { updateProfileFeatures } from "@/lib/data/profiles";
 import type { Feature } from "@/types";
 
@@ -27,7 +24,7 @@ export async function updateProfileFeaturesAction(
   profileId: string,
   features: Feature[],
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const account = await getCurrentAccount(await resolveMockAccountId());
+  const account = await getCurrentAccount();
   if (account?.role !== "admin") {
     return { ok: false, error: "No autorizado." };
   }

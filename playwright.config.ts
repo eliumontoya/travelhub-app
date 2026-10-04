@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Playwright 1.62 does not yet expose `default` on the Project type, but the
 // design reserves it as the opt-in marker for non-default projects. Declare
 // the field so the intent is type-safe; the corresponding `test:e2e` script
-// is pinned to `--project=mock` so preview does not run by default today.
+// is pinned to `--project=local` so preview does not run by default today.
 declare module "@playwright/test" {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Project {
@@ -11,10 +11,27 @@ declare module "@playwright/test" {
   }
 }
 
-// `mock` project runs against the local dev server (no remote target).
-// `preview` project runs against the deployed Vercel preview URL supplied
-// via BASE_URL. The presence of BASE_URL also disables the top-level
-// webServer so the preview job does not start a redundant local server.
+// The `local` project runs against the local dev server backed by the seeded
+// Supabase CLI stack (issue #372). These are the standard, public local demo
+// keys emitted by `supabase start`; they are safe to commit and are only used
+// by the local dev server started below. Override the env vars to point at a
+// different local stack.
+const LOCAL_SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
+const LOCAL_SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+// The admin/service-role key is required server-side for the client portal
+// (PIN verification) and the traveler-activity RPCs.
+const LOCAL_SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+
+// `local` project runs against the local dev server (with local Supabase env
+// wired into the webServer below). `preview` project runs against the deployed
+// Vercel preview URL supplied via BASE_URL. The presence of BASE_URL also
+// disables the top-level webServer so the preview job does not start a
+// redundant local server.
 const hasRemoteTarget = !!process.env.BASE_URL;
 const bypassToken = process.env.VERCEL_PROTECTION_BYPASS || "";
 
@@ -30,8 +47,11 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "mock",
-      testDir: "e2e/mock",
+      name: "local",
+      testDir: "e2e/local",
+      // Serial: specs share the seeded trip/client state and mutate it
+      // (publishing, assignments, checklist counts), so parallel files would
+      // race on the same rows.
       workers: 1,
       use: {
         ...devices["Desktop Chrome"],
@@ -58,5 +78,10 @@ export default defineConfig({
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
+        env: {
+          NEXT_PUBLIC_SUPABASE_URL: LOCAL_SUPABASE_URL,
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: LOCAL_SUPABASE_ANON_KEY,
+          SUPABASE_SERVICE_ROLE_KEY: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+        },
       },
 });

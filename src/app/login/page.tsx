@@ -96,7 +96,7 @@ export default async function LoginPage({
 
         {!configured ? (
           <p className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-4 text-sm leading-6 text-amber-800">
-            Supabase no está configurado todavía. Sigue los pasos de <code className="font-mono">SUPABASE_SETUP.md</code> para habilitar el login. Mientras tanto, el dashboard es accesible sin autenticación con datos de prueba.
+            Supabase no está configurado todavía. Sigue los pasos de <code className="font-mono">SUPABASE_SETUP.md</code> para habilitar el login.
           </p>
         ) : (
           <form action={signIn} className="space-y-4">
