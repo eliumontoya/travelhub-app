@@ -11,15 +11,9 @@ web
 - **Travel agent:** organizes client records, builds daily itineraries, manages documents, publishes trips, and follows up on travel details from the authenticated workspace.
 - **Traveler:** reviews a published itinerary from a shareable link, finds trip information on a phone, and can add activities or the whole trip to a personal calendar.
 
-## Product Purpose
+## Purpose and Positioning
 
-TravelHub gives an independent travel agent an owned workspace for creating, managing, and sharing complete itineraries. It replaces the operational dependency on third-party itinerary platforms and scattered client communications with a single product the agent controls.
-
-Success means a trip can move from client record to an organized, shareable itinerary without forcing the traveler to create an account, while preserving a useful travel history for the agent.
-
-## Positioning
-
-TravelHub combines the agent's internal trip workspace with a public, client-specific itinerary at a unique URL. The public experience is tied directly to the agent's published trip data rather than a generic document or a separate itinerary service.
+Purpose and positioning live in `project.md` (Spanish business reference); this document does not restate them.
 
 ## Operating Context
 
@@ -36,12 +30,9 @@ The agent works in a browser to manage clients, trips, day-by-day itinerary item
 
 The product is named **HUBit by TravelHub**. Its interface should make dense travel operations feel clear, trustworthy, and composed without obscuring itinerary details or actions.
 
-## Evidence on Hand
+## Sources of Truth
 
-- Business purpose and workflows: `project.md`.
-- Technical architecture and access boundaries: `architecture.md`.
-- Current global visual tokens: `src/app/globals.css`.
-- Current shared UI primitives and traveler surfaces: `src/components/ui/`, `src/app/client/`, and `src/app/t/[slug]/`.
+Topic ownership follows the truth-source table in `README.md`. This document keeps only product scope: platform, users, operating context, capabilities and constraints, brand commitments, principles, and accessibility.
 
 ## Product Principles
 
