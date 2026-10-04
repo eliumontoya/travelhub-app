@@ -10,11 +10,11 @@ import type {
   WhatsAppOptInStatus,
 } from "@/types";
 
-export const WCC_CONTACTS_PAGE_SIZE = 20;
+const WCC_CONTACTS_PAGE_SIZE = 20;
 
-export type WccLinkedClient = Pick<Client, "id" | "name" | "email" | "phone" | "whatsapp">;
+type WccLinkedClient = Pick<Client, "id" | "name" | "email" | "phone" | "whatsapp">;
 
-export type WccContactRow = {
+type WccContactRow = {
   id: string;
   phoneE164: string;
   whatsappProfileName?: string;
@@ -28,7 +28,7 @@ export type WccContactRow = {
   createdAt: string;
 };
 
-export type WccConversationContext = {
+type WccConversationContext = {
   id: string;
   status: WhatsAppConversationStatus;
   lastIntent?: string;
@@ -38,7 +38,7 @@ export type WccConversationContext = {
   assignedTripId?: string;
 };
 
-export type WccEscalationContext = {
+type WccEscalationContext = {
   id: string;
   reason: string;
   priority: WhatsAppEscalationPriority;
@@ -48,7 +48,7 @@ export type WccEscalationContext = {
   resolvedAt?: string;
 };
 
-export type WccIntentContext = {
+type WccIntentContext = {
   id: string;
   intentType: WhatsAppIntentType;
   confidence?: number;

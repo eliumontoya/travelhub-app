@@ -7,7 +7,7 @@ import {
 import { createWhatsAppLLMProvider } from "./whatsapp-llm-provider";
 import type { TravelHubClientToolStatus } from "./tools/travelhub-client-tools";
 
-export type WhatsAppInboundIntent =
+type WhatsAppInboundIntent =
   | "inquiry"
   | "quote_request"
   | "existing_trip"
@@ -15,7 +15,7 @@ export type WhatsAppInboundIntent =
   | "handoff"
   | "unknown";
 
-export type WhatsAppInboundDecisionType = "auto_answer" | "needs_human";
+type WhatsAppInboundDecisionType = "auto_answer" | "needs_human";
 
 export type WhatsAppKnowledgeEntry = {
   id: string;
@@ -63,7 +63,7 @@ export type WhatsAppInboundAgentProvider = (
   input: WhatsAppInboundAgentProviderInput
 ) => Promise<unknown> | unknown;
 
-export type WhatsAppInboundAgentDiagnostics = {
+type WhatsAppInboundAgentDiagnostics = {
   providerErrorType: "invalid_json" | "invalid_structured_output";
   rawOutputPreview?: string;
   validationIssues?: Array<{ path: string; message: string }>;

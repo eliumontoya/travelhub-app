@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ItemType } from "@/types";
 
-export const flightMetadataSchema = z.object({
+const flightMetadataSchema = z.object({
   airline: z.string().min(1).optional(),
   flightNumber: z.string().min(1).optional(),
   departureAirport: z.string().min(1).optional(),
@@ -14,7 +14,7 @@ export const flightMetadataSchema = z.object({
   bookingReference: z.string().min(1).optional(),
 });
 
-export const hotelMetadataSchema = z.object({
+const hotelMetadataSchema = z.object({
   hotelName: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
   checkIn: z.string().min(1).optional(),
@@ -26,7 +26,7 @@ export const hotelMetadataSchema = z.object({
   specialRequests: z.string().min(1).optional(),
 });
 
-export const activityMetadataSchema = z.object({
+const activityMetadataSchema = z.object({
   activityName: z.string().min(1).optional(),
   provider: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
@@ -39,7 +39,7 @@ export const activityMetadataSchema = z.object({
   meetingPoint: z.string().min(1).optional(),
 });
 
-export const restaurantMetadataSchema = z.object({
+const restaurantMetadataSchema = z.object({
   restaurantName: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
   cuisine: z.string().min(1).optional(),
@@ -48,7 +48,7 @@ export const restaurantMetadataSchema = z.object({
   phone: z.string().min(1).optional(),
 });
 
-export const transportMetadataSchema = z.object({
+const transportMetadataSchema = z.object({
   company: z.string().min(1).optional(),
   pickupLocation: z.string().min(1).optional(),
   dropoffLocation: z.string().min(1).optional(),

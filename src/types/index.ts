@@ -361,7 +361,7 @@ export interface HotelMetadata {
   specialRequests?: string;
 }
 
-export interface ActivityMetadata {
+interface ActivityMetadata {
   activityName: string;
   provider: string;
   address: string;
@@ -374,7 +374,7 @@ export interface ActivityMetadata {
   meetingPoint?: string;
 }
 
-export interface RestaurantMetadata {
+interface RestaurantMetadata {
   restaurantName: string;
   address: string;
   cuisine: string;
@@ -383,7 +383,7 @@ export interface RestaurantMetadata {
   phone?: string;
 }
 
-export interface TransportMetadata {
+interface TransportMetadata {
   company: string;
   pickupLocation: string;
   dropoffLocation: string;
@@ -393,14 +393,6 @@ export interface TransportMetadata {
   driverPhone?: string;
   bookingReference?: string;
 }
-
-export type ItemMetadata =
-  | FlightMetadata
-  | HotelMetadata
-  | ActivityMetadata
-  | RestaurantMetadata
-  | TransportMetadata
-  | null;
 
 type BaseItem = {
   id: string;
@@ -421,12 +413,12 @@ type BaseItem = {
   supplierId?: string;
 };
 
-export type FlightItem = BaseItem & { type: "flight"; metadata: FlightMetadata | null };
-export type HotelItem = BaseItem & { type: "hotel"; metadata: HotelMetadata | null };
-export type ActivityItem = BaseItem & { type: "activity"; metadata: ActivityMetadata | null };
-export type RestaurantItem = BaseItem & { type: "restaurant"; metadata: RestaurantMetadata | null };
-export type TransportItem = BaseItem & { type: "transport"; metadata: TransportMetadata | null };
-export type NoteItem = BaseItem & { type: "note"; metadata: null };
+type FlightItem = BaseItem & { type: "flight"; metadata: FlightMetadata | null };
+type HotelItem = BaseItem & { type: "hotel"; metadata: HotelMetadata | null };
+type ActivityItem = BaseItem & { type: "activity"; metadata: ActivityMetadata | null };
+type RestaurantItem = BaseItem & { type: "restaurant"; metadata: RestaurantMetadata | null };
+type TransportItem = BaseItem & { type: "transport"; metadata: TransportMetadata | null };
+type NoteItem = BaseItem & { type: "note"; metadata: null };
 
 export type Item =
   | FlightItem
@@ -481,7 +473,7 @@ export interface TripFeedback {
   createdAt: string;
 }
 
-export type JsonRecord = Record<string, unknown>;
+type JsonRecord = Record<string, unknown>;
 
 export type WhatsAppOptInStatus = "unknown" | "pending" | "opted_in" | "opted_out";
 export type WhatsAppConversationStatus =
@@ -509,9 +501,9 @@ export type WhatsAppIntentStatus = "detected" | "confirmed" | "dismissed" | "syn
 export type WhatsAppEscalationPriority = "low" | "normal" | "high" | "urgent";
 export type WhatsAppEscalationStatus = "open" | "acknowledged" | "resolved" | "canceled";
 export type WhatsAppKnowledgeStatus = "draft" | "approved" | "archived";
-export type CrmSyncEventStatus = "pending" | "processing" | "processed" | "failed";
+type CrmSyncEventStatus = "pending" | "processing" | "processed" | "failed";
 
-export interface WhatsAppContact {
+interface WhatsAppContact {
   id: string;
   phoneE164: string;
   whatsappProfileName?: string;
@@ -526,7 +518,7 @@ export interface WhatsAppContact {
   updatedAt: string;
 }
 
-export interface WhatsAppConversation {
+interface WhatsAppConversation {
   id: string;
   contactId: string;
   assignedTripId?: string;
@@ -541,7 +533,7 @@ export interface WhatsAppConversation {
   updatedAt: string;
 }
 
-export interface WhatsAppMessage {
+interface WhatsAppMessage {
   id: string;
   conversationId: string;
   contactId: string;
@@ -557,7 +549,7 @@ export interface WhatsAppMessage {
   createdAt: string;
 }
 
-export interface WhatsAppIntent {
+interface WhatsAppIntent {
   id: string;
   conversationId: string;
   messageId: string;
@@ -572,7 +564,7 @@ export interface WhatsAppIntent {
   updatedAt: string;
 }
 
-export interface WhatsAppEscalation {
+interface WhatsAppEscalation {
   id: string;
   conversationId: string;
   contactId: string;
@@ -602,7 +594,7 @@ export interface WhatsAppKnowledgeEntry {
   updatedAt: string;
 }
 
-export interface CrmSyncEvent {
+interface CrmSyncEvent {
   id: string;
   sourceTable: string;
   sourceId: string;

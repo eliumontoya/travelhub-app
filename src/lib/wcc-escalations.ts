@@ -6,12 +6,12 @@ import type {
   WhatsAppEscalationStatus,
 } from "@/types";
 
-export const WCC_ESCALATIONS_PAGE_SIZE = 20;
+const WCC_ESCALATIONS_PAGE_SIZE = 20;
 
 export const wccEscalationStatuses: WhatsAppEscalationStatus[] = ["open", "acknowledged", "resolved", "canceled"];
 export const wccEscalationPriorities: WhatsAppEscalationPriority[] = ["urgent", "high", "normal", "low"];
 
-export type WccEscalationContact = {
+type WccEscalationContact = {
   id: string;
   phoneE164: string;
   whatsappProfileName?: string;
@@ -19,7 +19,7 @@ export type WccEscalationContact = {
   linkedClientId?: string;
 };
 
-export type WccEscalationConversation = {
+type WccEscalationConversation = {
   id: string;
   status: WhatsAppConversationStatus;
   lastIntent?: string;

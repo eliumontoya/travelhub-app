@@ -76,7 +76,7 @@ function splitName(name: string): string[] {
 // deduplicando palabras individuales. Esto corrige el caso en que un
 // cliente se llama "Ana & Pedro" y otro "Ana" — en lugar de mostrar
 // "Ana & Pedro, Ana", muestra "Ana, Pedro".
-export function normalizeClientNames(clients: Client[]): string[] {
+function normalizeClientNames(clients: Client[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const c of clients) {
