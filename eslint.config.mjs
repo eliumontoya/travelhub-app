@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Tool caches and generated files:
     ".claude/**",
+    // Vendored third-party skill scripts (bundled/minified, not project code):
+    ".agents/**",
+    ".github/skills/**",
     ".codex/**",
     ".config/**",
     ".engram/**",

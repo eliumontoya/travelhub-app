@@ -1,8 +1,8 @@
 {
   "project": "travelhub-app",
-  "runDate": "2026-10-03T18:01:29.947Z",
+  "runDate": "2026-10-04T05:22:09.956Z",
   "overall": {
-    "score": 45,
+    "score": 60.6,
     "status": "fail"
   },
   "checks": [
@@ -22,24 +22,22 @@
       "id": "lint",
       "label": "Lint",
       "status": "warn",
-      "score": 0,
-      "summary": "0 errors, 199 warnings across 409 files",
+      "score": 78,
+      "summary": "0 errors, 11 warnings across 399 files",
       "details": [
-        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.agents/skills/impeccable/scripts/modern-screenshot.umd.js (0e/78w)",
-        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.github/skills/impeccable/scripts/modern-screenshot.umd.js (0e/78w)",
-        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.agents/skills/impeccable/scripts/live-browser.js (0e/16w)",
-        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/.github/skills/impeccable/scripts/live-browser.js (0e/16w)",
         "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/app/t/[slug]/actions.ts (0e/2w)",
         "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/lib/__tests__/client-auth.test.ts (0e/2w)",
         "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/lib/data/__tests__/services.test.ts (0e/2w)",
         "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/playwright.config.ts (0e/1w)",
         "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/sanity.config.mts (0e/1w)",
-        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/app/dashboard/trips/[id]/__tests__/actions.test.ts (0e/1w)"
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/app/dashboard/trips/[id]/__tests__/actions.test.ts (0e/1w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/lib/data/documents.ts (0e/1w)",
+        "/Volumes/Data Coding/Desarrollo/AI-workspace/travelhub-app/src/lib/mcp/tools/utils.ts (0e/1w)"
       ],
       "raw": {
         "errors": 0,
-        "warnings": 199,
-        "files": 409
+        "warnings": 11,
+        "files": 399
       }
     },
     {
@@ -56,9 +54,9 @@
         "agent/channels/whatsapp.ts",
         "src/lib/mock-data.ts",
         "src/lib/item-meta.ts",
+        "src/components/LocationMap.tsx",
         "src/lib/data/documents.ts",
-        "src/app/dashboard/trips/[id]/actions.ts",
-        "src/lib/item-metadata-schemas.ts"
+        "src/app/dashboard/trips/[id]/actions.ts"
       ],
       "raw": {
         "total": 73,
