@@ -15,3 +15,7 @@ Before making any change, read:
 - `architecture.md` — technical context: stack, structure, data, deploy.
 
 Both live at the repo root.
+
+`README.md` holds the truth-source table (topic → source document). Consult it to decide **where** a change must be documented; every other document cross-references that source instead of duplicating it.
+
+Every PR that changes behavior (not just implementation) must check whether any document in that table aged, the same way tests are verified today. Document freshness is part of the PR checklist.

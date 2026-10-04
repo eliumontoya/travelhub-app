@@ -3,7 +3,8 @@
 Este documento es la referencia funcional principal de TravelHub. Resume el
 propósito del negocio, el dolor operativo actual y los resultados esperados.
 Los detalles técnicos de implementación se mantienen en `architecture.md`; acá
-se describe únicamente qué es el producto y para qué sirve.
+se describe únicamente qué es el producto y para qué sirve. Los principios de
+producto, los usuarios y la accesibilidad se mantienen en `PRODUCT.md`.
 
 ## Propósito
 
