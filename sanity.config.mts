@@ -10,6 +10,18 @@ export default {
     lint: true,
     deadCode: true,
     audit: true,
+    // Riesgo aceptado y documentado (travelhub-app#395): braces <=3.0.3
+    // (GHSA-vfj7-8cjw-p6xm) no tiene parche publicado; la cadena afectada
+    // (micromatch, fast-glob, @next/eslint-plugin-next, eslint-config-next)
+    // es dev-only, se ejecuta solo en lint con patrones de la config, nunca
+    // en runtime. La aceptación transitiva cubre los 4 paquetes derivados.
+    auditAllow: [
+      {
+        package: "braces",
+        reason:
+          "dev-only lint chain, no upstream fix available (documented risk travelhub-app#395)",
+      },
+    ],
     secrets: true,
     tests: true,
     coverage: {
