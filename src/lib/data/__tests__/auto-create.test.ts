@@ -1,163 +1,219 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createTrip,
-  deleteTrip,
-  setTripClients,
-} from "@/lib/data/trips";
-import {
-  addChecklistItem,
-  uploadServiceDocument,
-} from "@/lib/data/services";
-import {
-  mockItems,
-  mockPackingItems,
-  mockServiceChecklistItems,
-  mockServices,
-  mockServiceUploads,
-  mockTripClients,
-  mockTripDays,
-  mockTripFeedback,
-  mockTripInternalNotes,
-  mockTripPhotos,
-  mockTripStatusHistory,
-  mockTripTags,
-  mockTrips,
-} from "@/lib/mock-data";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
-  createClient: vi.fn(),
-  getSupabaseAdmin: vi.fn(),
-}));
+/**
+ * Cascade behavior for the trip/service assignment flow, proven against the
+ * local Supabase stack (migration pattern "b" — see helpers/db.ts).
+ *
+ * `@/lib/supabase/server` is mocked so the production code path runs against
+ * the real local client (service role): `isSupabaseConfigured()` is true and
+ * both the cookie-less server client and the admin client resolve to the same
+ * local instance. Each test creates its own client/trip rows with a
+ * `phase2-batch3` marker so seed rows are never touched, and cleans up after
+ * itself through the service client.
+ */
+vi.mock("@/lib/supabase/server", async () => {
+  const { getTestSupabaseClient } = await import("@/lib/__tests__/helpers/db");
+  const client = getTestSupabaseClient();
+  return {
+    isSupabaseConfigured: () => true,
+    createClient: async () => client,
+    getSupabaseAdmin: () => client,
+  };
+});
 
-function resetMocks() {
-  mockTrips.length = 0;
-  mockTripClients.length = 0;
-  mockTripTags.length = 0;
-  mockTripDays.length = 0;
-  mockItems.length = 0;
-  mockTripPhotos.length = 0;
-  mockPackingItems.length = 0;
-  mockTripStatusHistory.length = 0;
-  mockTripFeedback.length = 0;
-  for (const key of Object.keys(mockTripInternalNotes)) {
-    delete mockTripInternalNotes[key];
-  }
-  mockServices.length = 0;
-  mockServiceChecklistItems.length = 0;
-  mockServiceUploads.length = 0;
+import { getTestSupabaseClient } from "@/lib/__tests__/helpers/db";
+import { createClient } from "@/lib/data/clients";
+import { createTrip, deleteTrip, setTripClients } from "@/lib/data/trips";
+import { addChecklistItem, uploadServiceDocument } from "@/lib/data/services";
+
+const DOCUMENTS_BUCKET = "trip-documents";
+const MARKER = "phase2-batch3";
+const service = getTestSupabaseClient();
+const createdTripIds: string[] = [];
+const createdClientIds: string[] = [];
+const uploadedPaths: string[] = [];
+
+function unique(label: string): string {
+  return `${label}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-beforeEach(resetMocks);
+async function makeClient(label: string) {
+  const client = await createClient({ name: `${MARKER} ${label} ${unique(label)}` });
+  createdClientIds.push(client.id);
+  return client;
+}
 
-describe("auto-create", () => {
+async function makeTrip(clientIds: string[], label: string) {
+  const trip = await createTrip({
+    clientIds,
+    title: `${MARKER} ${label}`,
+    slug: `${MARKER}-${unique(label)}`,
+  });
+  createdTripIds.push(trip.id);
+  return trip;
+}
+
+async function serviceIdsForTrip(tripId: string): Promise<string[]> {
+  const { data, error } = await service.from("services").select("id").eq("trip_id", tripId);
+  if (error) throw error;
+  return (data ?? []).map((row) => row.id as string);
+}
+
+async function serviceForClient(tripId: string, clientId: string): Promise<string> {
+  const { data, error } = await service
+    .from("services")
+    .select("id")
+    .eq("trip_id", tripId)
+    .eq("client_id", clientId)
+    .single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+async function countRows(tableName: string, column: string, value: string): Promise<number> {
+  const { count, error } = await service
+    .from(tableName)
+    .select("id", { count: "exact", head: true })
+    .eq(column, value);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/** Removes any rows left behind by a previously interrupted run. */
+async function purgeMarkedRows(): Promise<void> {
+  const { data: leftoverTrips } = await service
+    .from("trips")
+    .select("id")
+    .like("slug", `${MARKER}-%`);
+  const tripIds = (leftoverTrips ?? []).map((row) => row.id as string);
+  if (tripIds.length) await service.from("trips").delete().in("id", tripIds);
+
+  const { data: leftoverClients } = await service
+    .from("clients")
+    .select("id")
+    .like("name", `${MARKER} %`);
+  const clientIds = (leftoverClients ?? []).map((row) => row.id as string);
+  if (clientIds.length) await service.from("clients").delete().in("id", clientIds);
+}
+
+beforeEach(purgeMarkedRows);
+
+afterEach(async () => {
+  if (uploadedPaths.length) {
+    await service.storage.from(DOCUMENTS_BUCKET).remove([...uploadedPaths]);
+    uploadedPaths.length = 0;
+  }
+  if (createdTripIds.length) {
+    await service.from("trips").delete().in("id", [...createdTripIds]);
+    createdTripIds.length = 0;
+  }
+  if (createdClientIds.length) {
+    await service.from("clients").delete().in("id", [...createdClientIds]);
+    createdClientIds.length = 0;
+  }
+});
+
+describe("auto-create (real local DB)", () => {
   it("createTrip auto-creates one service per assigned client", async () => {
-    const trip = await createTrip({
-      title: "Viaje de prueba",
-      slug: "viaje-prueba",
-      clientIds: ["c1", "c2"],
-    });
+    const a = await makeClient("client-a");
+    const b = await makeClient("client-b");
 
-    const services = mockServices.filter((s) => s.tripId === trip.id);
+    const trip = await makeTrip([a.id, b.id], "auto-create");
 
+    const { data: services, error } = await service
+      .from("services")
+      .select("id, client_id, service_type, status")
+      .eq("trip_id", trip.id);
+    expect(error).toBeNull();
     expect(services).toHaveLength(2);
-    expect(services.map((s) => s.clientId).sort()).toEqual(["c1", "c2"]);
+    expect(services!.map((row) => row.client_id).sort()).toEqual([a.id, b.id].sort());
     expect(
-      services.every(
-        (s) => s.serviceType === "trip_documents" && s.status === "active"
-      )
+      services!.every((row) => row.service_type === "trip_documents" && row.status === "active")
     ).toBe(true);
-    expect(new Set(services.map((s) => s.id)).size).toBe(2);
+    expect(new Set(services!.map((row) => row.id)).size).toBe(2);
   });
 
   it("setTripClients toAdd auto-creates a service for the new client", async () => {
-    const trip = await createTrip({
-      title: "Viaje de prueba",
-      slug: "viaje-prueba-add",
-      clientIds: ["c1"],
-    });
+    const a = await makeClient("add-a");
+    const b = await makeClient("add-b");
+    const trip = await makeTrip([a.id], "add");
 
-    await setTripClients(trip.id, ["c1", "c2"]);
+    await setTripClients(trip.id, [a.id, b.id]);
 
-    const services = mockServices.filter((s) => s.tripId === trip.id);
+    const services = await serviceIdsForTrip(trip.id);
     expect(services).toHaveLength(2);
-    expect(services.some((s) => s.clientId === "c2")).toBe(true);
+    expect(await serviceForClient(trip.id, b.id)).toBeTruthy();
   });
 
   it("setTripClients removal deletes the removed client's service, checklist items and uploads", async () => {
-    const trip = await createTrip({
-      title: "Viaje de prueba",
-      slug: "viaje-prueba-remove",
-      clientIds: ["c1", "c2"],
-    });
-    const serviceForC2 = mockServices.find(
-      (s) => s.tripId === trip.id && s.clientId === "c2"
-    )!;
-    const item = await addChecklistItem(serviceForC2.id, {
-      label: "Passport",
-      required: true,
-    });
-    const file = new File(["x"], "passport.pdf", { type: "application/pdf" });
-    await uploadServiceDocument(serviceForC2.id, item.id, file);
+    const a = await makeClient("remove-a");
+    const b = await makeClient("remove-b");
+    const trip = await makeTrip([a.id, b.id], "remove");
+    const bServiceId = await serviceForClient(trip.id, b.id);
 
-    expect(mockServiceChecklistItems).toHaveLength(1);
-    expect(mockServiceUploads).toHaveLength(1);
+    const item = await addChecklistItem(bServiceId, { label: "Passport", required: true });
+    const upload = await uploadServiceDocument(
+      bServiceId,
+      item.id,
+      new File(["x"], "passport.pdf", { type: "application/pdf" })
+    );
+    uploadedPaths.push(upload.filePath);
 
-    await setTripClients(trip.id, ["c1"]);
+    expect(await countRows("service_checklist_items", "service_id", bServiceId)).toBe(1);
+    expect(await countRows("service_uploads", "service_id", bServiceId)).toBe(1);
 
-    expect(mockServices.filter((s) => s.tripId === trip.id)).toHaveLength(1);
-    expect(
-      mockServices.some((s) => s.tripId === trip.id && s.clientId === "c2")
-    ).toBe(false);
-    expect(mockServiceChecklistItems).toHaveLength(0);
-    expect(mockServiceUploads).toHaveLength(0);
+    await setTripClients(trip.id, [a.id]);
+
+    const { data: remaining, error } = await service
+      .from("services")
+      .select("id, client_id")
+      .eq("trip_id", trip.id);
+    expect(error).toBeNull();
+    expect(remaining).toHaveLength(1);
+    expect(remaining![0].client_id).toBe(a.id);
+    expect(await countRows("service_checklist_items", "service_id", bServiceId)).toBe(0);
+    expect(await countRows("service_uploads", "service_id", bServiceId)).toBe(0);
   });
 
-  it("setTripClients re-assignment is idempotent", async () => {
-    const trip = await createTrip({
-      title: "Viaje de prueba",
-      slug: "viaje-prueba-idempotent",
-      clientIds: ["c1"],
-    });
-    const originalService = mockServices.find(
-      (s) => s.tripId === trip.id && s.clientId === "c1"
-    )!;
+  it("setTripClients re-assignment is idempotent (no duplicate services)", async () => {
+    const a = await makeClient("idempotent-a");
+    const b = await makeClient("idempotent-b");
+    const trip = await makeTrip([a.id], "idempotent");
+    const originalServiceId = await serviceForClient(trip.id, a.id);
 
-    await setTripClients(trip.id, ["c1", "c2"]);
-    const afterAdd = mockServices.filter((s) => s.tripId === trip.id).length;
+    await setTripClients(trip.id, [a.id, b.id]);
+    const afterAdd = (await serviceIdsForTrip(trip.id)).length;
 
-    await setTripClients(trip.id, ["c1", "c2"]);
+    await setTripClients(trip.id, [a.id, b.id]);
 
-    expect(mockServices.filter((s) => s.tripId === trip.id)).toHaveLength(afterAdd);
-    expect(
-      mockServices.some((s) => s.id === originalService.id && s.clientId === "c1")
-    ).toBe(true);
+    expect(await serviceIdsForTrip(trip.id)).toHaveLength(afterAdd);
+    expect(await serviceForClient(trip.id, a.id)).toBe(originalServiceId);
   });
 
-  it("deleteTrip cascades services, checklist items, uploads and removes storage objects", async () => {
-    const trip = await createTrip({
-      title: "Viaje de prueba",
-      slug: "viaje-prueba-delete",
-      clientIds: ["c1"],
-    });
-    const service = mockServices.find((s) => s.tripId === trip.id)!;
-    const item = await addChecklistItem(service.id, {
-      label: "Passport",
-      required: true,
-    });
-    const file = new File(["x"], "passport.pdf", { type: "application/pdf" });
-    const upload = await uploadServiceDocument(service.id, item.id, file);
+  it("deleteTrip cascades services, checklist items and uploads, and removes storage objects", async () => {
+    const a = await makeClient("delete-a");
+    const trip = await makeTrip([a.id], "delete");
+    const serviceId = await serviceForClient(trip.id, a.id);
 
-    expect(mockServices).toHaveLength(1);
-    expect(mockServiceChecklistItems).toHaveLength(1);
-    expect(mockServiceUploads).toHaveLength(1);
+    const item = await addChecklistItem(serviceId, { label: "Passport", required: true });
+    const upload = await uploadServiceDocument(
+      serviceId,
+      item.id,
+      new File(["x"], "passport.pdf", { type: "application/pdf" })
+    );
+    uploadedPaths.push(upload.filePath);
     expect(upload.filePath).toContain("services/");
 
     await deleteTrip(trip.id);
 
-    expect(mockTrips.some((t) => t.id === trip.id)).toBe(false);
-    expect(mockServices).toHaveLength(0);
-    expect(mockServiceChecklistItems).toHaveLength(0);
-    expect(mockServiceUploads).toHaveLength(0);
+    expect(await countRows("trips", "id", trip.id)).toBe(0);
+    expect(await countRows("services", "trip_id", trip.id)).toBe(0);
+    expect(await countRows("service_checklist_items", "service_id", serviceId)).toBe(0);
+    expect(await countRows("service_uploads", "service_id", serviceId)).toBe(0);
+
+    const folder = upload.filePath.slice(0, upload.filePath.lastIndexOf("/"));
+    const { data: listed, error } = await service.storage.from(DOCUMENTS_BUCKET).list(folder);
+    expect(error).toBeNull();
+    expect(listed ?? []).toHaveLength(0);
   });
 });

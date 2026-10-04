@@ -1,6 +1,5 @@
 import { PackingItem } from "@/types";
-import { mockPackingItems } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured, uid } from "@/lib/data/shared";
+import { createServerSupabase } from "@/lib/data/shared";
 
 // ---------- Packing list (issue #24) ----------
 
@@ -8,18 +7,6 @@ export type CreatePackingItemInput = { tripId: string; label: string; sortOrder?
 export type UpdatePackingItemInput = Partial<{ label: string; checked: boolean; sortOrder: number }>;
 
 export async function createPackingItem(input: CreatePackingItemInput): Promise<PackingItem> {
-  if (!isSupabaseConfigured()) {
-    const item: PackingItem = {
-      id: uid(),
-      tripId: input.tripId,
-      label: input.label,
-      checked: false,
-      sortOrder:
-        input.sortOrder ?? mockPackingItems.filter((p) => p.tripId === input.tripId).length,
-    };
-    mockPackingItems.push(item);
-    return item;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("packing_items")
@@ -38,14 +25,6 @@ export async function updatePackingItem(
   id: string,
   input: UpdatePackingItemInput
 ): Promise<PackingItem> {
-  if (!isSupabaseConfigured()) {
-    const item = mockPackingItems.find((p) => p.id === id);
-    if (!item) throw new Error("Item de equipaje no encontrado");
-    if (input.label !== undefined) item.label = input.label;
-    if (input.checked !== undefined) item.checked = input.checked;
-    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
-    return item;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.label !== undefined) patch.label = input.label;
@@ -62,11 +41,6 @@ export async function updatePackingItem(
 }
 
 export async function deletePackingItem(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const idx = mockPackingItems.findIndex((p) => p.id === id);
-    if (idx >= 0) mockPackingItems.splice(idx, 1);
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase.from("packing_items").delete().eq("id", id);
   if (error) throw error;

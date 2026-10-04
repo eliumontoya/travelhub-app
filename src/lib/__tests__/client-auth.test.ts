@@ -8,16 +8,107 @@ import {
   verifyClientCredentials,
 } from "@/lib/client-auth";
 import { setClientPin } from "@/lib/data/clients";
-import { mockClientLoginAttempts, mockClientPinHashes } from "@/lib/mock-data";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
 }));
 
+/**
+ * Contract test (migration pattern "a" — see helpers/db.ts): the Supabase
+ * service-role client is mocked and the real Supabase branch of client-auth
+ * runs. `clients.pin_hash` and `client_login_attempts` are backed by small
+ * in-memory tables so the login/rate-limit contracts are exercised end to end.
+ */
+const db = vi.hoisted(() => {
+  type Row = Record<string, unknown>;
+  type Call = { table: string; method: string; args: unknown[] };
+
+  const tables = new Map<string, Row[]>();
+  const calls: Call[] = [];
+
+  const table = (name: string) => {
+    let rows = tables.get(name);
+    if (!rows) {
+      rows = [];
+      tables.set(name, rows);
+    }
+    return rows;
+  };
+
+  function createBuilder(tableName: string) {
+    let mode: "select" | "update" | "upsert" | "delete" = "select";
+    let payload: Record<string, unknown> = {};
+    const filters: [string, unknown][] = [];
+
+    const matches = (row: Row) => filters.every(([col, value]) => row[col] === value);
+
+    const builder: Record<string, unknown> = {
+      select(...args: unknown[]) {
+        calls.push({ table: tableName, method: "select", args });
+        return builder;
+      },
+      update(next: Record<string, unknown>) {
+        calls.push({ table: tableName, method: "update", args: [next] });
+        mode = "update";
+        payload = next;
+        return builder;
+      },
+      upsert(next: Record<string, unknown>, options?: unknown) {
+        calls.push({ table: tableName, method: "upsert", args: [next, options] });
+        mode = "upsert";
+        payload = next;
+        return builder;
+      },
+      delete() {
+        calls.push({ table: tableName, method: "delete", args: [] });
+        mode = "delete";
+        return builder;
+      },
+      eq(...args: unknown[]) {
+        calls.push({ table: tableName, method: "eq", args });
+        filters.push([args[0] as string, args[1]]);
+        return builder;
+      },
+      async maybeSingle() {
+        calls.push({ table: tableName, method: "maybeSingle", args: [] });
+        return { data: table(tableName).find(matches) ?? null, error: null };
+      },
+      then(resolve: (value: { data: null; error: null }) => unknown) {
+        calls.push({ table: tableName, method: "await", args: [] });
+        const rows = table(tableName);
+        if (mode === "update") {
+          for (const row of rows.filter(matches)) Object.assign(row, payload);
+        } else if (mode === "upsert") {
+          const existing = rows.find((row) => row.email === payload.email);
+          if (existing) Object.assign(existing, payload);
+          else rows.push({ ...payload });
+        } else if (mode === "delete") {
+          for (let i = rows.length - 1; i >= 0; i--) {
+            if (matches(rows[i])) rows.splice(i, 1);
+          }
+        }
+        return Promise.resolve({ data: null, error: null }).then(resolve);
+      },
+    };
+    return builder;
+  }
+
+  const client = { from: (name: string) => createBuilder(name) };
+
+  return {
+    client,
+    table,
+    reset() {
+      tables.clear();
+      calls.length = 0;
+    },
+  };
+});
+
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
+  isSupabaseConfigured: () => true,
   createClient: vi.fn(),
-  getSupabaseAdmin: vi.fn(),
+  getSupabaseAdmin: () => db.client,
 }));
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -41,8 +132,25 @@ describe("client-auth", () => {
   let mockStore: ReturnType<typeof createMockCookieStore>;
 
   beforeEach(() => {
-    mockClientPinHashes.clear();
-    mockClientLoginAttempts.clear();
+    db.reset();
+    db.table("clients").push(
+      {
+        id: "c1",
+        name: "Ana y Roberto Pérez",
+        email: "ana.perez@example.com",
+        phone: "",
+        created_at: "2026-06-01T10:00:00Z",
+        pin_hash: null,
+      },
+      {
+        id: "c2",
+        name: "Familia Gómez",
+        email: "gomez.family@example.com",
+        phone: "",
+        created_at: "2026-06-10T10:00:00Z",
+        pin_hash: null,
+      }
+    );
     vi.clearAllMocks();
     mockStore = createMockCookieStore();
     vi.mocked(cookies).mockResolvedValue(mockStore);
@@ -92,9 +200,10 @@ describe("client-auth", () => {
     });
 
     it("returns null when the session cookie has expired", async () => {
-      vi.useFakeTimers();
       await issueClientSession("c1");
-      vi.advanceTimersByTime(THIRTY_DAYS_MS + 1000);
+      const issued = await getClientSession();
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(issued!.expiresAt + 1000));
 
       const session = await getClientSession();
 
@@ -141,6 +250,14 @@ describe("client-auth", () => {
       await setClientPin("c1", "123456");
 
       const result = await verifyClientCredentials("ana.perez@example.com", "123456");
+
+      expect(result).toEqual({ ok: true, clientId: "c1" });
+    });
+
+    it("normalizes the email before hashing and lookup", async () => {
+      await setClientPin("c1", "123456");
+
+      const result = await verifyClientCredentials("  ANA.PEREZ@Example.com ", "123456");
 
       expect(result).toEqual({ ok: true, clientId: "c1" });
     });
@@ -196,14 +313,14 @@ describe("client-auth", () => {
     });
 
     it("allows a new attempt after the rate-limit window expires", async () => {
-      vi.useFakeTimers();
       await setClientPin("c1", "123456");
 
       for (let i = 0; i < 6; i++) {
         await verifyClientCredentials("ana.perez@example.com", "wrongpin");
       }
 
-      vi.advanceTimersByTime(FIFTEEN_MINUTES_MS + 1000);
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(Date.now() + FIFTEEN_MINUTES_MS + 1000));
 
       const result = await verifyClientCredentials("ana.perez@example.com", "123456");
       expect(result).toEqual({ ok: true, clientId: "c1" });
@@ -213,7 +330,6 @@ describe("client-auth", () => {
 
   describe("rate-limit sliding window", () => {
     it("starts a new window when the previous one has expired", async () => {
-      vi.useFakeTimers();
       await setClientPin("c1", "123456");
 
       // First burst: 3 failures inside the first window.
@@ -222,7 +338,8 @@ describe("client-auth", () => {
       await verifyClientCredentials("ana.perez@example.com", "wrongpin");
 
       // Move past the original window.
-      vi.advanceTimersByTime(FIFTEEN_MINUTES_MS + 1000);
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(Date.now() + FIFTEEN_MINUTES_MS + 1000));
 
       // The next failure starts a fresh window, so it does not lock out.
       const result = await verifyClientCredentials("ana.perez@example.com", "wrongpin");

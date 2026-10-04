@@ -9,6 +9,7 @@
 .temp/rest-version
 .temp/storage-migration
 .temp/storage-version
+.temp/start-secrets/
 
 # dotenvx
 .env.keys

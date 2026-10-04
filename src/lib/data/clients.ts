@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Client, ClientProfileForHome, Tag } from "@/types";
-import { mockClientPinHashes, mockClients, mockClientTags, mockTags, mockTripClients, mockTrips, mockTripTags } from "@/lib/mock-data";
-import { ALL_CLIENTS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, effectiveWhatsapp, isSupabaseConfigured, paginationBounds, sanitizeNote, slugify, uid } from "@/lib/data/shared";
+import { ALL_CLIENTS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, effectiveWhatsapp, paginationBounds, sanitizeNote, slugify } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 // ---------- Clients ----------
@@ -18,10 +17,7 @@ export type CreateClientInput = {
 };
 
 export async function getClients(params: PaginationParams = {}): Promise<PaginatedResult<Client>> {
-  const { from, to, pageSize } = paginationBounds(params);
-  if (!isSupabaseConfigured()) {
-    return { items: mockClients.slice(from, from + pageSize), totalCount: mockClients.length };
-  }
+  const { from, to } = paginationBounds(params);
   const supabase = await createServerSupabase();
   const { data, error, count } = await supabase
     .from("clients")
@@ -33,7 +29,6 @@ export async function getClients(params: PaginationParams = {}): Promise<Paginat
 }
 
 export async function getClientById(id: string): Promise<Client | null> {
-  if (!isSupabaseConfigured()) return mockClients.find((c) => c.id === id) ?? null;
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
@@ -41,9 +36,6 @@ export async function getClientById(id: string): Promise<Client | null> {
 }
 
 export async function getClientByEmail(email: string): Promise<Client | null> {
-  if (!isSupabaseConfigured()) {
-    return mockClients.find((c) => c.email.toLowerCase() === email.toLowerCase()) ?? null;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("clients")
@@ -60,9 +52,6 @@ export async function getClientByEmail(email: string): Promise<Client | null> {
 // leer la fila; se usa solo después de verificar el PIN.
 export async function getClientByEmailAdmin(email: string): Promise<Client | null> {
   const normalized = email.trim().toLowerCase();
-  if (!isSupabaseConfigured()) {
-    return mockClients.find((c) => c.email.toLowerCase() === normalized) ?? null;
-  }
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("clients")
@@ -78,14 +67,10 @@ function toClientProfileForHome(client: Client): ClientProfileForHome {
   return { name, email, phone, whatsapp, birthDate, notes, referralSource, coverImageUrl };
 }
 
-// Perfil reducido para el home del cliente (issue #307). Modo mock: lectura
-// directa de mockClients. Modo Supabase: service role (anon RLS no puede leer
-// la fila del cliente) con degradación controlada si falta la service key.
+// Perfil reducido para el home del cliente (issue #307). Service role (anon RLS
+// no puede leer la fila del cliente) con degradación controlada si falta la
+// service key.
 export async function getClientProfileForHome(clientId: string): Promise<ClientProfileForHome | null> {
-  if (!isSupabaseConfigured()) {
-    const client = mockClients.find((c) => c.id === clientId);
-    return client ? toClientProfileForHome(client) : null;
-  }
   if (!canUseServiceRole()) return null;
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -102,10 +87,6 @@ export async function getClientProfileForHome(clientId: string): Promise<ClientP
 
 export async function setClientPin(clientId: string, pin: string): Promise<void> {
   const hash = await bcrypt.hash(pin, 10);
-  if (!isSupabaseConfigured()) {
-    mockClientPinHashes.set(clientId, hash);
-    return;
-  }
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.from("clients").update({ pin_hash: hash }).eq("id", clientId);
   if (error) throw error;
@@ -113,11 +94,6 @@ export async function setClientPin(clientId: string, pin: string): Promise<void>
 
 export async function getClientPinHashByEmail(email: string): Promise<string | null> {
   const normalized = email.trim().toLowerCase();
-  if (!isSupabaseConfigured()) {
-    const client = mockClients.find((c) => c.email.toLowerCase() === normalized);
-    if (!client) return null;
-    return mockClientPinHashes.get(client.id) ?? null;
-  }
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("clients")
@@ -129,9 +105,6 @@ export async function getClientPinHashByEmail(email: string): Promise<string | n
 }
 
 export async function hasClientPin(clientId: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) {
-    return mockClientPinHashes.has(clientId);
-  }
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("clients")
@@ -152,24 +125,6 @@ function generateClientSlug(name: string): string {
 }
 
 export async function createClient(input: CreateClientInput): Promise<Client> {
-  if (!isSupabaseConfigured()) {
-    const now = new Date().toISOString();
-    const client: Client = {
-      id: uid(),
-      name: input.name,
-      slug: generateClientSlug(input.name),
-      email: input.email ?? "",
-      phone: input.phone ?? "",
-      whatsapp: effectiveWhatsapp(input.whatsapp, input.phone),
-      notes: sanitizeNote(input.notes),
-      referralSource: input.referralSource ?? null,
-      birthDate: input.birthDate,
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockClients.unshift(client);
-    return client;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("clients")
@@ -178,7 +133,9 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
       slug: generateClientSlug(input.name),
       email: input.email,
       phone: input.phone,
-      whatsapp: input.whatsapp,
+      // Fallback whatsapp → phone que antes solo aplicaba el modo mock
+      // (issue #372 fase 4); ahora es el único path.
+      whatsapp: effectiveWhatsapp(input.whatsapp, input.phone),
       notes: sanitizeNote(input.notes),
       referral_source: input.referralSource,
       birth_date: input.birthDate || null,
@@ -190,26 +147,26 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
 }
 
 export async function updateClient(id: string, input: Partial<CreateClientInput>): Promise<Client> {
-  if (!isSupabaseConfigured()) {
-    const client = mockClients.find((c) => c.id === id);
-    if (!client) throw new Error("Cliente no encontrado");
-    if (input.name !== undefined) client.name = input.name;
-    if (input.email !== undefined) client.email = input.email;
-    if (input.phone !== undefined) client.phone = input.phone;
-    if (input.whatsapp !== undefined) client.whatsapp = effectiveWhatsapp(input.whatsapp, input.phone ?? client.phone);
-    if (input.notes !== undefined) client.notes = sanitizeNote(input.notes);
-    if (input.referralSource !== undefined) client.referralSource = input.referralSource || null;
-    if (input.birthDate !== undefined) client.birthDate = input.birthDate;
-    if (input.coverImageUrl !== undefined) client.coverImageUrl = input.coverImageUrl;
-    client.updatedAt = new Date().toISOString();
-    return client;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.email !== undefined) patch.email = input.email;
   if (input.phone !== undefined) patch.phone = input.phone;
-  if (input.whatsapp !== undefined) patch.whatsapp = input.whatsapp;
+  if (input.whatsapp !== undefined) {
+    // Mismo fallback whatsapp → phone que el modo mock: si el patch no trae
+    // teléfono, cae al teléfono ya guardado del cliente (issue #372 fase 4).
+    let fallbackPhone = input.phone;
+    if (fallbackPhone === undefined) {
+      const { data: current, error: currentError } = await supabase
+        .from("clients")
+        .select("phone")
+        .eq("id", id)
+        .maybeSingle();
+      if (currentError) throw currentError;
+      fallbackPhone = (current?.phone as string | null) ?? undefined;
+    }
+    patch.whatsapp = effectiveWhatsapp(input.whatsapp, fallbackPhone);
+  }
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.referralSource !== undefined) patch.referral_source = input.referralSource || null;
   if (input.birthDate !== undefined) patch.birth_date = input.birthDate || null;
@@ -220,26 +177,6 @@ export async function updateClient(id: string, input: Partial<CreateClientInput>
 }
 
 export async function deleteClient(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const index = mockClients.findIndex((client) => client.id === id);
-    if (index === -1) return;
-
-    mockClients.splice(index, 1);
-
-    for (let i = mockClientTags.length - 1; i >= 0; i--) {
-      if (mockClientTags[i].clientId === id) mockClientTags.splice(i, 1);
-    }
-
-    for (let i = mockTripClients.length - 1; i >= 0; i--) {
-      if (mockTripClients[i].clientId === id) mockTripClients.splice(i, 1);
-    }
-
-    for (const trip of mockTrips) {
-      if (trip.clientId === id) trip.clientId = "";
-    }
-    return;
-  }
-
   const supabase = await createServerSupabase();
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) throw error;
@@ -297,8 +234,8 @@ export type ClientWithUpcomingBirthday = Omit<Client, "birthDate"> & {
 
 // Clientes con birth_date cuyo cumpleaños (mes/día) cae dentro de los
 // próximos `daysAhead` días (incluye hoy = 0). Se apoya en getClients(),
-// que ya cubre el modo dual mock/Supabase, en vez de duplicar ese
-// branching: esta función es una derivación pura sobre esos datos.
+// que ya centraliza la consulta, en vez de duplicar ese branching: esta
+// función es una derivación pura sobre esos datos.
 export async function getUpcomingBirthdays(daysAhead = 30): Promise<ClientWithUpcomingBirthday[]> {
   const { items: clients } = await getClients({ pageSize: ALL_CLIENTS_PAGE_SIZE });
   const today = new Date();
@@ -317,22 +254,7 @@ export async function getUpcomingBirthdays(daysAhead = 30): Promise<ClientWithUp
 export async function getClientsWithTags(
   params: PaginationParams = {}
 ): Promise<PaginatedResult<Client & { tags: Tag[] }>> {
-  const { from, to, pageSize } = paginationBounds(params);
-
-  if (!isSupabaseConfigured()) {
-    const pageClients = mockClients.slice(from, from + pageSize);
-    return {
-      items: pageClients.map((client) => ({
-        ...client,
-        tags: mockClientTags
-          .filter((ct) => ct.clientId === client.id)
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-          .map((ct) => mockTags.find((t) => t.id === ct.tagId))
-          .filter((t): t is Tag => Boolean(t)),
-      })),
-      totalCount: mockClients.length,
-    };
-  }
+  const { from, to } = paginationBounds(params);
 
   const supabase = await createServerSupabase();
   const { data: clientRows, error, count } = await supabase
@@ -379,13 +301,6 @@ export async function getClientsWithTags(
 
 // Tags asignados a un solo cliente (0..N), ordenados por created_at asc.
 export async function getClientTags(clientId: string): Promise<Tag[]> {
-  if (!isSupabaseConfigured()) {
-    return mockClientTags
-      .filter((ct) => ct.clientId === clientId)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((ct) => mockTags.find((t) => t.id === ct.tagId))
-      .filter((t): t is Tag => Boolean(t));
-  }
   const supabase = await createServerSupabase();
   const { data: tagLinkRows, error: tagLinksError } = await supabase
     .from("client_tags")
@@ -409,26 +324,6 @@ export async function getClientTags(clientId: string): Promise<Tag[]> {
 // diff (borra los removidos + inserta los agregados), mismo patrón que
 // setTripTags. 0 tags es válido, no lanza.
 export async function setClientTags(clientId: string, tagIds: string[]): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const current = mockClientTags.filter((ct) => ct.clientId === clientId);
-    const currentIds = new Set(current.map((ct) => ct.tagId));
-    const nextIds = new Set(tagIds);
-
-    for (let i = mockClientTags.length - 1; i >= 0; i--) {
-      const ct = mockClientTags[i];
-      if (ct.clientId === clientId && !nextIds.has(ct.tagId)) {
-        mockClientTags.splice(i, 1);
-      }
-    }
-    const now = Date.now();
-    tagIds.forEach((tagId, idx) => {
-      if (!currentIds.has(tagId)) {
-        mockClientTags.push({ clientId, tagId, createdAt: new Date(now + idx).toISOString() });
-      }
-    });
-    return;
-  }
-
   const supabase = await createServerSupabase();
   const { data: currentRows, error: currentError } = await supabase
     .from("client_tags")
@@ -472,9 +367,6 @@ export function rowToTag(row: Record<string, unknown>): Tag {
 }
 
 export async function getTags(): Promise<Tag[]> {
-  if (!isSupabaseConfigured()) {
-    return [...mockTags].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("tags")
@@ -491,14 +383,6 @@ export async function getOrCreateTag(name: string): Promise<Tag> {
   const trimmed = name.trim();
   if (!trimmed) throw new Error("El nombre del tag no puede estar vacío");
   const normalized = trimmed.toLowerCase();
-
-  if (!isSupabaseConfigured()) {
-    const existing = mockTags.find((t) => t.name.toLowerCase() === normalized);
-    if (existing) return existing;
-    const tag: Tag = { id: uid(), name: trimmed, createdAt: new Date().toISOString() };
-    mockTags.push(tag);
-    return tag;
-  }
 
   const supabase = await createServerSupabase();
 
@@ -542,26 +426,6 @@ export async function getOrCreateTag(name: string): Promise<Tag> {
 // reinsert, para preservar el created_at de los tags retenidos. A diferencia
 // de setTripClients, un arreglo vacío es válido (0 tags permitido).
 export async function setTripTags(tripId: string, tagIds: string[]): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const current = mockTripTags.filter((tt) => tt.tripId === tripId);
-    const currentIds = new Set(current.map((tt) => tt.tagId));
-    const nextIds = new Set(tagIds);
-
-    for (let i = mockTripTags.length - 1; i >= 0; i--) {
-      const tt = mockTripTags[i];
-      if (tt.tripId === tripId && !nextIds.has(tt.tagId)) {
-        mockTripTags.splice(i, 1);
-      }
-    }
-    const now = Date.now();
-    tagIds.forEach((tagId, idx) => {
-      if (!currentIds.has(tagId)) {
-        mockTripTags.push({ tripId, tagId, createdAt: new Date(now + idx).toISOString() });
-      }
-    });
-    return;
-  }
-
   const supabase = await createServerSupabase();
   const { data: currentRows, error: currentError } = await supabase
     .from("trip_tags")

@@ -4,8 +4,7 @@
 // pública de @/lib/data permanezca idéntica.
 
 import { Client, ClientHomeTrip, ItemWithSupplier, Supplier, Tag, Trip, TripFilters, TripWithDetails } from "@/types";
-import { mockClients, mockTravelAgents, mockTripClients, mockTripInternalNotes, mockTripTags, mockTags, mockTrips, getTripWithDetails as mockGetTripWithDetails } from "@/lib/mock-data";
-import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, hasActiveTripFilters, isSupabaseConfigured, paginationBounds, tripMatchesFilters } from "@/lib/data/shared";
+import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, hasActiveTripFilters, paginationBounds } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { rowToClient, rowToTag } from "@/lib/data/clients";
 import { PHOTOS_BUCKET, getSignedDocumentUrl, rowToDocument, rowToTripDocument, rowToTripPhoto } from "@/lib/data/documents";
@@ -25,16 +24,7 @@ export async function getTripsWithClients(
   params: TripsWithClientsParams = {}
 ): Promise<PaginatedResult<Trip & { clients: Client[]; tags: Tag[] }>> {
   const filters = params.filters ?? {};
-  const { from, to, pageSize } = paginationBounds(params);
-
-  if (!isSupabaseConfigured()) {
-    const filteredTrips = mockTrips
-      .filter((trip) => !trip.isTemplate)
-      .map((trip) => hydrateMockTripListItem(trip))
-      .filter((trip) => tripMatchesFilters(trip, filters));
-    const pageTrips = filteredTrips.slice(from, from + pageSize);
-    return { items: pageTrips, totalCount: filteredTrips.length };
-  }
+  const { from, to } = paginationBounds(params);
 
   const supabase = await createServerSupabase();
   const matchingTripIds = hasActiveTripFilters(filters)
@@ -79,23 +69,6 @@ export async function getTripsWithClients(
         .filter((tag): tag is Tag => Boolean(tag)),
     })),
     totalCount,
-  };
-}
-
-function hydrateMockTripListItem(trip: Trip): Trip & { clients: Client[]; tags: Tag[]; internalNotes?: string | null } {
-  return {
-    ...trip,
-    clients: mockTripClients
-      .filter((link) => link.tripId === trip.id)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((link) => mockClients.find((client) => client.id === link.clientId))
-      .filter((client): client is Client => Boolean(client)),
-    tags: mockTripTags
-      .filter((link) => link.tripId === trip.id)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((link) => mockTags.find((tag) => tag.id === link.tagId))
-      .filter((tag): tag is Tag => Boolean(tag)),
-    internalNotes: mockTripInternalNotes[trip.id] ?? null,
   };
 }
 
@@ -253,14 +226,6 @@ export async function getUpcomingUnpublishedTrips(
 // de verdad many-to-many), no solo los que tienen trips.client_id === clientId.
 // Batch query (.in) para evitar N+1 al resolver los trips encontrados.
 export async function getTripsByClientId(clientId: string): Promise<Trip[]> {
-  if (!isSupabaseConfigured()) {
-    const tripIds = new Set(
-      mockTripClients.filter((tc) => tc.clientId === clientId).map((tc) => tc.tripId)
-    );
-    return mockTrips
-      .filter((t) => tripIds.has(t.id))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }
   const supabase = await createServerSupabase();
   const { data: links, error: linksError } = await supabase
     .from("trip_clients")
@@ -289,8 +254,7 @@ export type ClientTripSummary = {
 };
 
 // Resumen agregado para la vista de detalle de cliente (issue #41). Se apoya
-// en getTripsByClientId para respetar el modo mock/Supabase sin duplicar
-// lógica de acceso a datos.
+// en getTripsByClientId para no duplicar lógica de acceso a datos.
 export async function getClientTripSummary(clientId: string): Promise<ClientTripSummary> {
   const trips = await getTripsByClientId(clientId);
   return {
@@ -299,26 +263,6 @@ export async function getClientTripSummary(clientId: string): Promise<ClientTrip
     draftCount: trips.filter((t) => t.status === "draft").length,
     archivedCount: trips.filter((t) => t.status === "archived").length,
     totalCost: null,
-  };
-}
-
-function toClientHomeTrip(trip: Trip): ClientHomeTrip {
-  const agentName = trip.assignedAgentId
-    ? mockTravelAgents.find((a) => a.id === trip.assignedAgentId)?.name
-    : undefined;
-  return {
-    id: trip.id,
-    title: trip.title,
-    slug: trip.slug,
-    startDate: trip.startDate,
-    endDate: trip.endDate,
-    coverImageUrl: trip.coverImageUrl,
-    status: trip.status,
-    currency: trip.currency,
-    travelerCount: trip.travelerCount,
-    salePrice: trip.salePrice,
-    assignedAgentId: trip.assignedAgentId,
-    assignedAgentName: agentName,
   };
 }
 
@@ -349,15 +293,6 @@ function rowToClientHomeTrip(row: Record<string, unknown>, agentsById: Map<strin
 // archived, y se resuelven nombres de agentes en batch. Modo Supabase usa
 // service role; si falta la service key se degrada a [] sin lanzar.
 export async function getClientHomeTrips(clientId: string): Promise<ClientHomeTrip[]> {
-  if (!isSupabaseConfigured()) {
-    const tripIds = new Set(
-      mockTripClients.filter((tc) => tc.clientId === clientId).map((tc) => tc.tripId)
-    );
-    return mockTrips
-      .filter((t) => tripIds.has(t.id) && (t.status === "draft" || t.status === "published"))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map(toClientHomeTrip);
-  }
   if (!canUseServiceRole()) return [];
   const supabase = getSupabaseAdmin();
 
@@ -416,14 +351,6 @@ export type ClientTripHistory = {
 export async function getClientPublishedTripsBySlug(
   clientSlug: string
 ): Promise<ClientTripHistory | null> {
-  if (!isSupabaseConfigured()) {
-    const client = mockClients.find((c) => c.slug === clientSlug);
-    if (!client) return null;
-    const trips = mockTrips
-      .filter((t) => t.clientId === client.id && t.status === "published")
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    return { client: { name: client.name, slug: client.slug, coverImageUrl: client.coverImageUrl }, trips };
-  }
   const supabase = await createServerSupabase();
   const { data: clientRow, error: clientError } = await supabase
     .from("clients")
@@ -452,7 +379,6 @@ export async function getClientPublishedTripsBySlug(
 }
 
 export async function getTripById(id: string): Promise<TripWithDetails | null> {
-  if (!isSupabaseConfigured()) return mockGetTripWithDetails(mockTrips.find((t) => t.id === id)?.slug ?? "");
   const supabase = await createServerSupabase();
   const { data: tripRow, error } = await supabase
     .from("trips")
@@ -468,13 +394,6 @@ export async function getTripById(id: string): Promise<TripWithDetails | null> {
 // (issue #53, campos exclusivos del editor del agente). A diferencia de
 // getTripById, no usa select("*") — lista explícita de columnas públicas.
 export async function getTripWithDetails(slug: string): Promise<TripWithDetails | null> {
-  if (!isSupabaseConfigured()) {
-    const trip = mockGetTripWithDetails(slug);
-    if (!trip) return null;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { salePrice: _salePrice, commissionRate: _commissionRate, ...publicTrip } = trip;
-    return publicTrip as TripWithDetails;
-  }
   const supabase = await createServerSupabase();
   const { data: tripRow, error } = await supabase
     .from("trips")

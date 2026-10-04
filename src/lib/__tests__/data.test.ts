@@ -1,560 +1,340 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * Facade (barrel) contract for `src/lib/data.ts`.
+ *
+ * Two concerns live here:
+ *  1. Surface: the barrel must re-export every domain module symbol by
+ *     reference and expose nothing of its own, so `@/lib/data` can never grow
+ *     logic. Behavior coverage for each domain lives in the dedicated module
+ *     tests (batches 1-2) and the domain-contract suites.
+ *  2. Routing: a representative read + write per major domain family is driven
+ *     through the barrel against a mocked Supabase client (migration pattern
+ *     "a" — see helpers/db.ts) to prove the public entry points reach the real
+ *     Supabase branch of their domain module.
+ */
+const db = vi.hoisted(() => {
+  type Row = Record<string, unknown>;
+  type Filter = { col: string; value: unknown; op: "eq" | "in" };
+  type Call = { table: string; method: string; args: unknown[] };
+
+  const tables = new Map<string, Row[]>();
+  const calls: Call[] = [];
+  const NOW = "2026-11-01T12:00:00.000Z";
+
+  const table = (name: string): Row[] => {
+    let rows = tables.get(name);
+    if (!rows) {
+      rows = [];
+      tables.set(name, rows);
+    }
+    return rows;
+  };
+
+  class Query {
+    private filters: Filter[] = [];
+    private orders: { col: string; asc: boolean }[] = [];
+    private rangeArgs: [number, number] | null = null;
+    private op: "select" | "insert" | "upsert" = "select";
+    private payload: unknown;
+    private countFlag = false;
+
+    constructor(private tableName: string) {}
+
+    select(cols = "*", opts?: { count?: string }): this {
+      calls.push({ table: this.tableName, method: "select", args: opts === undefined ? [cols] : [cols, opts] });
+      if (opts?.count) this.countFlag = true;
+      return this;
+    }
+    insert(payload: unknown): this {
+      calls.push({ table: this.tableName, method: "insert", args: [payload] });
+      this.op = "insert";
+      this.payload = payload;
+      return this;
+    }
+    upsert(payload: unknown, opts?: { onConflict?: string }): this {
+      calls.push({ table: this.tableName, method: "upsert", args: [payload, opts] });
+      this.op = "upsert";
+      this.payload = payload;
+      return this;
+    }
+    eq(col: string, value: unknown): this {
+      calls.push({ table: this.tableName, method: "eq", args: [col, value] });
+      this.filters.push({ col, value, op: "eq" });
+      return this;
+    }
+    in(col: string, value: unknown[]): this {
+      calls.push({ table: this.tableName, method: "in", args: [col, value] });
+      this.filters.push({ col, value, op: "in" });
+      return this;
+    }
+    order(col: string, opts?: { ascending?: boolean }): this {
+      calls.push({ table: this.tableName, method: "order", args: opts === undefined ? [col] : [col, opts] });
+      this.orders.push({ col, asc: opts?.ascending ?? true });
+      return this;
+    }
+    range(from: number, to: number): this {
+      calls.push({ table: this.tableName, method: "range", args: [from, to] });
+      this.rangeArgs = [from, to];
+      return this;
+    }
+
+    private matched(): Row[] {
+      let rows = table(this.tableName).filter((row) =>
+        this.filters.every((filter) =>
+          filter.op === "eq"
+            ? row[filter.col] === filter.value
+            : (filter.value as unknown[]).includes(row[filter.col])
+        )
+      );
+      for (const { col, asc } of [...this.orders].reverse()) {
+        rows = [...rows].sort((a, b) => {
+          const cmp = String(a[col] ?? "").localeCompare(String(b[col] ?? ""));
+          return asc ? cmp : -cmp;
+        });
+      }
+      if (this.rangeArgs) rows = rows.slice(this.rangeArgs[0], this.rangeArgs[1] + 1);
+      return rows;
+    }
+
+    private write(): Row[] {
+      const rows = table(this.tableName);
+      const inputs = Array.isArray(this.payload) ? this.payload : [this.payload];
+      return inputs.map((input) => {
+        const data = input as Row;
+        const row: Row = { id: crypto.randomUUID(), created_at: NOW, updated_at: NOW, changed_at: NOW, ...data };
+        rows.push(row);
+        return row;
+      });
+    }
+
+    async maybeSingle() {
+      calls.push({ table: this.tableName, method: "maybeSingle", args: [] });
+      const rows = this.op === "select" ? this.matched() : this.write();
+      return { data: rows[0] ?? null, error: null };
+    }
+
+    async single() {
+      calls.push({ table: this.tableName, method: "single", args: [] });
+      const rows = this.op === "select" ? this.matched() : this.write();
+      return { data: rows[0] ?? null, error: null };
+    }
+
+    then<TResult1 = { data: unknown; error: unknown; count?: number }, TResult2 = never>(
+      onfulfilled?:
+        | ((value: { data: unknown; error: unknown; count?: number }) => TResult1 | PromiseLike<TResult1>)
+        | null,
+      onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
+    ): PromiseLike<TResult1 | TResult2> {
+      let result: { data: unknown; error: unknown; count?: number };
+      if (this.op === "select") {
+        const rows = this.matched();
+        result = this.countFlag ? { data: rows, error: null, count: rows.length } : { data: rows, error: null };
+      } else {
+        this.write();
+        result = { data: null, error: null };
+      }
+      return Promise.resolve(result).then(onfulfilled, onrejected);
+    }
+  }
+
+  return {
+    calls,
+    client: { from: (name: string) => new Query(name) },
+    seed(tableName: string, rows: Row[]) {
+      table(tableName).push(...rows);
+    },
+    reset() {
+      tables.clear();
+      calls.length = 0;
+    },
+    callsFor(tableName: string, method: string) {
+      return calls.filter((call) => call.table === tableName && call.method === method);
+    },
+  };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: () => false,
-  createClient: vi.fn(),
+  isSupabaseConfigured: () => true,
+  createClient: async () => db.client,
+  getSupabaseAdmin: () => db.client,
 }));
 
-import {
-  getClients,
-  getClientById,
-  createClient,
-  createItem,
-  createPackingItem,
-  createTrip,
-  createTripDay,
-  deleteTrip,
-  updateClient,
-  updateTrip,
-  deleteClient,
-  getTripById,
-  getTrips,
-  getTripsWithClients,
-  getTripWithDetails,
-  getTripsByClientId,
-  getClientTripSummary,
-  getTags,
-  getOrCreateTag,
-  setTripTags,
-  updateTripInternalNotes,
-  createSupplier,
-  updateSupplier,
-  getSupplierById,
-  getTravelAgents,
-  getTravelAgentById,
-  createTravelAgent,
-  updateTravelAgent,
-  deleteTravelAgent,
-} from "@/lib/data";
-import {
-  mockItems,
-  mockPackingItems,
-  mockTripClients,
-  mockTripDays,
-  mockTripFeedback,
-  mockTripInternalNotes,
-  mockTripPhotos,
-  mockTrips,
-  mockTripStatusHistory,
-  mockTripTags,
-} from "@/lib/mock-data";
+// Las lecturas de visas del portal usan service role; canUseServiceRole()
+// exige esta key, igual que en client-portal.test.ts / services.test.ts.
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 
-describe("data layer (mock mode)", () => {
-  describe("getClients", () => {
-    it("retorna clientes paginados", async () => {
-      const result = await getClients({ page: 1, pageSize: 10 });
-      expect(result.items.length).toBeLessThanOrEqual(10);
-      expect(result.totalCount).toBeGreaterThan(0);
+import * as dataFacade from "@/lib/data";
+import * as sharedModule from "@/lib/data/shared";
+import * as clientsModule from "@/lib/data/clients";
+import * as profilesModule from "@/lib/data/profiles";
+import * as suppliersModule from "@/lib/data/suppliers";
+import * as travelAgentsModule from "@/lib/data/travel-agents";
+import * as tripsModule from "@/lib/data/trips";
+import * as documentsModule from "@/lib/data/documents";
+import * as servicesModule from "@/lib/data/services";
+import * as dashboardModule from "@/lib/data/dashboard";
+import * as settingsModule from "@/lib/data/settings";
+import * as feedbackModule from "@/lib/data/feedback";
+import * as visasModule from "@/lib/data/visas";
+import * as visaDocumentsModule from "@/lib/data/visa-documents";
+
+const DOMAIN_MODULES = {
+  shared: sharedModule,
+  clients: clientsModule,
+  profiles: profilesModule,
+  suppliers: suppliersModule,
+  travelAgents: travelAgentsModule,
+  trips: tripsModule,
+  documents: documentsModule,
+  services: servicesModule,
+  dashboard: dashboardModule,
+  settings: settingsModule,
+  feedback: feedbackModule,
+  visas: visasModule,
+  visaDocuments: visaDocumentsModule,
+} as const;
+
+const domainSymbols = new Map<string, unknown>();
+for (const domainModule of Object.values(DOMAIN_MODULES)) {
+  for (const [symbol, value] of Object.entries(domainModule)) {
+    domainSymbols.set(symbol, value);
+  }
+}
+
+const facade = dataFacade as unknown as Record<string, unknown>;
+
+beforeEach(() => db.reset());
+
+describe("data facade surface (barrel contract)", () => {
+  it("re-exports every domain module symbol by reference and adds no logic of its own", () => {
+    for (const [symbol, value] of domainSymbols) {
+      expect(facade[symbol], `@/lib/data should re-export ${symbol}`).toBe(value);
+    }
+  });
+
+  it("exposes exactly the union of its domain module exports", () => {
+    expect(Object.keys(dataFacade).sort()).toEqual([...domainSymbols.keys()].sort());
+  });
+});
+
+describe("data facade routing (mocked Supabase client)", () => {
+  it("clients read: resolves getClients through the clients domain, newest first", async () => {
+    db.seed("clients", [
+      { id: "client-1", name: "Ana Pérez", email: "ana@example.com", created_at: "2026-11-02T00:00:00.000Z" },
+      { id: "client-2", name: "Bruno Díaz", email: "bruno@example.com", created_at: "2026-11-01T00:00:00.000Z" },
+    ]);
+
+    const result = await dataFacade.getClients({ page: 1, pageSize: 2 });
+
+    expect(result.totalCount).toBe(2);
+    expect(result.items.map((client) => client.id)).toEqual(["client-1", "client-2"]);
+    expect(db.callsFor("clients", "select")[0].args).toEqual(["*", { count: "exact" }]);
+  });
+
+  it("clients write: createClient inserts the mapped row and returns the persisted client", async () => {
+    const created = await dataFacade.createClient({
+      name: "Facade Client",
+      email: "facade@example.com",
+      phone: "+52 55 0000 1111",
+      whatsapp: "+52 55 0000 2222",
     });
 
-    it("respeta la paginación", async () => {
-      const page1 = await getClients({ page: 1, pageSize: 1 });
-      const page2 = await getClients({ page: 2, pageSize: 1 });
-      expect(page1.items).toHaveLength(1);
-      expect(page2.items).toHaveLength(1);
-      expect(page1.items[0].id).not.toBe(page2.items[0].id);
+    expect(created.id).toBeTruthy();
+    expect(created.name).toBe("Facade Client");
+    expect(created.phone).toBe("+52 55 0000 1111");
+    expect(created.whatsapp).toBe("+52 55 0000 2222");
+    expect(db.callsFor("clients", "insert")[0].args[0]).toMatchObject({
+      name: "Facade Client",
+      email: "facade@example.com",
     });
   });
 
-  describe("getClientById", () => {
-    it("retorna un cliente existente", async () => {
-      const clients = await getClients({ pageSize: 1 });
-      const client = await getClientById(clients.items[0].id);
-      expect(client).not.toBeNull();
-      expect(client!.name).toBeTruthy();
-    });
+  it("trips read: resolves getTrips through the trips domain and hides templates", async () => {
+    db.seed("trips", [
+      { id: "trip-1", title: "Viaje A", slug: "viaje-a", is_template: false, status: "draft", currency: "MXN", created_at: "2026-11-02T00:00:00.000Z" },
+      { id: "trip-2", title: "Viaje B", slug: "viaje-b", is_template: false, status: "published", currency: "EUR", created_at: "2026-11-01T00:00:00.000Z" },
+      { id: "trip-tpl", title: "Plantilla", slug: "plantilla", is_template: true, status: "draft", currency: "MXN", created_at: "2026-11-03T00:00:00.000Z" },
+    ]);
 
-    it("retorna null para id inexistente", async () => {
-      const client = await getClientById("nonexistent-id");
-      expect(client).toBeNull();
-    });
+    const result = await dataFacade.getTrips({ page: 1, pageSize: 10 });
+
+    expect(result.items.map((trip) => trip.id)).toEqual(["trip-1", "trip-2"]);
+    expect(result.items.every((trip) => trip.isTemplate === false)).toBe(true);
+    expect(db.callsFor("trips", "eq")[0].args).toEqual(["is_template", false]);
   });
 
-  describe("createClient + updateClient", () => {
-    it("crea un cliente y lo puede encontrar por id", async () => {
-      const created = await createClient({
-        name: "Test Client",
-        email: "test@example.com",
-      });
-      expect(created.name).toBe("Test Client");
-      expect(created.email).toBe("test@example.com");
-      expect(created.id).toBeTruthy();
-
-      const found = await getClientById(created.id);
-      expect(found).not.toBeNull();
-      expect(found!.name).toBe("Test Client");
+  it("trips write: createTrip inserts the trip, links clients and provisions their service", async () => {
+    const trip = await dataFacade.createTrip({
+      clientIds: ["client-x"],
+      title: "Facade Trip",
+      slug: "facade-trip",
+      startDate: "2026-11-01",
+      endDate: "2026-11-02",
     });
 
-    it("actualiza un cliente existente", async () => {
-      const created = await createClient({ name: "Original Name" });
-      const updated = await updateClient(created.id, { name: "Updated Name" });
-      expect(updated.name).toBe("Updated Name");
-
-      const found = await getClientById(created.id);
-      expect(found!.name).toBe("Updated Name");
-    });
-
-    it("copies phone into whatsapp when create receives blank whatsapp", async () => {
-      const created = await createClient({
-        name: "Blank WhatsApp",
-        phone: "+52 55 1111 2222",
-        whatsapp: "",
-      });
-
-      expect(created.whatsapp).toBe("+52 55 1111 2222");
-    });
-
-    it("copies phone into whatsapp on update only when whatsapp is blank", async () => {
-      const created = await createClient({
-        name: "Update WhatsApp",
-        phone: "+52 55 3333 4444",
-        whatsapp: "+52 1 55 9999 0000",
-      });
-
-      const explicit = await updateClient(created.id, {
-        phone: "+52 55 3333 4444",
-        whatsapp: "+52 1 55 9999 0000",
-      });
-      expect(explicit.whatsapp).toBe("+52 1 55 9999 0000");
-
-      const fallback = await updateClient(created.id, {
-        phone: "+52 55 7777 8888",
-        whatsapp: "",
-      });
-      expect(fallback.whatsapp).toBe("+52 55 7777 8888");
-    });
+    expect(trip.id).toBeTruthy();
+    expect(trip.title).toBe("Facade Trip");
+    expect(db.callsFor("trips", "insert")[0].args[0]).toMatchObject({ slug: "facade-trip", title: "Facade Trip" });
+    expect(db.callsFor("trip_clients", "insert")[0].args[0]).toEqual([{ trip_id: trip.id, client_id: "client-x" }]);
+    expect(db.callsFor("services", "upsert")[0].args[1]).toEqual({ onConflict: "trip_id,client_id,service_type" });
   });
 
+  it("services read: resolves getServicesForTrip through the services domain", async () => {
+    db.seed("services", [
+      { id: "service-1", trip_id: "trip-1", client_id: "client-1", service_type: "trip_documents", status: "active", created_at: "2026-11-01T00:00:00.000Z" },
+      { id: "service-2", trip_id: "trip-1", client_id: "client-2", service_type: "trip_documents", status: "active", created_at: "2026-11-02T00:00:00.000Z" },
+      { id: "service-other", trip_id: "trip-9", client_id: "client-1", service_type: "trip_documents", status: "active", created_at: "2026-11-03T00:00:00.000Z" },
+    ]);
 
-  describe("deleteClient", () => {
-    it("removes a client from mock storage", async () => {
-      const client = await createClient({ name: "Delete Me" });
+    const services = await dataFacade.getServicesForTrip("trip-1");
 
-      await deleteClient(client.id);
-
-      await expect(getClientById(client.id)).resolves.toBeNull();
-    });
-
-    it("removes deleted-client relationships without deleting trips", async () => {
-      const client = await createClient({ name: "Assigned Delete" });
-      const trip = await createTrip({
-        clientIds: [client.id],
-        title: "Preserved Trip",
-        slug: `preserved-trip-${client.id}`,
-        startDate: "2026-01-01",
-        endDate: "2026-01-02",
-      });
-
-      await deleteClient(client.id);
-
-      const details = await getTripWithDetails(trip.slug);
-      expect(details).not.toBeNull();
-      expect(details!.id).toBe(trip.id);
-      expect(details!.clients.map((assigned) => assigned.id)).not.toContain(client.id);
-      await expect(getTripsByClientId(client.id)).resolves.toEqual([]);
-    });
+    expect(services.map((service) => service.id)).toEqual(["service-1", "service-2"]);
+    expect(db.callsFor("services", "eq")[0].args).toEqual(["trip_id", "trip-1"]);
   });
 
-  describe("getTrips", () => {
-    it("retorna viajes no-template", async () => {
-      const result = await getTrips({ pageSize: 10 });
-      expect(result.items.length).toBeGreaterThan(0);
-      for (const trip of result.items) {
-        expect(trip.isTemplate).toBe(false);
-      }
-    });
+  it("services write: ensureServiceForAssignment upserts the default trip_documents service", async () => {
+    const service = await dataFacade.ensureServiceForAssignment("trip-1", "client-1");
+
+    expect(service.tripId).toBe("trip-1");
+    expect(service.clientId).toBe("client-1");
+    expect(service.serviceType).toBe("trip_documents");
+    expect(db.callsFor("services", "upsert")[0].args).toEqual([
+      { trip_id: "trip-1", client_id: "client-1", service_type: "trip_documents", status: "active" },
+      { onConflict: "trip_id,client_id,service_type" },
+    ]);
   });
 
-  describe("createTrip client validation", () => {
-    it("rejects a trip without clients", async () => {
-      await expect(
-        createTrip({
-          clientIds: [],
-          title: "Trip Without Clients",
-          slug: `trip-without-clients-${Date.now()}`,
-        })
-      ).rejects.toThrow("Se requiere al menos un cliente para crear el viaje");
-    });
+  it("visas read: resolves getVisasByClientId through the visa client links", async () => {
+    db.seed("visa_clients", [{ visa_id: "visa-1", client_id: "client-1" }]);
+    db.seed("visas", [
+      { id: "visa-1", client_id: "client-1", country: "Japón", visa_type: "turismo", deadline: "2026-12-01", price: 1200, status: "pending", created_at: "2026-11-01T00:00:00.000Z" },
+    ]);
+
+    const visas = await dataFacade.getVisasByClientId("client-1");
+
+    expect(visas).toHaveLength(1);
+    expect(visas[0]).toMatchObject({ id: "visa-1", country: "Japón", status: "pending" });
+    expect(db.callsFor("visa_clients", "eq")[0].args).toEqual(["client_id", "client-1"]);
   });
 
-  describe("deleteTrip", () => {
-    it("borra el viaje y sus datos relacionados en modo mock", async () => {
-      const trip = await createTrip({
-        clientIds: ["c1"],
-        title: "Viaje a borrar",
-        slug: `viaje-a-borrar-${Date.now()}`,
-        startDate: "2026-10-01",
-        endDate: "2026-10-02",
-      });
-      const day = await createTripDay({ tripId: trip.id, date: "2026-10-01" });
-      const item = await createItem({ tripDayId: day.id, type: "note", title: "Nota" });
-      const tag = await getOrCreateTag(`tag-borrar-${Date.now()}`);
-      await setTripTags(trip.id, [tag.id]);
-      await createPackingItem({ tripId: trip.id, label: "Pasaporte" });
-      await updateTripInternalNotes(trip.id, "Nota privada");
-      mockTripStatusHistory.push({
-        id: `hist-${trip.id}`,
-        tripId: trip.id,
-        fromStatus: "draft",
-        toStatus: "archived",
-        changedAt: new Date().toISOString(),
-      });
-      mockTripPhotos.push({
-        id: `photo-${trip.id}`,
-        tripId: trip.id,
-        filePath: "mock/photo.jpg",
-        fileName: "photo.jpg",
-        sortOrder: 0,
-        createdAt: new Date().toISOString(),
-      });
-      mockTripFeedback.push({
-        id: `feedback-${trip.id}`,
-        tripId: trip.id,
-        rating: 5,
-        comment: "ok",
-        createdAt: new Date().toISOString(),
-      });
+  it("visas write: createVisa inserts the visa, client links and opening history entry", async () => {
+    const visa = await dataFacade.createVisa({
+      clientIds: ["client-1"],
+      country: "Japón",
+      visaType: "turismo",
+      deadline: "2026-12-01",
+      price: 1200,
+    });
 
-      await deleteTrip(trip.id);
-
-      expect(await getTripById(trip.id)).toBeNull();
-      expect(mockTrips.some((row) => row.id === trip.id)).toBe(false);
-      expect(mockTripDays.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockItems.some((row) => row.id === item.id)).toBe(false);
-      expect(mockTripClients.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockTripTags.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockPackingItems.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockTripStatusHistory.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockTripPhotos.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockTripFeedback.some((row) => row.tripId === trip.id)).toBe(false);
-      expect(mockTripInternalNotes[trip.id]).toBeUndefined();
+    expect(visa.id).toBeTruthy();
+    expect(visa.status).toBe("pending");
+    expect(db.callsFor("visas", "insert")[0].args[0]).toMatchObject({ country: "Japón", visa_type: "turismo", status: "pending" });
+    expect(db.callsFor("visa_clients", "insert")[0].args[0]).toEqual([{ visa_id: visa.id, client_id: "client-1" }]);
+    expect(db.callsFor("visa_status_history", "insert")[0].args[0]).toEqual({
+      visa_id: visa.id,
+      from_status: null,
+      to_status: "pending",
     });
   });
-
-
-  describe("getTripsWithClients filters", () => {
-    it("filtra viajes por status, moneda, cliente y tags en modo mock", async () => {
-      const result = await getTripsWithClients({
-        filters: {
-          status: ["published"],
-          currency: "EUR",
-          clientIds: ["c1"],
-          tagIds: ["tg1"],
-        },
-      });
-
-      expect(result.items.map((trip) => trip.id)).toEqual(["t1"]);
-      expect(result.totalCount).toBe(1);
-    });
-
-    it("filtra texto con acentos en título, instrucciones y cliente", async () => {
-      const byTitle = await getTripsWithClients({ filters: { query: "italia" } });
-      const byInstructions = await getTripsWithClients({ filters: { query: "documento" } });
-      const byClient = await getTripsWithClients({ filters: { query: "familia gomez" } });
-
-      expect(byTitle.items.map((trip) => trip.id)).toContain("t1");
-      expect(byInstructions.items.map((trip) => trip.id)).toContain("t1");
-      expect(byClient.items.map((trip) => trip.id)).toContain("t2");
-    });
-
-    it("aplica rango de fechas inclusivo por traslape y pagina sobre resultados filtrados", async () => {
-      const result = await getTripsWithClients({
-        page: 1,
-        pageSize: 1,
-        filters: { dateFrom: "2026-12-01", dateTo: "2026-12-31" },
-      });
-
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].id).toBe("t2");
-      expect(result.totalCount).toBe(1);
-    });
-  });
-
-  describe("getTripWithDetails", () => {
-    it("retorna un viaje con sus días", async () => {
-      const trips = await getTrips({ pageSize: 1 });
-      const trip = await getTripWithDetails(trips.items[0].slug);
-      expect(trip).not.toBeNull();
-      expect(trip!.days).toBeDefined();
-      expect(Array.isArray(trip!.days)).toBe(true);
-    });
-
-    it("retorna null para slug inexistente", async () => {
-      const trip = await getTripWithDetails("nonexistent-slug");
-      expect(trip).toBeNull();
-    });
-  });
-
-  describe("getTripsByClientId", () => {
-    it("retorna viajes de un cliente existente", async () => {
-      const clients = await getClients({ pageSize: 1 });
-      const trips = await getTripsByClientId(clients.items[0].id);
-      expect(Array.isArray(trips)).toBe(true);
-    });
-  });
-
-  describe("getClientTripSummary", () => {
-    it("retorna un resumen válido", async () => {
-      const clients = await getClients({ pageSize: 1 });
-      const summary = await getClientTripSummary(clients.items[0].id);
-      expect(summary.totalTrips).toBeGreaterThanOrEqual(0);
-      expect(summary.publishedCount + summary.draftCount + summary.archivedCount).toBe(
-        summary.totalTrips
-      );
-    });
-  });
-
-  describe("getTags", () => {
-    it("retorna un array de tags", async () => {
-      const tags = await getTags();
-      expect(Array.isArray(tags)).toBe(true);
-    });
-  });
-
-  describe("getOrCreateTag", () => {
-    it("crea un tag nuevo", async () => {
-      const tag = await getOrCreateTag("Tag Test Único");
-      expect(tag.name).toBe("Tag Test Único");
-      expect(tag.id).toBeTruthy();
-    });
-
-    it("retorna el mismo tag si ya existe (case-insensitive)", async () => {
-      const tag1 = await getOrCreateTag("Duplicate Tag");
-      const tag2 = await getOrCreateTag("duplicate tag");
-      expect(tag1.id).toBe(tag2.id);
-    });
-  });
-
-  describe("supplier Google place metadata", () => {
-    it("preserves Google place metadata when creating a supplier", async () => {
-      const created = await createSupplier({
-        name: "Hotel Google Test",
-        type: "hotel",
-        address: "Av. Test 123, CDMX",
-        lat: 19.432608,
-        lng: -99.133209,
-        googlePlaceId: "ChIJ-google-test",
-        tags: ["google"],
-      });
-
-      expect(created.googlePlaceId).toBe("ChIJ-google-test");
-      expect(created.address).toBe("Av. Test 123, CDMX");
-      expect(created.lat).toBe(19.432608);
-      expect(created.lng).toBe(-99.133209);
-
-      const found = await getSupplierById(created.id);
-      expect(found?.googlePlaceId).toBe("ChIJ-google-test");
-    });
-
-    it("preserves Google place metadata when updating a supplier", async () => {
-      const created = await createSupplier({
-        name: "Proveedor Manual",
-        type: "restaurant",
-        tags: [],
-      });
-
-      const updated = await updateSupplier(created.id, {
-        address: "Calle Actualizada 456, Puebla",
-        lat: 19.04144,
-        lng: -98.20627,
-        googlePlaceId: "ChIJ-updated-place",
-      });
-
-      expect(updated.googlePlaceId).toBe("ChIJ-updated-place");
-      expect(updated.address).toBe("Calle Actualizada 456, Puebla");
-      expect(updated.lat).toBe(19.04144);
-      expect(updated.lng).toBe(-98.20627);
-    });
-
-    it("enriches only confirmed Google fields while preserving existing supplier details", async () => {
-      const created = await createSupplier({
-        name: "Hotel Curado",
-        type: "hotel",
-        contactPhone: "+52 55 0000 0000",
-        contactEmail: "reservas@example.com",
-        website: "https://hotel.example.com",
-        notes: "Notas internas",
-        tags: ["vip"],
-      });
-
-      const enriched = await updateSupplier(created.id, {
-        address: "Paseo de la Reforma 1, CDMX",
-        lat: 19.433,
-        lng: -99.133,
-        googlePlaceId: "ChIJ-confirmed-enrichment",
-      });
-
-      expect(enriched.name).toBe("Hotel Curado");
-      expect(enriched.type).toBe("hotel");
-      expect(enriched.contactPhone).toBe("+52 55 0000 0000");
-      expect(enriched.contactEmail).toBe("reservas@example.com");
-      expect(enriched.website).toBe("https://hotel.example.com");
-      expect(enriched.notes).toBe("Notas internas");
-      expect(enriched.tags).toEqual(["vip"]);
-      expect(enriched.address).toBe("Paseo de la Reforma 1, CDMX");
-      expect(enriched.lat).toBe(19.433);
-      expect(enriched.lng).toBe(-99.133);
-      expect(enriched.googlePlaceId).toBe("ChIJ-confirmed-enrichment");
-    });
-  });
-
-  describe("travel agents catalog", () => {
-    it("returns all travel agents", async () => {
-      const agents = await getTravelAgents();
-      expect(agents.length).toBeGreaterThanOrEqual(2);
-      expect(agents.map((a) => a.name)).toContain("Eliu Montoya");
-    });
-
-    it("finds a travel agent by id", async () => {
-      const agent = await getTravelAgentById("a1");
-      expect(agent).not.toBeNull();
-      expect(agent!.id).toBe("a1");
-      expect(agent!.name).toBe("Eliu Montoya");
-    });
-
-    it("returns null for unknown agent id", async () => {
-      const agent = await getTravelAgentById("unknown-agent");
-      expect(agent).toBeNull();
-    });
-
-    it("requires a name to create an agent", async () => {
-      await expect(createTravelAgent({ name: "" })).rejects.toThrow("El nombre es obligatorio");
-    });
-
-    it("creates and stores a travel agent", async () => {
-      const created = await createTravelAgent({
-        name: "Agente de Prueba",
-        email: "test@agent.com",
-        phone: "+52 55 9999 0000",
-        notes: "Notas de prueba",
-      });
-      expect(created.name).toBe("Agente de Prueba");
-      expect(created.email).toBe("test@agent.com");
-      expect(created.phone).toBe("+52 55 9999 0000");
-      expect(created.notes).toBe("Notas de prueba");
-
-      const found = await getTravelAgentById(created.id);
-      expect(found?.name).toBe("Agente de Prueba");
-    });
-
-    it("updates a travel agent", async () => {
-      const created = await createTravelAgent({ name: "Original Agent" });
-      const updated = await updateTravelAgent(created.id, { name: "Updated Agent", email: "up@example.com" });
-      expect(updated.name).toBe("Updated Agent");
-      expect(updated.email).toBe("up@example.com");
-
-      const found = await getTravelAgentById(created.id);
-      expect(found?.name).toBe("Updated Agent");
-    });
-
-    it("rejects update with empty name", async () => {
-      const created = await createTravelAgent({ name: "Named Agent" });
-      await expect(updateTravelAgent(created.id, { name: "" })).rejects.toThrow("El nombre es obligatorio");
-    });
-
-    it("deletes an unreferenced agent", async () => {
-      const created = await createTravelAgent({ name: "Agent to Delete" });
-      await deleteTravelAgent(created.id);
-      await expect(getTravelAgentById(created.id)).resolves.toBeNull();
-    });
-
-    it("nullifies assigned_agent_id on referenced trips when deleting an agent", async () => {
-      const agent = await createTravelAgent({ name: "Referenced Agent" });
-      const trip = await createTrip({
-        clientIds: ["c1"],
-        title: "Assigned Trip",
-        slug: `assigned-trip-${agent.id}`,
-        startDate: "2026-10-01",
-        endDate: "2026-10-02",
-        assignedAgentId: agent.id,
-      });
-      expect(trip.assignedAgentId).toBe(agent.id);
-
-      await deleteTravelAgent(agent.id);
-
-      await expect(getTravelAgentById(agent.id)).resolves.toBeNull();
-      const details = await getTripWithDetails(trip.slug);
-      expect(details?.assignedAgentId).toBeUndefined();
-    });
-  });
-
-  describe("trip assignment", () => {
-    it("creates a trip with an assigned agent", async () => {
-      const trip = await createTrip({
-        clientIds: ["c1"],
-        title: "Trip With Agent",
-        slug: `trip-with-agent-${Date.now()}`,
-        startDate: "2026-11-01",
-        endDate: "2026-11-05",
-        assignedAgentId: "a1",
-      });
-      expect(trip.assignedAgentId).toBe("a1");
-    });
-
-    it("creates a trip without an assigned agent", async () => {
-      const trip = await createTrip({
-        clientIds: ["c1"],
-        title: "Trip Without Agent",
-        slug: `trip-no-agent-${Date.now()}`,
-        startDate: "2026-11-01",
-        endDate: "2026-11-05",
-      });
-      expect(trip.assignedAgentId).toBeUndefined();
-    });
-
-    it("updates a trip to change its assigned agent", async () => {
-      const trip = await createTrip({
-        clientIds: ["c1"],
-        title: "Reassign Trip",
-        slug: `reassign-trip-${Date.now()}`,
-        startDate: "2026-11-01",
-        endDate: "2026-11-05",
-        assignedAgentId: "a1",
-      });
-      const updated = await updateTrip(trip.id, { assignedAgentId: "a2" });
-      expect(updated.assignedAgentId).toBe("a2");
-    });
-
-    it("updates a trip to clear its assigned agent", async () => {
-      const trip = await createTrip({
-        clientIds: ["c1"],
-        title: "Clear Agent Trip",
-        slug: `clear-agent-trip-${Date.now()}`,
-        startDate: "2026-11-01",
-        endDate: "2026-11-05",
-        assignedAgentId: "a1",
-      });
-      const updated = await updateTrip(trip.id, { assignedAgentId: null });
-      expect(updated.assignedAgentId).toBeUndefined();
-    });
-  });
-
-  describe("getTripsWithClients agent filter", () => {
-    it("filters trips by a single assigned agent", async () => {
-      const result = await getTripsWithClients({ filters: { agentIds: ["a1"] } });
-      expect(result.items.map((trip) => trip.id)).toContain("t1");
-    });
-
-    it("filters trips by multiple assigned agents", async () => {
-      const result = await getTripsWithClients({ filters: { agentIds: ["a1", "a2"] } });
-      expect(result.items.map((trip) => trip.id)).toContain("t1");
-    });
-
-    it("returns empty when no trip matches the selected agent", async () => {
-      const result = await getTripsWithClients({ filters: { agentIds: ["no-such-agent"] } });
-      expect(result.items).toHaveLength(0);
-      expect(result.totalCount).toBe(0);
-    });
-  });
-
 });

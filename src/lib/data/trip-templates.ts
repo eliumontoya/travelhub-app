@@ -1,6 +1,5 @@
 import { Trip } from "@/types";
-import { mockTrips } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/data/shared";
+import { createServerSupabase } from "@/lib/data/shared";
 import { createTripDay } from "@/lib/data/trip-days";
 import { createItem } from "@/lib/data/trip-items";
 import { CreateTripInput, createTrip, getTripById, rowToTrip } from "@/lib/data/trips";
@@ -11,11 +10,6 @@ import { CreateTripInput, createTrip, getTripById, rowToTrip } from "@/lib/data/
 // reusable, sin cliente asociado. Se listan aparte de getTrips() (que las
 // excluye) para el selector de "crear desde plantilla".
 export async function getTemplates(): Promise<Trip[]> {
-  if (!isSupabaseConfigured()) {
-    return mockTrips
-      .filter((t) => t.isTemplate)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trips")
@@ -27,8 +21,8 @@ export async function getTemplates(): Promise<Trip[]> {
 }
 
 // Copia días + items (sin documentos, issue #31) de un viaje/plantilla origen
-// hacia un viaje destino recién creado. Reusa createTripDay/createItem (que
-// ya manejan mock/Supabase) en vez de duplicar esa lógica aquí.
+// hacia un viaje destino recién creado. Reusa createTripDay/createItem en vez
+// de duplicar esa lógica aquí.
 async function copyTripDaysAndItems(sourceTripId: string, destTripId: string): Promise<void> {
   const source = await getTripById(sourceTripId);
   if (!source) throw new Error("Viaje origen no encontrado");

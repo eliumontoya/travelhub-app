@@ -2,9 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { getClientByEmailAdmin, getClientPinHashByEmail } from "@/lib/data/clients";
-import { isSupabaseConfigured } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { mockClientLoginAttempts } from "@/lib/mock-data";
 import type { ClientSession } from "@/types";
 
 export type { ClientSession };
@@ -88,19 +86,9 @@ export async function destroyClientSession(): Promise<void> {
   });
 }
 
-// ---------- Rate-limit store (dual-mode: Supabase service-role or mock) ----------
+// ---------- Rate-limit store (Supabase service-role) ----------
 
 async function getLoginAttempts(email: string): Promise<LoginAttemptRecord | null> {
-  if (!isSupabaseConfigured()) {
-    const raw = mockClientLoginAttempts.get(email);
-    if (!raw) return null;
-    return {
-      failures: raw.failures,
-      windowStartedAt: new Date(raw.windowStartedAt).getTime(),
-      updatedAt: new Date(raw.updatedAt).getTime(),
-    };
-  }
-
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("client_login_attempts")
@@ -121,15 +109,6 @@ async function setLoginAttempts(email: string, record: LoginAttemptRecord): Prom
   const nowIso = new Date(record.updatedAt).toISOString();
   const windowStartedAtIso = new Date(record.windowStartedAt).toISOString();
 
-  if (!isSupabaseConfigured()) {
-    mockClientLoginAttempts.set(email, {
-      failures: record.failures,
-      windowStartedAt: windowStartedAtIso,
-      updatedAt: nowIso,
-    });
-    return;
-  }
-
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.from("client_login_attempts").upsert(
     {
@@ -144,11 +123,6 @@ async function setLoginAttempts(email: string, record: LoginAttemptRecord): Prom
 }
 
 async function deleteLoginAttempts(email: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    mockClientLoginAttempts.delete(email);
-    return;
-  }
-
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.from("client_login_attempts").delete().eq("email", email);
   if (error) throw error;

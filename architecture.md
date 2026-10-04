@@ -58,8 +58,8 @@ Cliente (browser)
   una Server Action: webhooks, el servidor MCP, el cron de recordatorios,
   descargas/importaciones de archivos y la consulta de estado de vuelos.
 - `src/middleware.ts` protege todas las rutas bajo `/dashboard/**`,
-  redirigiendo a `/login` si no hay sesión de Supabase. En modo mock aplica el
-  mismo modelo de roles usando la cookie `x-mock-account-id`.
+  redirigiendo a `/login` si no hay sesión de Supabase; el rol se resuelve
+  desde la sesión (`profiles`).
 - Las rutas de `/client/**` no pasan por el middleware: cada página y Server
   Action resuelve la sesión de cliente con `getClientSession()`
   (`src/lib/client-auth.ts`) y redirige a `/client/login` si no existe.
@@ -76,7 +76,7 @@ responsabilidad.
 
 | Archivo | Responsabilidad |
 |---------|-----------------|
-| `data/shared.ts` | Helpers comunes: cliente server de Supabase, mock/Supabase switch, paginación, slugs, sanitización, chequeo de service role. |
+| `data/shared.ts` | Helpers comunes: cliente server de Supabase, service role, paginación, slugs, sanitización. |
 | `data/clients.ts` | Clientes, tags, cumpleaños, fuentes de referido, asociaciones cliente/tag, hash del PIN y perfil/historial público del cliente. |
 | `data/profiles.ts` | Perfiles de cuenta (`profiles`): rol, features habilitadas y lectura/escritura para la gestión de permisos. |
 | `data/suppliers.ts` | Proveedores, conteos relacionados y soft delete/restore. |
@@ -90,25 +90,19 @@ responsabilidad.
 | `data/settings.ts` | Configuración editable del sitio. |
 | `data/feedback.ts` | Feedback público de viajes. |
 
-Cada módulo conserva el modo dual:
-
-- **Si Supabase está configurado** (`isSupabaseConfigured()`): lee/escribe en
-  Postgres/Storage.
-- **Si no**: usa los datos en memoria de `src/lib/mock-data.ts`.
-
-Esto permite levantar el proyecto sin cuenta de Supabase.
+Cada módulo trabaja únicamente contra Supabase/Postgres/Storage. La capa de
+datos ya no tiene modo en memoria: Supabase es requisito para que la app
+funcione (en desarrollo se usa el stack local de Supabase CLI, ver "Entorno
+local con Supabase CLI").
 
 ### Frontera de acceso a datos
 
-- Las páginas, Server Actions y componentes **no hablan directo con Supabase ni
-  con `mock-data.ts`**: atraviesan `@/lib/data`. Toda la lógica de datos debe
+- Las páginas, Server Actions y componentes **no hablan directo con Supabase**:
+  atraviesan `@/lib/data`. Toda la lógica de datos debe
   vivir en el módulo de dominio correspondiente.
 - `src/lib/data.ts` no debe volver a tener lógica: solo exports.
-- `mock-data.ts` es un detalle interno de la capa de datos/auth. Solo lo
-  importan los módulos de `src/lib/data/*`, `src/lib/auth/roles.ts`,
-  `src/lib/client-auth.ts` y `src/middleware.ts` (resolución de la cuenta/rol
-  mock). Nunca debe importarse desde páginas, Server Actions, componentes ni
-  rutas API.
+- Nunca debe importarse `mock-data` (el archivo fue eliminado en #372): la
+  capa de datos y auth leen/escriben exclusivamente en Supabase.
 - El subsistema WCC tiene su propia familia de módulos de dominio
   (`src/lib/wcc-*.ts`), que encapsula el acceso al cliente de Supabase y
   mantiene la misma frontera: las páginas y Server Actions del WCC no hablan
@@ -235,7 +229,7 @@ src/
   lib/
     data.ts                 -- fachada pública; solo reexporta src/lib/data/*
     data/
-      shared.ts              helpers comunes, paginación, mock/Supabase switch
+      shared.ts              helpers comunes, paginación, service role
       clients.ts             clientes, tags, cumpleaños, referidos, PIN
       profiles.ts            perfiles de cuenta (rol + features)
       suppliers.ts           proveedores
@@ -256,7 +250,6 @@ src/
                                conversations, escalations, knowledge)
     whatsapp/               -- servicio inbound (store, normalize, signature…)
     mcp/                    -- servidor MCP, auth y módulos de tools
-    mock-data.ts            -- datos de prueba en memoria (uso interno de la capa de datos)
     supabase/
       client.ts               cliente de Supabase para el browser
       server.ts                cliente de Supabase para Server Components/Actions
@@ -345,10 +338,27 @@ están documentadas en `doc/whatsapp-inbound-agent-architecture.md`.
 
 - **Producción**: Vercel, deploy automático en cada push a `main` (no hay
   ambiente de staging separado por ahora).
-- **Local**: `npm run dev` (puerto 3000). Funciona sin Supabase configurado
-  (modo mock).
+- **Local**: `npm run dev` (puerto 3000). Supabase es requisito: usar el stack
+  local de Supabase CLI (ver abajo).
 - Verificación antes de commitear: `npx tsc --noEmit` y `npm run build`
   deben pasar limpios.
+
+### Entorno local con Supabase CLI
+
+El desarrollo local usa un stack de Supabase gestionado por la CLI
+(`supabase/config.toml`), reproducible sin credenciales de producción:
+
+```bash
+npm run db:start   # levanta Postgres/Auth/Storage local (requiere Docker)
+npm run db:reset   # reaplica migraciones + seed (supabase/seed.sql)
+npm run db:stop    # detiene el stack
+```
+
+Con el stack arriba, apuntar `.env.local` a los valores locales que imprime
+`npm run db:start` (`NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321` y la
+anon key local correspondiente). `supabase/seed.sql` carga datos de prueba
+(cuentas admin/agent, clientes, viajes) equivalentes a los fixtures que la app
+necesita para funcionar en local.
 
 ## Convenciones de código
 
@@ -360,7 +370,7 @@ están documentadas en `doc/whatsapp-inbound-agent-architecture.md`.
 - Mutaciones vía Server Actions co-ubicadas en `actions.ts` dentro de cada
   ruta (ej. `src/app/dashboard/trips/[id]/actions.ts`).
 - Las páginas y Server Actions no deben hablar directo con Supabase ni con
-  `mock-data.ts`; siempre atraviesan `@/lib/data` (o el módulo de dominio que
+  `mock-data` (el archivo fue eliminado); siempre atraviesan `@/lib/data` (o el módulo de dominio que
   corresponda). Las únicas excepciones son las registradas más arriba.
 - La capa `src/lib/data/*` debe mantener funciones pequeñas por caso de uso y
   evitar mezclar UI, navegación, cookies o lógica de formularios.

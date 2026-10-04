@@ -1,6 +1,5 @@
 import { ClientDocument, ItemDocument, TripDocument, TripPhoto } from "@/types";
-import { mockClients, mockTripPhotos, mockTrips } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured, sanitizeStorageKey, uid } from "@/lib/data/shared";
+import { createServerSupabase, sanitizeStorageKey } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { updateTrip } from "@/lib/data/trips";
 import { updateClient } from "@/lib/data/clients";
@@ -15,16 +14,6 @@ export async function createDocument(input: {
   fileName: string;
   mimeType?: string;
 }): Promise<ItemDocument> {
-  if (!isSupabaseConfigured()) {
-    return {
-      id: uid(),
-      itemId: input.itemId,
-      fileUrl: input.fileUrl,
-      fileName: input.fileName,
-      mimeType: input.mimeType,
-      uploadedAt: new Date().toISOString(),
-    };
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("documents")
@@ -41,7 +30,6 @@ export async function createDocument(input: {
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) return;
   const supabase = await createServerSupabase();
   const { data: row } = await supabase.from("documents").select("file_url").eq("id", id).maybeSingle();
   if (row?.file_url) {
@@ -56,9 +44,6 @@ export async function deleteDocument(id: string): Promise<void> {
 // Requiere Supabase configurado; si no, lanza para que la UI muestre el
 // mensaje de "configura Supabase" en vez de fallar en silencio.
 export async function uploadItemDocument(itemId: string, file: File): Promise<ItemDocument> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se pueden subir documentos.");
-  }
   const supabase = await createServerSupabase();
   const path = `${itemId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
@@ -71,7 +56,6 @@ export async function uploadItemDocument(itemId: string, file: File): Promise<It
 // Genera una URL firmada de corta duración para descargar/ver un documento
 // privado. Devuelve null si Supabase no está configurado o si falla.
 export async function getSignedDocumentUrl(path: string): Promise<string | null> {
-  if (!isSupabaseConfigured()) return null;
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
@@ -125,7 +109,6 @@ export async function getSignedServiceDocumentUploadUrl(
 export async function getItemDocuments(
   itemId: string
 ): Promise<(ItemDocument & { url: string | null })[]> {
-  if (!isSupabaseConfigured()) return [];
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.from("documents").select("*").eq("item_id", itemId);
   if (error) throw error;
@@ -157,9 +140,6 @@ export function rowToDocument(row: Record<string, unknown>): ItemDocument {
 // la vista pública /t/{slug}.
 
 export async function uploadClientDocument(clientId: string, file: File): Promise<ClientDocument> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se pueden subir documentos.");
-  }
   const supabase = await createServerSupabase();
   const path = `clients/${clientId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
@@ -192,9 +172,6 @@ export async function uploadClientCoverImage(
   clientId: string,
   file: File
 ): Promise<string> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se puede subir la portada.");
-  }
   const supabase = await createServerSupabase();
   const path = `clients/${clientId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
@@ -207,13 +184,6 @@ export async function uploadClientCoverImage(
 }
 
 export async function removeClientCoverImage(clientId: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const client = mockClients.find((c) => c.id === clientId);
-    if (!client) throw new Error("Cliente no encontrado");
-    client.coverImageUrl = undefined;
-    client.updatedAt = new Date().toISOString();
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("clients")
@@ -225,7 +195,6 @@ export async function removeClientCoverImage(clientId: string): Promise<void> {
 export async function getClientDocuments(
   clientId: string
 ): Promise<(ClientDocument & { url: string | null })[]> {
-  if (!isSupabaseConfigured()) return [];
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("client_documents")
@@ -243,7 +212,6 @@ export async function getClientDocuments(
 }
 
 export async function deleteClientDocument(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) return;
   const supabase = await createServerSupabase();
   const { data: row } = await supabase
     .from("client_documents")
@@ -276,9 +244,6 @@ export function rowToClientDocument(row: Record<string, unknown>): ClientDocumen
 // pública cuando el viaje está publicado, igual que documents (item-level).
 
 export async function uploadTripDocument(tripId: string, file: File): Promise<TripDocument> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se pueden subir documentos.");
-  }
   const supabase = await createServerSupabase();
   const path = `trips/${tripId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
@@ -302,7 +267,6 @@ export async function uploadTripDocument(tripId: string, file: File): Promise<Tr
 export async function getTripDocuments(
   tripId: string
 ): Promise<(TripDocument & { url: string | null })[]> {
-  if (!isSupabaseConfigured()) return [];
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trip_documents")
@@ -320,7 +284,6 @@ export async function getTripDocuments(
 }
 
 export async function deleteTripDocument(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) return;
   const supabase = await createServerSupabase();
   const { data: row } = await supabase
     .from("trip_documents")
@@ -366,12 +329,6 @@ export function rowToTripPhoto(row: Record<string, unknown>): TripPhoto {
 export async function getTripPhotos(
   tripId: string
 ): Promise<(TripPhoto & { url: string | null })[]> {
-  if (!isSupabaseConfigured()) {
-    return mockTripPhotos
-      .filter((p) => p.tripId === tripId)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((p) => ({ ...p, url: p.filePath }));
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trip_photos")
@@ -392,9 +349,6 @@ export async function getTripPhotos(
 // "configura Supabase" en vez de fallar en silencio (mismo patrón que
 // uploadItemDocument).
 export async function uploadTripPhoto(tripId: string, file: File): Promise<TripPhoto> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se pueden subir fotos.");
-  }
   const supabase = await createServerSupabase();
   const path = `${tripId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
@@ -422,7 +376,6 @@ export async function uploadTripPhoto(tripId: string, file: File): Promise<TripP
 }
 
 export async function deleteTripPhoto(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) return;
   const supabase = await createServerSupabase();
   const { data: row } = await supabase
     .from("trip_photos")
@@ -449,7 +402,6 @@ export function storagePathFromPublicUrl(bucket: string, url: string): string | 
 }
 
 async function removeTripCoverObjectIfExists(tripId: string): Promise<void> {
-  if (!isSupabaseConfigured()) return;
   const supabase = await createServerSupabase();
   const { data: row } = await supabase
     .from("trips")
@@ -464,9 +416,6 @@ async function removeTripCoverObjectIfExists(tripId: string): Promise<void> {
 }
 
 export async function uploadTripCoverImage(tripId: string, file: File): Promise<string> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se puede subir la portada.");
-  }
   await removeTripCoverObjectIfExists(tripId);
   const supabase = await createServerSupabase();
   const path = `covers/${tripId}/${Date.now()}-${sanitizeStorageKey(file.name)}`;
@@ -480,13 +429,6 @@ export async function uploadTripCoverImage(tripId: string, file: File): Promise<
 }
 
 export async function removeTripCoverImage(tripId: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const trip = mockTrips.find((t) => t.id === tripId);
-    if (!trip) throw new Error("Viaje no encontrado");
-    trip.coverImageUrl = undefined;
-    trip.updatedAt = new Date().toISOString();
-    return;
-  }
   await removeTripCoverObjectIfExists(tripId);
   const supabase = await createServerSupabase();
   const { error } = await supabase
@@ -499,9 +441,6 @@ export async function removeTripCoverImage(tripId: string): Promise<void> {
 const SITE_ASSETS_BUCKET = "site-assets";
 
 export async function uploadSiteLogo(file: File): Promise<string> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase no está configurado; no se puede subir el logo.");
-  }
   const supabase = await createServerSupabase();
   const path = `logo/${Date.now()}-${sanitizeStorageKey(file.name)}`;
   const { error: uploadError } = await supabase.storage
