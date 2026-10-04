@@ -1,29 +1,7 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { isSupabaseConfigured, createClient } from "@/lib/supabase/server";
-import { currentMockAccountId, mockProfiles } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { filterFeatures } from "@/lib/auth/features";
 import type { AccountProfile, AccountRole, Feature } from "@/types";
-
-/**
- * Cookie name used by the dev/test mock-mode override. The dashboard layout
- * and middleware both honor this cookie to switch the effective mock account.
- */
-export const MOCK_ACCOUNT_COOKIE = "x-mock-account-id";
-
-/**
- * Resolve the effective mock account id: an explicit id wins, otherwise we
- * fall back to the `x-mock-account-id` cookie (used by dev/test harnesses).
- * Returns `undefined` when neither is present — the caller decides what to
- * do with that (typically `getCurrentAccount` falls back to its module-level
- * `currentMockAccountId` default).
- */
-export async function resolveMockAccountId(mockAccountId?: string): Promise<string | undefined> {
-  if (mockAccountId) return mockAccountId;
-  const cookieStore = await cookies();
-  const fromCookie = cookieStore.get(MOCK_ACCOUNT_COOKIE)?.value;
-  return fromCookie ?? undefined;
-}
 
 export function normalizeRole(value: unknown): AccountRole | null {
   if (value === "admin" || value === "agent") {
@@ -43,17 +21,7 @@ export function canAccessFeature(profile: AccountProfile | null, feature: Featur
   return profile.features.includes(feature);
 }
 
-export async function getCurrentAccount(mockAccountId?: string): Promise<AccountProfile | null> {
-  if (!isSupabaseConfigured()) {
-    const accountId = mockAccountId ?? currentMockAccountId;
-    const profile = mockProfiles[accountId];
-    if (!profile) return null;
-    // Defensive: drop unknown feature strings (DB drift, stale mocks) so the
-    // resolved account only exposes recognized catalog features. We return a
-    // filtered copy — the in-memory profile is left untouched.
-    return { ...profile, features: filterFeatures(profile.features) };
-  }
-
+export async function getCurrentAccount(): Promise<AccountProfile | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -79,13 +47,13 @@ export async function getCurrentAccount(mockAccountId?: string): Promise<Account
   };
 }
 
-export async function getCurrentUserRole(mockAccountId?: string): Promise<AccountRole | null> {
-  const account = await getCurrentAccount(mockAccountId);
+export async function getCurrentUserRole(): Promise<AccountRole | null> {
+  const account = await getCurrentAccount();
   return account?.role ?? null;
 }
 
-export async function getCurrentTravelAgentId(mockAccountId?: string): Promise<string | null> {
-  const account = await getCurrentAccount(mockAccountId);
+export async function getCurrentTravelAgentId(): Promise<string | null> {
+  const account = await getCurrentAccount();
   return account?.travelAgentId ?? null;
 }
 
@@ -105,12 +73,8 @@ export async function requireRole(...allowed: AccountRole[]): Promise<AccountRol
  * Returns the resolved `AccountProfile` on success so callers can reuse it
  * without re-fetching.
  */
-export async function requireFeature(
-  feature: Feature,
-  mockAccountId?: string,
-): Promise<AccountProfile> {
-  const accountId = await resolveMockAccountId(mockAccountId);
-  const account = await getCurrentAccount(accountId);
+export async function requireFeature(feature: Feature): Promise<AccountProfile> {
+  const account = await getCurrentAccount();
   if (!account || !canAccessFeature(account, feature)) {
     redirect("/dashboard");
   }
@@ -122,9 +86,8 @@ export async function requireFeature(
  * `role === "admin"`. Redirects to `/dashboard` on denial. Returns the
  * resolved admin profile on success.
  */
-export async function requireAdmin(mockAccountId?: string): Promise<AccountProfile> {
-  const accountId = await resolveMockAccountId(mockAccountId);
-  const account = await getCurrentAccount(accountId);
+export async function requireAdmin(): Promise<AccountProfile> {
+  const account = await getCurrentAccount();
   if (!account || account.role !== "admin") {
     redirect("/dashboard");
   }

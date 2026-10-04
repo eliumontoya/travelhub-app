@@ -160,6 +160,10 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdmin: () => db.client,
 }));
 
+// Las lecturas de visas del portal usan service role; canUseServiceRole()
+// exige esta key, igual que en client-portal.test.ts / services.test.ts.
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+
 import * as dataFacade from "@/lib/data";
 import * as sharedModule from "@/lib/data/shared";
 import * as clientsModule from "@/lib/data/clients";

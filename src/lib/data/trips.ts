@@ -1,6 +1,5 @@
 import { Trip } from "@/types";
-import { mockItems, mockPackingItems, mockServiceChecklistItems, mockServices, mockTripClients, mockTripDays, mockTripFeedback, mockTripInternalNotes, mockTripPhotos, mockTripStatusHistory, mockTripTags, mockTrips } from "@/lib/mock-data";
-import { PaginationParams, PaginatedResult, createServerSupabase, isSupabaseConfigured, paginationBounds, sanitizeNote, uid } from "@/lib/data/shared";
+import { PaginationParams, PaginatedResult, createServerSupabase, paginationBounds, sanitizeNote } from "@/lib/data/shared";
 import { DOCUMENTS_BUCKET, PHOTOS_BUCKET, storagePathFromPublicUrl } from "@/lib/data/documents";
 import { deleteChecklistItem, ensureServiceForAssignment } from "@/lib/data/services";
 
@@ -49,14 +48,7 @@ export type UpdateTripInput = Partial<{
 }>;
 
 export async function getTrips(params: PaginationParams = {}): Promise<PaginatedResult<Trip>> {
-  const { from, to, pageSize } = paginationBounds(params);
-  if (!isSupabaseConfigured()) {
-    const nonTemplateTrips = mockTrips.filter((t) => !t.isTemplate);
-    return {
-      items: nonTemplateTrips.slice(from, from + pageSize),
-      totalCount: nonTemplateTrips.length,
-    };
-  }
+  const { from, to } = paginationBounds(params);
   const supabase = await createServerSupabase();
   const { data, error, count } = await supabase
     .from("trips")
@@ -77,48 +69,6 @@ export async function createTrip(input: CreateTripInput): Promise<Trip> {
   const clientIds = input.clientIds ?? [];
   if (!isTemplate && clientIds.length < 1) {
     throw new Error("Se requiere al menos un cliente para crear el viaje");
-  }
-  if (!isSupabaseConfigured()) {
-    const now = new Date().toISOString();
-    const trip: Trip = {
-      id: uid(),
-      clientId: clientIds[0] ?? "",
-      title: input.title,
-      slug: input.slug,
-      startDate: input.startDate ?? "",
-      endDate: input.endDate ?? "",
-      coverImageUrl: input.coverImageUrl,
-      instructions: sanitizeNote(input.instructions),
-      travelerCount: input.travelerCount ?? 1,
-      status: "draft",
-      currency: input.currency ?? "MXN",
-      isTemplate,
-      showCostsToClient: false,
-      createdAt: now,
-      updatedAt: now,
-    };
-    if (input.assignedAgentId) {
-      trip.assignedAgentId = input.assignedAgentId;
-    }
-    mockTrips.unshift(trip);
-    clientIds.forEach((clientId, idx) => {
-      mockTripClients.push({
-        tripId: trip.id,
-        clientId,
-        createdAt: new Date(Date.parse(now) + idx).toISOString(),
-      });
-    });
-    await Promise.all(
-      clientIds.map((clientId) => ensureServiceForAssignment(trip.id, clientId))
-    );
-    (input.tagIds ?? []).forEach((tagId, idx) => {
-      mockTripTags.push({
-        tripId: trip.id,
-        tagId,
-        createdAt: new Date(Date.parse(now) + idx).toISOString(),
-      });
-    });
-    return trip;
   }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
@@ -171,41 +121,6 @@ export async function setTripClients(tripId: string, clientIds: string[]): Promi
   if (!clientIds || clientIds.length < 1) {
     throw new Error("Se requiere al menos un cliente asignado al viaje");
   }
-  if (!isSupabaseConfigured()) {
-    const current = mockTripClients.filter((tc) => tc.tripId === tripId);
-    const currentIds = new Set(current.map((tc) => tc.clientId));
-    const nextIds = new Set(clientIds);
-    const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
-    const toAdd = clientIds.filter((id) => !currentIds.has(id));
-
-    for (let i = mockTripClients.length - 1; i >= 0; i--) {
-      const tc = mockTripClients[i];
-      if (tc.tripId === tripId && !nextIds.has(tc.clientId)) {
-        mockTripClients.splice(i, 1);
-      }
-    }
-    for (const clientId of toRemove) {
-      await deleteServiceForClient(tripId, clientId);
-    }
-    const now = Date.now();
-    clientIds.forEach((clientId, idx) => {
-      if (!currentIds.has(clientId)) {
-        mockTripClients.push({
-          tripId,
-          clientId,
-          createdAt: new Date(now + idx).toISOString(),
-        });
-      }
-    });
-    await Promise.all(
-      toAdd.map((clientId) => ensureServiceForAssignment(tripId, clientId))
-    );
-
-    const trip = mockTrips.find((t) => t.id === tripId);
-    if (trip) trip.clientId = clientIds[0];
-    return;
-  }
-
   const supabase = await createServerSupabase();
   const { data: currentRows, error: currentError } = await supabase
     .from("trip_clients")
@@ -251,39 +166,6 @@ export async function setTripClients(tripId: string, clientIds: string[]): Promi
 }
 
 export async function updateTrip(id: string, input: UpdateTripInput): Promise<Trip> {
-  if (!isSupabaseConfigured()) {
-    const trip = mockTrips.find((t) => t.id === id);
-    if (!trip) throw new Error("Trip no encontrado");
-    const previousStatus = trip.status;
-    if (input.title !== undefined) trip.title = input.title;
-    if (input.slug !== undefined) trip.slug = input.slug;
-    if (input.startDate !== undefined) trip.startDate = input.startDate;
-    if (input.endDate !== undefined) trip.endDate = input.endDate;
-    if (input.coverImageUrl !== undefined) trip.coverImageUrl = input.coverImageUrl ?? undefined;
-    if (input.instructions !== undefined) trip.instructions = input.instructions ? sanitizeNote(input.instructions) : undefined;
-    if (input.travelerCount !== undefined) trip.travelerCount = input.travelerCount;
-    if (input.budget !== undefined) trip.budget = input.budget ?? undefined;
-    if (input.status !== undefined) trip.status = input.status;
-    if (input.currency !== undefined) trip.currency = input.currency;
-    if (input.showCostsToClient !== undefined) trip.showCostsToClient = input.showCostsToClient;
-    if (input.salePrice !== undefined) trip.salePrice = input.salePrice ?? undefined;
-    if (input.commissionRate !== undefined) trip.commissionRate = input.commissionRate ?? undefined;
-    if (input.assignedAgentId !== undefined) {
-      if (input.assignedAgentId) trip.assignedAgentId = input.assignedAgentId;
-      else delete trip.assignedAgentId;
-    }
-    if (input.status !== undefined && input.status !== previousStatus) {
-      mockTripStatusHistory.push({
-        id: uid(),
-        tripId: trip.id,
-        fromStatus: previousStatus,
-        toStatus: input.status,
-        changedAt: new Date().toISOString(),
-      });
-    }
-    trip.updatedAt = new Date().toISOString();
-    return trip;
-  }
   const supabase = await createServerSupabase();
 
   let previousStatus: Trip["status"] | undefined;
@@ -328,35 +210,6 @@ export async function updateTrip(id: string, input: UpdateTripInput): Promise<Tr
 }
 
 export async function deleteTrip(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const tripIndex = mockTrips.findIndex((t) => t.id === id);
-    if (tripIndex < 0) throw new Error("Viaje no encontrado");
-
-    const services = mockServices.filter((s) => s.tripId === id);
-    for (const service of services) {
-      const items = mockServiceChecklistItems.filter((i) => i.serviceId === service.id);
-      for (const item of items) {
-        await deleteChecklistItem(item.id);
-      }
-    }
-    removeWhere(mockServices, (s) => s.tripId === id);
-
-    const dayIds = new Set(mockTripDays.filter((d) => d.tripId === id).map((d) => d.id));
-    const itemIds = new Set(mockItems.filter((i) => dayIds.has(i.tripDayId)).map((i) => i.id));
-
-    mockTrips.splice(tripIndex, 1);
-    removeWhere(mockTripDays, (day) => day.tripId === id);
-    removeWhere(mockItems, (item) => itemIds.has(item.id));
-    removeWhere(mockTripClients, (link) => link.tripId === id);
-    removeWhere(mockTripTags, (link) => link.tripId === id);
-    removeWhere(mockTripStatusHistory, (entry) => entry.tripId === id);
-    removeWhere(mockTripFeedback, (entry) => entry.tripId === id);
-    removeWhere(mockTripPhotos, (photo) => photo.tripId === id);
-    removeWhere(mockPackingItems, (item) => item.tripId === id);
-    delete mockTripInternalNotes[id];
-    return;
-  }
-
   const supabase = await createServerSupabase();
   const { data: tripRow, error: tripError } = await supabase
     .from("trips")
@@ -434,34 +287,11 @@ export async function deleteTrip(id: string): Promise<void> {
   if (error) throw error;
 }
 
-function removeWhere<T>(items: T[], predicate: (item: T) => boolean): void {
-  for (let i = items.length - 1; i >= 0; i--) {
-    if (predicate(items[i])) items.splice(i, 1);
-  }
-}
-
 // Borra el servicio trip_documents de un cliente dentro de un viaje,
 // eliminando primero sus checklist items (y con ello sus uploads + objetos
 // de storage) para evitar huérfanos. Se usa en setTripClients (remoción) y
 // deleteTrip (cascada).
 async function deleteServiceForClient(tripId: string, clientId: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const service = mockServices.find(
-      (s) =>
-        s.tripId === tripId &&
-        s.clientId === clientId &&
-        s.serviceType === "trip_documents"
-    );
-    if (!service) return;
-    const items = mockServiceChecklistItems.filter((i) => i.serviceId === service.id);
-    for (const item of items) {
-      await deleteChecklistItem(item.id);
-    }
-    const idx = mockServices.findIndex((s) => s.id === service.id);
-    if (idx >= 0) mockServices.splice(idx, 1);
-    return;
-  }
-
   const supabase = await createServerSupabase();
   const { data: serviceRows, error: serviceError } = await supabase
     .from("services")

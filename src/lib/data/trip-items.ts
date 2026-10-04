@@ -1,6 +1,5 @@
 import { Item } from "@/types";
-import { mockItems, mockTripClients, mockTripDays, mockTrips } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured, sanitizeNote, uid } from "@/lib/data/shared";
+import { createServerSupabase, sanitizeNote } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getSupplierById } from "@/lib/data/suppliers";
 import { ItemSupplierCompatibilityError, isSupplierTypeCompatible } from "@/lib/item-supplier-compatibility";
@@ -101,35 +100,7 @@ function normalizeTravelerActivityFields(
   };
 }
 
-function isMockTravelerEligible(tripId: string, tripDayId: string, clientId: string): boolean {
-  const trip = mockTrips.find((candidate) => candidate.id === tripId);
-  if (trip?.status !== "published") return false;
-  if (!mockTripClients.some((assignment) => assignment.tripId === tripId && assignment.clientId === clientId)) {
-    return false;
-  }
-  return mockTripDays.some((day) => day.id === tripDayId && day.tripId === tripId && !day.deletedAt);
-}
-
-function findMockTravelerActivity(input: DeleteTravelerActivityInput): Item | undefined {
-  return mockItems.find(
-    (candidate) =>
-      candidate.id === input.itemId &&
-      candidate.tripDayId === input.tripDayId &&
-      candidate.type === "activity" &&
-      candidate.createdByClientId === input.clientId &&
-      !candidate.deletedAt
-  );
-}
-
 export async function canClientAddActivities(tripId: string, clientId: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) {
-    const trip = mockTrips.find((candidate) => candidate.id === tripId);
-    return Boolean(
-      trip?.status === "published" &&
-      mockTripClients.some((assignment) => assignment.tripId === tripId && assignment.clientId === clientId)
-    );
-  }
-
   const supabase = getSupabaseAdmin();
   const { data: trip, error: tripError } = await supabase
     .from("trips")
@@ -152,29 +123,6 @@ export async function createTravelerActivity(input: CreateTravelerActivityInput)
   const fields = normalizeTravelerActivityFields(input);
   if (!fields) return INVALID_TRAVELER_ACTIVITY_RESULT;
 
-  if (!isSupabaseConfigured()) {
-    if (!isMockTravelerEligible(input.tripId, input.tripDayId, input.clientId)) {
-      return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
-    }
-    const sortOrder = mockItems
-      .filter((item) => item.tripDayId === input.tripDayId && !item.deletedAt)
-      .reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1;
-    const item: Item = {
-      id: uid(),
-      tripDayId: input.tripDayId,
-      createdByClientId: input.clientId,
-      type: "activity",
-      title: fields.title,
-      startTime: fields.startTime ?? undefined,
-      location: fields.location ?? undefined,
-      notes: fields.notes ?? undefined,
-      sortOrder,
-      metadata: null,
-    };
-    mockItems.push(item);
-    return { ok: true, item };
-  }
-
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("create_traveler_activity", {
     p_trip_id: input.tripId,
@@ -193,19 +141,6 @@ export async function createTravelerActivity(input: CreateTravelerActivityInput)
 export async function updateTravelerActivity(input: UpdateTravelerActivityInput): Promise<TravelerActivityResult> {
   const fields = normalizeTravelerActivityFields(input);
   if (!fields) return INVALID_TRAVELER_ACTIVITY_RESULT;
-
-  if (!isSupabaseConfigured()) {
-    if (!isMockTravelerEligible(input.tripId, input.tripDayId, input.clientId)) {
-      return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
-    }
-    const item = findMockTravelerActivity(input);
-    if (!item) return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
-    item.title = fields.title;
-    item.startTime = fields.startTime ?? undefined;
-    item.location = fields.location ?? undefined;
-    item.notes = fields.notes ?? undefined;
-    return { ok: true, item };
-  }
 
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("update_traveler_activity", {
@@ -226,16 +161,6 @@ export async function updateTravelerActivity(input: UpdateTravelerActivityInput)
 export async function deleteTravelerActivity(
   input: DeleteTravelerActivityInput
 ): Promise<DeleteTravelerActivityResult> {
-  if (!isSupabaseConfigured()) {
-    if (!isMockTravelerEligible(input.tripId, input.tripDayId, input.clientId)) {
-      return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
-    }
-    const item = findMockTravelerActivity(input);
-    if (!item) return UNAUTHORIZED_TRAVELER_ACTIVITY_RESULT;
-    item.deletedAt = new Date().toISOString();
-    return { ok: true };
-  }
-
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.rpc("soft_delete_traveler_activity", {
     p_trip_id: input.tripId,
@@ -261,29 +186,6 @@ async function validateItemSupplier(type: Item["type"], supplierId?: string | nu
 export async function createItem(input: CreateItemInput): Promise<Item> {
   await validateItemSupplier(input.type, input.supplierId);
 
-  if (!isSupabaseConfigured()) {
-    const item = {
-      id: uid(),
-      tripDayId: input.tripDayId,
-      createdByClientId: null,
-      type: input.type,
-      title: input.title,
-      startTime: input.startTime,
-      endTime: input.endTime,
-      location: input.location,
-      lat: input.lat,
-      lng: input.lng,
-      confirmationCode: input.confirmationCode,
-      notes: sanitizeNote(input.notes),
-      cost: input.cost,
-      supplierId: input.supplierId,
-      metadata: (input.metadata ?? null) as unknown as Item["metadata"],
-      sortOrder:
-        input.sortOrder ?? mockItems.filter((i) => i.tripDayId === input.tripDayId).length,
-    } as Item;
-    mockItems.push(item);
-    return item;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("items")
@@ -318,24 +220,6 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
   const resultingSupplierId = input.supplierId === undefined ? current.supplierId : input.supplierId;
   await validateItemSupplier(resultingType, resultingSupplierId);
 
-  if (!isSupabaseConfigured()) {
-    const item = mockItems.find((i) => i.id === id);
-    if (!item) throw new Error("Item no encontrado");
-    if (input.type !== undefined) item.type = input.type;
-    if (input.title !== undefined) item.title = input.title;
-    if (input.startTime !== undefined) item.startTime = input.startTime;
-    if (input.endTime !== undefined) item.endTime = input.endTime;
-    if (input.location !== undefined) item.location = input.location;
-    if (input.lat !== undefined) item.lat = input.lat;
-    if (input.lng !== undefined) item.lng = input.lng;
-    if (input.confirmationCode !== undefined) item.confirmationCode = input.confirmationCode;
-    if (input.notes !== undefined) item.notes = sanitizeNote(input.notes);
-    if (input.cost !== undefined) item.cost = input.cost;
-    if (input.supplierId !== undefined) item.supplierId = input.supplierId || undefined;
-    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
-    if (input.metadata !== undefined) item.metadata = (input.metadata ?? null) as unknown as Item["metadata"];
-    return item;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.type !== undefined) patch.type = input.type;
@@ -358,11 +242,6 @@ export async function updateItem(id: string, input: UpdateItemInput): Promise<It
 
 // Soft delete (issue #23): ver comentario de deleteTripDay.
 export async function deleteItem(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const item = mockItems.find((i) => i.id === id);
-    if (item) item.deletedAt = new Date().toISOString();
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("items")
@@ -372,11 +251,6 @@ export async function deleteItem(id: string): Promise<void> {
 }
 
 export async function restoreItem(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const item = mockItems.find((i) => i.id === id);
-    if (item) item.deletedAt = undefined;
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase.from("items").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
@@ -386,16 +260,6 @@ export async function restoreItem(id: string): Promise<void> {
 // Lo coloca al final del día destino (sort_order = max + 1) para no romper
 // el orden relativo de los items ya existentes en ese día.
 export async function moveItemToDay(itemId: string, targetDayId: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const item = mockItems.find((i) => i.id === itemId);
-    if (!item) return;
-    item.tripDayId = targetDayId;
-    const maxSort = mockItems
-      .filter((i) => i.tripDayId === targetDayId && i.id !== itemId)
-      .reduce((max, i) => Math.max(max, i.sortOrder), -1);
-    item.sortOrder = maxSort + 1;
-    return;
-  }
   const supabase = await createServerSupabase();
   const { data: siblings, error: siblingsError } = await supabase
     .from("items")
@@ -415,10 +279,6 @@ export async function moveItemToDay(itemId: string, targetDayId: string): Promis
 }
 
 export async function getItemById(id: string): Promise<Item | null> {
-  if (!isSupabaseConfigured()) {
-    const found = mockItems.find((i) => i.id === id && !i.deletedAt);
-    return found ? { ...found } : null;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("items")
@@ -433,9 +293,6 @@ export async function getItemById(id: string): Promise<Item | null> {
 }
 
 async function getNextItemSortOrder(tripDayId: string): Promise<number> {
-  if (!isSupabaseConfigured()) {
-    return mockItems.filter((i) => i.tripDayId === tripDayId && !i.deletedAt).length;
-  }
   const supabase = await createServerSupabase();
   const { count, error } = await supabase
     .from("items")
@@ -472,13 +329,6 @@ export async function duplicateItem(
 }
 
 export async function reorderItems(order: { id: string; sortOrder: number }[]): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    for (const { id, sortOrder } of order) {
-      const item = mockItems.find((i) => i.id === id);
-      if (item) item.sortOrder = sortOrder;
-    }
-    return;
-  }
   const supabase = await createServerSupabase();
   await Promise.all(
     order.map(({ id, sortOrder }) =>

@@ -46,23 +46,23 @@ afterEach(() => {
   vi.resetModules();
 });
 
-describe("playwright.config.ts — two-project mock/preview split", () => {
-  it("declares exactly two projects named 'mock' and 'preview'", async () => {
+describe("playwright.config.ts — two-project local/preview split", () => {
+  it("declares exactly two projects named 'local' and 'preview'", async () => {
     const config = await loadConfig();
     expect(config.projects).toHaveLength(2);
     const names = config.projects?.map((p) => p.name).sort();
-    expect(names).toEqual(["mock", "preview"]);
+    expect(names).toEqual(["local", "preview"]);
   });
 
-  it("mock project pins testDir, workers, baseURL and skips the bypass header", async () => {
+  it("local project pins testDir, workers, baseURL and skips the bypass header", async () => {
     const config = await loadConfig();
-    const mock = config.projects?.find((p) => p.name === "mock");
-    expect(mock).toBeDefined();
-    expect(mock?.testDir).toBe("e2e/mock");
-    expect(mock?.workers).toBe(1);
-    expect(mock?.use?.baseURL).toBe("http://localhost:3000");
+    const local = config.projects?.find((p) => p.name === "local");
+    expect(local).toBeDefined();
+    expect(local?.testDir).toBe("e2e/local");
+    expect(local?.workers).toBe(1);
+    expect(local?.use?.baseURL).toBe("http://localhost:3000");
     expect(
-      mock?.use?.extraHTTPHeaders?.["x-vercel-protection-bypass"],
+      local?.use?.extraHTTPHeaders?.["x-vercel-protection-bypass"],
     ).toBeUndefined();
   });
 

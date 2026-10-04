@@ -1,7 +1,6 @@
 import type { AccountProfile, Feature } from "@/types";
 import { filterFeatures } from "@/lib/auth/features";
-import { mockProfiles } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/data/shared";
+import { createServerSupabase } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 /**
@@ -23,17 +22,10 @@ export function rowToProfile(row: Record<string, unknown>): AccountProfile {
 /**
  * Admin-only read of every profile in the system.
  *
- * Mock: returns `Object.values(mockProfiles)` with features defensively filtered.
- * Supabase: queries `profiles` ordered by `created_at` and maps rows through
+ * Queries `profiles` ordered by `created_at` and maps rows through
  * `rowToProfile`. RLS enforces admin-only access (see migration).
  */
 export async function listProfiles(): Promise<AccountProfile[]> {
-  if (!isSupabaseConfigured()) {
-    return Object.values(mockProfiles).map((profile) => ({
-      ...profile,
-      features: filterFeatures(profile.features),
-    }));
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("profiles")
@@ -95,25 +87,14 @@ async function resolveAgentNames(ids: string[]): Promise<Map<string, string>> {
  * input are dropped before persistence (defense in depth: the admin toggle UI
  * only emits recognized values, but untrusted callers are still rejected).
  *
- * Mock: mutates `mockProfiles[id].features` in place so subsequent reads see
- * the new value.
- * Supabase: `update({ features, updated_at })` filtered by id, then re-selects
- * the canonical columns and returns the mapped row. RLS enforces admin-only.
+ * `update({ features, updated_at })` filtered by id, then re-selects the
+ * canonical columns and returns the mapped row. RLS enforces admin-only.
  */
 export async function updateProfileFeatures(
   id: string,
   features: Feature[],
 ): Promise<AccountProfile> {
   const sanitized = filterFeatures(features);
-
-  if (!isSupabaseConfigured()) {
-    const profile = mockProfiles[id];
-    if (!profile) {
-      throw new Error("Perfil no encontrado");
-    }
-    profile.features = sanitized;
-    return { ...profile, features: filterFeatures(profile.features) };
-  }
 
   const supabase = await createServerSupabase();
   const { data, error } = await supabase

@@ -9,12 +9,6 @@ import {
   ServiceUpload,
   ServiceWithChecklist,
 } from "@/types";
-import {
-  mockServiceChecklistItems,
-  mockServices,
-  mockServiceUploads,
-} from "@/lib/mock-data";
-import { isSupabaseConfigured, uid } from "@/lib/data/shared";
 import { DOCUMENTS_BUCKET, getSignedDocumentUrl } from "@/lib/data/documents";
 import { rowToServiceUpload } from "@/lib/data/service-documents";
 import { rowToService } from "@/lib/data/services";
@@ -39,15 +33,6 @@ export function rowToServiceChecklistItem(
 }
 
 async function nextSortOrder(serviceId: string): Promise<number> {
-  if (!isSupabaseConfigured()) {
-    const items = mockServiceChecklistItems.filter(
-      (i) => i.serviceId === serviceId
-    );
-    return items.length === 0
-      ? 0
-      : Math.max(...items.map((i) => i.sortOrder)) + 1;
-  }
-
   const supabase = await getServiceClient();
   const { data } = await supabase
     .from("service_checklist_items")
@@ -66,20 +51,6 @@ export async function addChecklistItem(
   const label = input.label.trim();
   if (!label) throw new Error("El label del checklist no puede estar vacío");
   const sortOrder = await nextSortOrder(serviceId);
-
-  if (!isSupabaseConfigured()) {
-    const item: ServiceChecklistItem = {
-      id: uid(),
-      serviceId,
-      label,
-      required: input.required ?? true,
-      sortOrder,
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    };
-    mockServiceChecklistItems.push(item);
-    return item;
-  }
 
   const supabase = await getServiceClient();
   const { data, error } = await supabase
@@ -102,38 +73,6 @@ export async function addChecklistItemToTripServices(
 ): Promise<ServiceChecklistItem[]> {
   const label = input.label.trim();
   if (!label) throw new Error("El label del checklist no puede estar vacío");
-
-  if (!isSupabaseConfigured()) {
-    const services = mockServices.filter(
-      (service) =>
-        service.tripId === tripId && service.serviceType === DEFAULT_SERVICE_TYPE
-    );
-    if (services.length === 0) throw new Error("El viaje no tiene servicios disponibles");
-    if (services.some((service) => service.status !== "active")) {
-      throw new Error("No todos los servicios del viaje están disponibles");
-    }
-
-    const items = services.map((service) => {
-      const existingItems = mockServiceChecklistItems.filter(
-        (item) => item.serviceId === service.id
-      );
-      const sortOrder =
-        existingItems.length === 0
-          ? 0
-          : Math.max(...existingItems.map((item) => item.sortOrder)) + 1;
-      return {
-        id: uid(),
-        serviceId: service.id,
-        label,
-        required: input.required ?? true,
-        sortOrder,
-        createdAt: nowIso(),
-        updatedAt: nowIso(),
-      } satisfies ServiceChecklistItem;
-    });
-    mockServiceChecklistItems.push(...items);
-    return items;
-  }
 
   const supabase = await getServiceClient();
   const { data: serviceRows, error: servicesError } = await supabase
@@ -178,15 +117,6 @@ export async function updateChecklistItem(
   id: string,
   input: { label?: string; required?: boolean }
 ): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const item = mockServiceChecklistItems.find((i) => i.id === id);
-    if (!item) throw new Error("Checklist item no encontrado");
-    if (input.label !== undefined) item.label = input.label.trim();
-    if (input.required !== undefined) item.required = input.required;
-    item.updatedAt = nowIso();
-    return;
-  }
-
   const supabase = await getServiceClient();
   const update: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -201,19 +131,6 @@ export async function updateChecklistItem(
 }
 
 export async function deleteChecklistItem(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const item = mockServiceChecklistItems.find((i) => i.id === id);
-    if (!item) return;
-    mockServiceUploads.splice(
-      0,
-      mockServiceUploads.length,
-      ...mockServiceUploads.filter((u) => u.checklistItemId !== id)
-    );
-    const idx = mockServiceChecklistItems.findIndex((i) => i.id === id);
-    if (idx >= 0) mockServiceChecklistItems.splice(idx, 1);
-    return;
-  }
-
   const supabase = await getServiceClient();
   const { data: uploads } = await supabase
     .from("service_uploads")
@@ -241,16 +158,6 @@ export async function reorderChecklistItems(
   serviceId: string,
   orderedIds: string[]
 ): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    for (let i = 0; i < orderedIds.length; i++) {
-      const item = mockServiceChecklistItems.find(
-        (it) => it.id === orderedIds[i] && it.serviceId === serviceId
-      );
-      if (item) item.sortOrder = i;
-    }
-    return;
-  }
-
   const supabase = await getServiceClient();
   await Promise.all(
     orderedIds.map((id, index) =>
@@ -266,25 +173,6 @@ export async function reorderChecklistItems(
 export async function getServiceWithChecklist(
   serviceId: string
 ): Promise<ServiceWithChecklist> {
-  if (!isSupabaseConfigured()) {
-    const service = mockServices.find((s) => s.id === serviceId);
-    if (!service) throw new Error("Servicio no encontrado");
-    const items = mockServiceChecklistItems
-      .filter((i) => i.serviceId === serviceId)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((item) => {
-        const upload = mockServiceUploads.find(
-          (u) => u.checklistItemId === item.id
-        );
-        const extended: ServiceChecklistItemWithUpload = { ...item };
-        if (upload) {
-          extended.upload = { ...upload, url: null };
-        }
-        return extended;
-      });
-    return { ...service, items };
-  }
-
   const supabase = await getServiceClient();
   const { data: serviceRow, error: serviceError } = await supabase
     .from("services")
@@ -329,17 +217,6 @@ export async function getServiceChecklistForTrip(
   tripId: string,
   serviceId: string
 ): Promise<ServiceWithChecklist> {
-  if (!isSupabaseConfigured()) {
-    const service = mockServices.find(
-      (candidate) =>
-        candidate.id === serviceId &&
-        candidate.tripId === tripId &&
-        candidate.serviceType === DEFAULT_SERVICE_TYPE
-    );
-    if (!service) throw new Error("El servicio no pertenece al viaje");
-    return getServiceWithChecklist(service.id);
-  }
-
   const supabase = await getServiceClient();
   const { data, error } = await supabase
     .from("services")
