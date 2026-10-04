@@ -11,6 +11,7 @@ export default {
     deadCode: true,
     audit: true,
     secrets: true,
+    tests: true,
     coverage: {
       enabled: true,
       // Baseline ratchet (calibrated 2026-10-03 to current levels):
@@ -19,6 +20,18 @@ export default {
       minBranches: 40,
       minFunctions: 50,
       minStatements: 48,
+    },
+    e2e: {
+      enabled: true,
+      // Mock project: deterministic, no external services, no Vercel deploy.
+      args: ["--project=mock"],
+      // Parity with CI: blank Supabase env vars so the app falls back to
+      // mock mode even though .env.local exists locally. Real env vars take
+      // precedence over .env.local in Next, so "" reliably disables them.
+      env: {
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      },
     },
   },
 };
