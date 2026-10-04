@@ -2,6 +2,22 @@
 
 Plataforma web para agentes de viajes independientes. Permite crear, gestionar y compartir itinerarios de viaje con clientes, sin depender de herramientas de terceros.
 
+## Fuentes de verdad
+
+Cada tema tiene un unico documento fuente de verdad; el resto de los documentos lo referencian (cross-reference) en lugar de duplicarlo.
+
+| Tema | Fuente de verdad |
+|------|------------------|
+| Negocio (que es y para que) | `project.md` |
+| Tecnica (como esta hecho) | `architecture.md` |
+| Producto: usuarios, principios, accesibilidad | `PRODUCT.md` |
+| Sistema de diseno / UI | `DESIGN.md` |
+| Novedades para el usuario final | `Changes.md` |
+| Decisiones estructurales | `doc/adr/` |
+| Agente WhatsApp: detalle operativo | `doc/whatsapp-inbound-agent-architecture.md` |
+
+Regla: cada tema se documenta en su fuente de verdad y se enlaza desde el resto; si un cambio toca un tema, hay que actualizar su documento fuente en el mismo PR.
+
 ## Que hace
 
 - **Gestion de clientes**: alta, edicion, historial de viajes, tags, fuentes de referido, cumpleanos.
