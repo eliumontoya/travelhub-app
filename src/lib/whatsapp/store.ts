@@ -47,7 +47,7 @@ function throwIfError(error: SingleResult<unknown>["error"], fallback: string) {
   if (error) throw new Error(error.message || fallback);
 }
 
-export async function upsertWhatsAppContact(client: WhatsAppSupabaseClient, event: NormalizedWhatsAppInboundEvent) {
+async function upsertWhatsAppContact(client: WhatsAppSupabaseClient, event: NormalizedWhatsAppInboundEvent) {
   const now = new Date().toISOString();
   const result = (await client
     .from("whatsapp_contacts")
@@ -70,7 +70,7 @@ export async function upsertWhatsAppContact(client: WhatsAppSupabaseClient, even
   return result.data.id;
 }
 
-export async function getOrCreateOpenWhatsAppConversation(
+async function getOrCreateOpenWhatsAppConversation(
   client: WhatsAppSupabaseClient,
   contactId: string,
   event: NormalizedWhatsAppInboundEvent

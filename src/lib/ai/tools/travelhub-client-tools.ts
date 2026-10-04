@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-export type TravelHubClientToolName =
+type TravelHubClientToolName =
   | "getClientByWhatsappPhone"
   | "getClientActiveTrips"
   | "getTripSummary"
@@ -11,7 +11,7 @@ export type TravelHubClientToolName =
 
 export type TravelHubClientToolStatus = "success" | "not_found" | "ambiguous" | "blocked" | "needs_human" | "error";
 
-export type TravelHubToolAudit = {
+type TravelHubToolAudit = {
   attempted: boolean;
   ok: boolean;
   eventId?: string;

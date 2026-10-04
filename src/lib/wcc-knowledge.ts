@@ -2,7 +2,7 @@ import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server
 import { createWccClient } from "@/lib/wcc-client";
 import type { WhatsAppKnowledgeEntry, WhatsAppKnowledgeStatus } from "@/types";
 
-export const WCC_KNOWLEDGE_PAGE_SIZE = 20;
+const WCC_KNOWLEDGE_PAGE_SIZE = 20;
 export const wccKnowledgeStatuses: WhatsAppKnowledgeStatus[] = ["draft", "approved", "archived"];
 
 export type WccKnowledgeListFilters = {
@@ -58,7 +58,7 @@ type Query = PromiseLike<MultiResult> & {
 };
 type DbClient = { from: (table: string) => Query };
 
-export class WccKnowledgeValidationError extends Error {
+class WccKnowledgeValidationError extends Error {
   errors: NonNullable<WccKnowledgeMutationResult["errors"]>;
 
   constructor(errors: NonNullable<WccKnowledgeMutationResult["errors"]>) {
@@ -77,7 +77,7 @@ function normalizePage(page: unknown) {
   return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : 1;
 }
 
-export function normalizeWccKnowledgeStatus(status: unknown): WhatsAppKnowledgeStatus | undefined {
+function normalizeWccKnowledgeStatus(status: unknown): WhatsAppKnowledgeStatus | undefined {
   return typeof status === "string" && wccKnowledgeStatuses.includes(status as WhatsAppKnowledgeStatus) ? (status as WhatsAppKnowledgeStatus) : undefined;
 }
 

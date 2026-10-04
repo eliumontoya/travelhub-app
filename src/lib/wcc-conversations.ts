@@ -8,10 +8,10 @@ import type {
   WhatsAppMessageStatus,
 } from "@/types";
 
-export const WCC_CONVERSATIONS_PAGE_SIZE = 20;
-export const WCC_CONVERSATION_TIMELINE_LIMIT = 50;
+const WCC_CONVERSATIONS_PAGE_SIZE = 20;
+const WCC_CONVERSATION_TIMELINE_LIMIT = 50;
 
-export type WccConversationContact = {
+type WccConversationContact = {
   id: string;
   phoneE164: string;
   whatsappProfileName?: string;

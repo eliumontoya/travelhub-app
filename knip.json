@@ -10,5 +10,6 @@
     "sanity.config.mts"
   ],
   "project": ["src/**", "scripts/**"],
-  "ignoreDependencies": ["@types/sanitize-html", "@types/qrcode", "@types/bcryptjs", "tailwindcss", "@tailwindcss/postcss", "eslint-config-next"]
+  "ignoreDependencies": ["@types/sanitize-html", "@types/qrcode", "@types/bcryptjs", "tailwindcss", "@tailwindcss/postcss", "eslint-config-next"],
+  "ignoreBinaries": ["supabase"]
 }

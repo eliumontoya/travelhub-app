@@ -8,7 +8,7 @@ export const ITEM_SUPPLIER_TYPE = {
   transport: "transport",
 } as const satisfies Partial<Record<ItemType, SupplierType>>;
 
-export type SupplierEnabledItemType = keyof typeof ITEM_SUPPLIER_TYPE;
+type SupplierEnabledItemType = keyof typeof ITEM_SUPPLIER_TYPE;
 
 export function getSupplierTypeForItem(type: ItemType): SupplierType | null {
   return ITEM_SUPPLIER_TYPE[type as SupplierEnabledItemType] ?? null;

@@ -3,17 +3,6 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { mcpError } from "@/lib/mcp/errors";
 
 /**
- * Serializes a value into a single text content block, mirroring the
- * `success()` envelope but with raw string body (used when the value is
- * already a string, e.g. a pre-built message).
- */
-export function textResult(text: string): CallToolResult {
-  return {
-    content: [{ type: "text", text }],
-  };
-}
-
-/**
  * Extracts a safe, plain message string from an unknown error value.
  * Never returns a stack trace or arbitrary nested fields — only `Error.message`
  * or a stringified fallback so that the secret-safe envelope can be built.

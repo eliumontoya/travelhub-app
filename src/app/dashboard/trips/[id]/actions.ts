@@ -42,7 +42,6 @@ import {
   updateChecklistItem,
   deleteChecklistItem,
   reorderChecklistItems,
-  markUploadProcessed,
   markUploadReviewed,
   requestReUpload,
   getServicesForTrip,
@@ -576,16 +575,6 @@ export async function markUploadReviewedAction(
   revalidateTrip(tripId);
 }
 
-export async function markUploadProcessedAction(
-  tripId: string,
-  uploadId: string
-) {
-  await assertServiceDocumentMutableTrip(tripId);
-  await getUploadForTrip(tripId, uploadId);
-  await markUploadProcessed(uploadId);
-  revalidateTrip(tripId);
-}
-
 export async function requestReUploadAction(
   tripId: string,
   uploadId: string,
@@ -596,12 +585,6 @@ export async function requestReUploadAction(
   const comment = String(formData.get("comment") ?? "").trim();
   await requestReUpload(uploadId, comment);
   revalidateTrip(tripId);
-}
-
-export async function getServicesWithChecklistsForTripAction(tripId: string) {
-  await requireRole("admin", "agent");
-  const services = await getServicesForTrip(tripId);
-  return Promise.all(services.map((service) => getServiceChecklistForTrip(tripId, service.id)));
 }
 
 export async function getServiceChecklistForTripAction(tripId: string, serviceId: string) {

@@ -43,7 +43,3 @@ export function LocationActions({ lat, lng, label, address }: LocationProps) {
     </div>
   );
 }
-
-export function LocationMap({ lat, lng, label }: { lat: number; lng: number; label?: string }) {
-  return <LocationActions lat={lat} lng={lng} label={label} />;
-}

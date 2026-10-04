@@ -48,7 +48,7 @@ export type WhatsAppWebhookProcessingResult = WhatsAppInboundServiceResult & {
   statusCallbacks: WhatsAppStatusPersistenceResult;
 };
 
-export type WhatsAppInboundEventResult = {
+type WhatsAppInboundEventResult = {
   providerMessageId: string;
   action: "duplicate_skipped" | "auto_answer" | "needs_human" | "unsupported_escalated";
   decision?: WhatsAppInboundAgentDecision;
@@ -455,7 +455,7 @@ export async function processWhatsAppInboundEvents(
   };
 }
 
-export async function processWhatsAppStatusEvents(
+async function processWhatsAppStatusEvents(
   events: NormalizedWhatsAppStatusEvent[],
   options: WhatsAppInboundServiceOptions = {}
 ) {

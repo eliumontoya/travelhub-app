@@ -3,13 +3,13 @@ import { isSupabaseConfigured as hasSupabaseConfig } from "@/lib/supabase/server
 import { createWccClient } from "@/lib/wcc-client";
 import type { WhatsAppConversationStatus, WhatsAppKnowledgeStatus } from "@/types";
 
-export type WccRecentConversation = {
+type WccRecentConversation = {
   id: string;
   status: WhatsAppConversationStatus;
   lastIntent?: string;
   lastMessageAt?: string;
 };
-export type WccRecentContact = {
+type WccRecentContact = {
   id: string;
   displayName?: string;
   phoneE164: string;
