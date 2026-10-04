@@ -1,6 +1,5 @@
 import { Client, Trip } from "@/types";
-import { mockClients, mockTripClients, mockTrips } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/data/shared";
+import { createServerSupabase } from "@/lib/data/shared";
 import { rowToClient } from "@/lib/data/clients";
 import { rowToTrip } from "@/lib/data/trips";
 
@@ -19,25 +18,6 @@ export async function getTripsPendingReminder(daysAhead: number): Promise<TripRe
   cutoff.setUTCDate(cutoff.getUTCDate() + daysAhead);
   const todayStr = today.toISOString().slice(0, 10);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
-
-  if (!isSupabaseConfigured()) {
-    return mockTrips
-      .filter(
-        (t) =>
-          t.status === "published" &&
-          !t.reminderSentAt &&
-          t.startDate >= todayStr &&
-          t.startDate <= cutoffStr
-      )
-      .map((trip) => {
-        const link = mockTripClients
-          .filter((tc) => tc.tripId === trip.id)
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
-        const client = link ? mockClients.find((c) => c.id === link.clientId) : undefined;
-        return client ? { ...trip, client } : null;
-      })
-      .filter((t): t is TripReminderCandidate => Boolean(t));
-  }
 
   const supabase = await createServerSupabase();
   const { data: tripRows, error } = await supabase
@@ -87,11 +67,6 @@ export async function getTripsPendingReminder(daysAhead: number): Promise<TripRe
 }
 
 export async function markTripReminderSent(tripId: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const trip = mockTrips.find((t) => t.id === tripId);
-    if (trip) trip.reminderSentAt = new Date().toISOString();
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("trips")

@@ -8,16 +8,7 @@ import {
   ServiceUpload,
   ServiceUploadStatus,
 } from "@/types";
-import {
-  mockServiceChecklistItems,
-  mockServices,
-  mockServiceUploads,
-} from "@/lib/mock-data";
-import {
-  isSupabaseConfigured,
-  sanitizeStorageKey,
-  uid,
-} from "@/lib/data/shared";
+import { sanitizeStorageKey } from "@/lib/data/shared";
 import { DOCUMENTS_BUCKET } from "@/lib/data/documents";
 import {
   DEFAULT_SERVICE_TYPE,
@@ -101,30 +92,6 @@ export async function assertServiceUploadMutable(
 export async function getServiceDocumentSummariesForTrip(
   tripId: string
 ): Promise<ServiceDocumentSummary[]> {
-  if (!isSupabaseConfigured()) {
-    return mockServices
-      .filter(
-        (service) =>
-          service.tripId === tripId && service.serviceType === DEFAULT_SERVICE_TYPE
-      )
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((service) => {
-        const items = mockServiceChecklistItems.filter(
-          (item) => item.serviceId === service.id
-        );
-        const uploads = mockServiceUploads.filter(
-          (upload) => upload.serviceId === service.id
-        );
-        return {
-          serviceId: service.id,
-          clientId: service.clientId,
-          processed: uploads.filter((upload) => upload.status === "reviewed" || upload.status === "processed").length,
-          total: items.length,
-          awaitingReview: uploads.filter((upload) => upload.status === "uploaded").length,
-        };
-      });
-  }
-
   const supabase = await getServiceClient();
   const { data: serviceRows, error: servicesError } = await supabase
     .from("services")
@@ -180,31 +147,6 @@ export async function uploadServiceDocument(
   checklistItemId: string,
   file: File
 ): Promise<ServiceUpload> {
-  if (!isSupabaseConfigured()) {
-    const item = mockServiceChecklistItems.find(
-      (i) => i.id === checklistItemId && i.serviceId === serviceId
-    );
-    if (!item) throw new Error("El item no pertenece al servicio");
-    const existingIndex = mockServiceUploads.findIndex(
-      (u) => u.serviceId === serviceId && u.checklistItemId === checklistItemId
-    );
-    if (existingIndex >= 0) mockServiceUploads.splice(existingIndex, 1);
-    const upload: ServiceUpload = {
-      id: uid(),
-      serviceId,
-      checklistItemId,
-      filePath: buildStoragePath(serviceId, checklistItemId, file.name),
-      filename: file.name,
-      mimeType: file.type || undefined,
-      status: "uploaded",
-      fileRemoved: false,
-      uploadedAt: nowIso(),
-      updatedAt: nowIso(),
-    };
-    mockServiceUploads.push(upload);
-    return upload;
-  }
-
   const supabase = await getServiceClient();
   const { data: itemRow, error: itemError } = await supabase
     .from("service_checklist_items")
@@ -274,15 +216,6 @@ export async function uploadServiceDocument(
 }
 
 export async function markUploadReviewed(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const upload = mockServiceUploads.find((u) => u.id === id);
-    if (!upload) throw new Error("Upload no encontrado");
-    upload.status = "reviewed";
-    upload.fileRemoved = false;
-    upload.updatedAt = nowIso();
-    return;
-  }
-
   const supabase = await getServiceClient();
   const { error } = await supabase
     .from("service_uploads")
@@ -296,15 +229,6 @@ export async function markUploadReviewed(id: string): Promise<void> {
 }
 
 export async function markUploadProcessed(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const upload = mockServiceUploads.find((u) => u.id === id);
-    if (!upload) throw new Error("Upload no encontrado");
-    upload.status = "processed";
-    upload.fileRemoved = true;
-    upload.updatedAt = nowIso();
-    return;
-  }
-
   const supabase = await getServiceClient();
   const { data: upload } = await supabase
     .from("service_uploads")
@@ -335,15 +259,6 @@ export async function requestReUpload(
   const trimmed = comment.trim();
   if (!trimmed) throw new Error("El comentario no puede estar vacío");
 
-  if (!isSupabaseConfigured()) {
-    const upload = mockServiceUploads.find((u) => u.id === id);
-    if (!upload) throw new Error("Upload no encontrado");
-    upload.status = "re_upload_requested";
-    upload.agentComment = trimmed;
-    upload.updatedAt = nowIso();
-    return;
-  }
-
   const supabase = await getServiceClient();
   const { error } = await supabase
     .from("service_uploads")
@@ -360,24 +275,6 @@ export async function getServicesProgressForClient(
   clientId: string
 ): Promise<Map<string, { completed: number; total: number }>> {
   const result = new Map<string, { completed: number; total: number }>();
-
-  if (!isSupabaseConfigured()) {
-    const services = mockServices.filter(
-      (s) => s.clientId === clientId && s.serviceType === DEFAULT_SERVICE_TYPE
-    );
-    for (const service of services) {
-      const items = mockServiceChecklistItems.filter(
-        (i) => i.serviceId === service.id
-      );
-      const completed = mockServiceUploads.filter(
-        (u) =>
-          u.serviceId === service.id &&
-          (u.status === "reviewed" || u.status === "processed")
-      ).length;
-      result.set(service.id, { completed, total: items.length });
-    }
-    return result;
-  }
 
   const supabase = await getServiceClient();
   const { data: serviceRows, error: servicesError } = await supabase

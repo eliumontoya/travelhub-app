@@ -95,11 +95,10 @@ export type TripStats = {
   unpublishedNearStart: number;
 };
 
-// Se apoya en getTrips()/getClients() (ya cubren el modo dual mock/Supabase),
-// pidiendo el catálogo completo vía ALL_*_PAGE_SIZE, y calcula los conteos en
-// JS: al ser una sola cuenta de agente, el volumen de trips/clients es bajo y
-// no justifica duplicar el branching de isSupabaseConfigured() con queries
-// agregadas.
+// Se apoya en getTrips()/getClients(), pidiendo el catálogo completo vía
+// ALL_*_PAGE_SIZE, y calcula los conteos en JS: al ser una sola cuenta de
+// agente, el volumen de trips/clients es bajo y no justifica duplicar la
+// consulta con queries agregadas.
 export async function getTripStats(): Promise<TripStats> {
   const [{ items: trips }, { items: clients }] = await Promise.all([
     getTrips({ pageSize: ALL_TRIPS_PAGE_SIZE }),
