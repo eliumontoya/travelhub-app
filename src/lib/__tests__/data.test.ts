@@ -196,8 +196,8 @@ const DOMAIN_MODULES = {
 } as const;
 
 const domainSymbols = new Map<string, unknown>();
-for (const module of Object.values(DOMAIN_MODULES)) {
-  for (const [symbol, value] of Object.entries(module)) {
+for (const domainModule of Object.values(DOMAIN_MODULES)) {
+  for (const [symbol, value] of Object.entries(domainModule)) {
     domainSymbols.set(symbol, value);
   }
 }
