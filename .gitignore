@@ -22,8 +22,9 @@ next-env.d.ts
 test-results/
 coverage/
 
-# sanity-kit
-sanity-hub/
+# sanity-kit results stay local in the sanity-kit repo
+SANITY.md
+sanity/
 
 # playwright
 test-results/

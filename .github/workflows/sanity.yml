@@ -53,7 +53,5 @@ jobs:
         if: always()
         with:
           name: sanity-report
-          path: |
-            SANITY.md
-            sanity/
+          path: sanity-kit/results/
           retention-days: 30
