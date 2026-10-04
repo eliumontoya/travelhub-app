@@ -9,10 +9,10 @@ vi.mock("@/lib/supabase/middleware", () => ({
 import { updateSession } from "@/lib/supabase/middleware";
 import { middleware } from "@/middleware";
 
-function mockDashboardRequest() {
+function mockRequest(path: string) {
   return {
-    url: "http://localhost/dashboard",
-    nextUrl: new URL("http://localhost/dashboard"),
+    url: `http://localhost${path}`,
+    nextUrl: new URL(`http://localhost${path}`),
     cookies: {
       get: () => undefined,
       getAll: () => [],
@@ -27,11 +27,9 @@ function redirectLocation(response: NextResponse): URL {
   return new URL(location as string, "http://localhost");
 }
 
-describe("middleware (configured Supabase)", () => {
+describe("middleware (Supabase session gate)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
   });
 
   it("redirects unauthenticated users to /login with redirectTo=/dashboard", async () => {
@@ -41,12 +39,26 @@ describe("middleware (configured Supabase)", () => {
       role: null,
     });
 
-    const result = await middleware(mockDashboardRequest());
+    const result = await middleware(mockRequest("/dashboard"));
 
     expect(result.status).toBe(307);
     const url = redirectLocation(result);
     expect(url.pathname).toBe("/login");
     expect(url.searchParams.get("redirectTo")).toBe("/dashboard");
+  });
+
+  it("preserves the requested dashboard path in redirectTo", async () => {
+    vi.mocked(updateSession).mockResolvedValue({
+      response: NextResponse.next(),
+      user: null,
+      role: null,
+    });
+
+    const result = await middleware(mockRequest("/dashboard/trips/new"));
+
+    const url = redirectLocation(result);
+    expect(url.pathname).toBe("/login");
+    expect(url.searchParams.get("redirectTo")).toBe("/dashboard/trips/new");
   });
 
   it("redirects authenticated users without a role to /login with error=unauthorized", async () => {
@@ -56,7 +68,7 @@ describe("middleware (configured Supabase)", () => {
       role: null,
     });
 
-    const result = await middleware(mockDashboardRequest());
+    const result = await middleware(mockRequest("/dashboard"));
 
     expect(result.status).toBe(307);
     const url = redirectLocation(result);
@@ -72,7 +84,33 @@ describe("middleware (configured Supabase)", () => {
       role: "admin",
     });
 
-    const result = await middleware(mockDashboardRequest());
+    const result = await middleware(mockRequest("/dashboard"));
+
+    expect(result).toBe(response);
+  });
+
+  it("passes through for an agent user", async () => {
+    const response = NextResponse.next();
+    vi.mocked(updateSession).mockResolvedValue({
+      response,
+      user: { id: "user-2" } as never,
+      role: "agent",
+    });
+
+    const result = await middleware(mockRequest("/dashboard"));
+
+    expect(result).toBe(response);
+  });
+
+  it("passes public non-dashboard routes through even without a session", async () => {
+    const response = NextResponse.next();
+    vi.mocked(updateSession).mockResolvedValue({
+      response,
+      user: null,
+      role: null,
+    });
+
+    const result = await middleware(mockRequest("/t/italia-perez-2026"));
 
     expect(result).toBe(response);
   });

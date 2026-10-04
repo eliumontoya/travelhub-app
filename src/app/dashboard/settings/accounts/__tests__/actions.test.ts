@@ -1,28 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Feature } from "@/types";
-import { mockProfiles } from "@/lib/mock-data";
 
 // Mocks for server-only modules. `updateProfileFeaturesAction` reads the
-// current account via getCurrentAccount (which itself touches `next/headers`
-// and `@/lib/supabase/server`), and writes via updateProfileFeatures.
+// current account via getCurrentAccount (which itself touches
+// `@/lib/supabase/server`) and writes via updateProfileFeatures.
 // `revalidatePath` is the server-action post-write hook we want to assert.
 const {
   getCurrentAccountMock,
-  resolveMockAccountIdMock,
   updateProfileFeaturesMock,
   revalidatePathMock,
-  cookiesMock,
 } = vi.hoisted(() => ({
   getCurrentAccountMock: vi.fn(),
-  resolveMockAccountIdMock: vi.fn(),
   updateProfileFeaturesMock: vi.fn(),
   revalidatePathMock: vi.fn(),
-  cookiesMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/roles", () => ({
   getCurrentAccount: getCurrentAccountMock,
-  resolveMockAccountId: resolveMockAccountIdMock,
 }));
 
 vi.mock("@/lib/data/profiles", () => ({
@@ -37,25 +31,9 @@ vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
 }));
 
-vi.mock("next/headers", () => ({
-  cookies: cookiesMock,
-}));
-
-vi.mock("@/lib/supabase/server", () => ({
-  isSupabaseConfigured: vi.fn(() => false),
-  createClient: vi.fn(),
-}));
-
 describe("updateProfileFeaturesAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default mock mode and admin account; individual tests override.
-    resolveMockAccountIdMock.mockResolvedValue("mock-admin");
-    getCurrentAccountMock.mockResolvedValue({
-      id: "mock-admin",
-      role: "admin",
-      features: [],
-    });
     updateProfileFeaturesMock.mockImplementation(
       async (id: string, features: Feature[]) => ({
         id,
@@ -64,20 +42,23 @@ describe("updateProfileFeaturesAction", () => {
         travelAgentId: "a1",
       }),
     );
-    // Reset mock profiles to a known baseline so the action is reproducible.
-    mockProfiles["mock-admin"].features = [];
-    mockProfiles["mock-agent"].features = ["trips", "clients"] as Feature[];
+    // Default: an admin session. Individual tests override.
+    getCurrentAccountMock.mockResolvedValue({
+      id: "admin-1",
+      role: "admin",
+      features: [],
+    });
   });
 
   it("returns an authorization error for a non-admin account without writing (threat case b)", async () => {
     getCurrentAccountMock.mockResolvedValue({
-      id: "mock-agent",
+      id: "agent-1",
       role: "agent",
       features: ["trips", "clients"],
       travelAgentId: "a1",
     });
 
-    const result = await updateProfileFeaturesAction("mock-agent", ["trips", "suppliers"]);
+    const result = await updateProfileFeaturesAction("agent-1", ["trips", "suppliers"]);
 
     expect(result).toEqual({ ok: false, error: "No autorizado." });
     expect(updateProfileFeaturesMock).not.toHaveBeenCalled();
@@ -85,13 +66,13 @@ describe("updateProfileFeaturesAction", () => {
   });
 
   it("returns ok and revalidates when an admin writes a profile's features", async () => {
-    const result = await updateProfileFeaturesAction("mock-agent", [
+    const result = await updateProfileFeaturesAction("agent-1", [
       "trips",
       "suppliers",
     ]);
 
     expect(result).toEqual({ ok: true });
-    expect(updateProfileFeaturesMock).toHaveBeenCalledWith("mock-agent", [
+    expect(updateProfileFeaturesMock).toHaveBeenCalledWith("agent-1", [
       "trips",
       "suppliers",
     ]);
@@ -103,7 +84,7 @@ describe("updateProfileFeaturesAction", () => {
   it("returns a write-error envelope when updateProfileFeatures throws", async () => {
     updateProfileFeaturesMock.mockRejectedValue(new Error("Perfil no encontrado"));
 
-    const result = await updateProfileFeaturesAction("mock-agent", ["trips"]);
+    const result = await updateProfileFeaturesAction("agent-1", ["trips"]);
 
     expect(result).toEqual({
       ok: false,
@@ -115,7 +96,7 @@ describe("updateProfileFeaturesAction", () => {
   it("returns an authorization error when no account can be resolved", async () => {
     getCurrentAccountMock.mockResolvedValue(null);
 
-    const result = await updateProfileFeaturesAction("mock-agent", ["trips"]);
+    const result = await updateProfileFeaturesAction("agent-1", ["trips"]);
 
     expect(result).toEqual({ ok: false, error: "No autorizado." });
     expect(updateProfileFeaturesMock).not.toHaveBeenCalled();
