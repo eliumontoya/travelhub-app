@@ -1,13 +1,10 @@
 import { Client, Visa, VisaFilters, VisaStatus, VisaStatusHistoryEntry, VisaWithDetails } from "@/types";
-import { mockClients, mockVisaClients, mockVisas, mockVisaStatusHistory } from "@/lib/mock-data";
 import {
   PaginationParams,
   PaginatedResult,
   canUseServiceRole,
   createServerSupabase,
-  isSupabaseConfigured,
   paginationBounds,
-  uid,
 } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { rowToClient } from "@/lib/data/clients";
@@ -83,39 +80,6 @@ function assertCreateVisaInput(input: CreateVisaInput): void {
 export async function createVisa(input: CreateVisaInput): Promise<Visa> {
   assertCreateVisaInput(input);
   const clientIds = input.clientIds ?? [];
-  const now = new Date().toISOString();
-
-  if (!isSupabaseConfigured()) {
-    const id = uid();
-    const visa: Visa = {
-      id,
-      clientId: clientIds[0] ?? "",
-      country: input.country.trim(),
-      visaType: input.visaType.trim(),
-      deadline: input.deadline,
-      price: input.price,
-      notes: input.notes?.trim() || undefined,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now,
-    };
-    mockVisas.push(visa);
-    mockVisaStatusHistory.push({
-      id: uid(),
-      visaId: id,
-      fromStatus: null,
-      toStatus: "pending",
-      changedAt: now,
-    });
-    clientIds.forEach((clientId, idx) => {
-      mockVisaClients.push({
-        visaId: id,
-        clientId,
-        createdAt: new Date(Date.parse(now) + idx).toISOString(),
-      });
-    });
-    return visa;
-  }
 
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
@@ -151,23 +115,6 @@ export async function createVisa(input: CreateVisaInput): Promise<Visa> {
   return visa;
 }
 
-// ---------- Mock-only hydration helpers ----------
-
-// Hydrate the clients array for a visa in mock mode (sorted by createdAt asc).
-function hydrateMockVisaClients(visaId: string): Client[] {
-  return mockVisaClients
-    .filter((vc) => vc.visaId === visaId)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map((vc) => mockClients.find((c) => c.id === vc.clientId))
-    .filter((c): c is Client => Boolean(c));
-}
-
-function hydrateMockVisaStatusHistory(visaId: string): VisaStatusHistoryEntry[] {
-  return mockVisaStatusHistory
-    .filter((h) => h.visaId === visaId)
-    .sort((a, b) => a.changedAt.localeCompare(b.changedAt));
-}
-
 function escapeVisaIlike(value: string): string {
   return value.replace(/[%,_*]/g, " ").trim();
 }
@@ -197,20 +144,6 @@ function visaMatchesFilters(
 }
 
 export async function getVisaById(id: string): Promise<VisaWithDetails | null> {
-  if (!isSupabaseConfigured()) {
-    const visa = mockVisas.find((v) => v.id === id);
-    if (!visa) return null;
-    const clients = hydrateMockVisaClients(id);
-    const statusHistory = hydrateMockVisaStatusHistory(id);
-    return {
-      ...visa,
-      clients,
-      client: clients[0] ?? ({} as Client),
-      statusHistory,
-      documents: [],
-    };
-  }
-
   const supabase = await createServerSupabase();
   const { data: visaRow, error } = await supabase
     .from("visas")
@@ -226,18 +159,7 @@ export async function getVisasWithClients(
   params: GetVisasWithClientsParams = {}
 ): Promise<PaginatedResult<Visa & { clients: Client[] }>> {
   const filters = params.filters ?? {};
-  const { from, to, pageSize } = paginationBounds(params);
-
-  if (!isSupabaseConfigured()) {
-    const allItems: (Visa & { clients: Client[] })[] = mockVisas
-      .map((v) => ({ ...v, clients: hydrateMockVisaClients(v.id) }))
-      .filter((v) => visaMatchesFilters(v, v.clients, filters))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    return {
-      items: allItems.slice(from, from + pageSize),
-      totalCount: allItems.length,
-    };
-  }
+  const { from, to } = paginationBounds(params);
 
   const supabase = await createServerSupabase();
   let query = supabase.from("visas").select("*", { count: "exact" });
@@ -309,14 +231,6 @@ export async function getVisasWithClients(
 }
 
 export async function getVisasByClientId(clientId: string): Promise<Visa[]> {
-  if (!isSupabaseConfigured()) {
-    const visaIds = new Set(
-      mockVisaClients.filter((vc) => vc.clientId === clientId).map((vc) => vc.visaId)
-    );
-    return mockVisas
-      .filter((v) => visaIds.has(v.id))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }
   // El portal del cliente autentica con una cookie propia (PIN), no con
   // Supabase Auth, así que createServerSupabase() corre como `anon` y la RLS no
   // puede acotar filas por usuario. La migración 20260930000000_visas.sql
@@ -348,18 +262,6 @@ export async function updateVisa(id: string, input: UpdateVisaInput): Promise<Vi
   // transitions are disjoint operations.
   const now = new Date().toISOString();
 
-  if (!isSupabaseConfigured()) {
-    const visa = mockVisas.find((v) => v.id === id);
-    if (!visa) throw new Error("Visa not found");
-    if (input.country !== undefined) visa.country = input.country.trim();
-    if (input.visaType !== undefined) visa.visaType = input.visaType.trim();
-    if (input.deadline !== undefined) visa.deadline = input.deadline;
-    if (input.price !== undefined) visa.price = input.price;
-    if (input.notes !== undefined) visa.notes = input.notes ? input.notes.trim() : undefined;
-    visa.updatedAt = now;
-    return visa;
-  }
-
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = { updated_at: now };
   if (input.country !== undefined) patch.country = input.country.trim();
@@ -382,34 +284,6 @@ export async function updateVisa(id: string, input: UpdateVisaInput): Promise<Vi
 // the assignment. The visas.client_id mirror is set to clientIds[0] or null.
 export async function setVisaClients(visaId: string, clientIds: string[]): Promise<void> {
   const nextIds = Array.from(new Set(clientIds));
-
-  if (!isSupabaseConfigured()) {
-    const current = mockVisaClients.filter((vc) => vc.visaId === visaId);
-    const currentIds = new Set(current.map((vc) => vc.clientId));
-    const toRemove = [...currentIds].filter((id) => !nextIds.includes(id));
-
-    for (let i = mockVisaClients.length - 1; i >= 0; i--) {
-      const vc = mockVisaClients[i];
-      if (vc.visaId === visaId && toRemove.includes(vc.clientId)) {
-        mockVisaClients.splice(i, 1);
-      }
-    }
-
-    const now = Date.now();
-    nextIds.forEach((clientId, idx) => {
-      if (!currentIds.has(clientId)) {
-        mockVisaClients.push({
-          visaId,
-          clientId,
-          createdAt: new Date(now + idx).toISOString(),
-        });
-      }
-    });
-
-    const visa = mockVisas.find((v) => v.id === visaId);
-    if (visa) visa.clientId = nextIds[0] ?? "";
-    return;
-  }
 
   const supabase = await createServerSupabase();
   const { data: currentRows, error: currentError } = await supabase
@@ -461,22 +335,6 @@ export async function transitionVisaStatus(
   }
 
   const now = new Date().toISOString();
-  const historyEntry: VisaStatusHistoryEntry = {
-    id: uid(),
-    visaId,
-    fromStatus: current,
-    toStatus,
-    changedAt: now,
-  };
-
-  if (!isSupabaseConfigured()) {
-    const visa = mockVisas.find((v) => v.id === visaId);
-    if (!visa) throw new Error("Visa not found");
-    visa.status = toStatus;
-    visa.updatedAt = now;
-    mockVisaStatusHistory.push(historyEntry);
-    return historyEntry;
-  }
 
   const supabase = await createServerSupabase();
   const { error: updateError } = await supabase
@@ -499,9 +357,6 @@ export async function transitionVisaStatus(
 }
 
 export async function getVisaStatusHistory(visaId: string): Promise<VisaStatusHistoryEntry[]> {
-  if (!isSupabaseConfigured()) {
-    return hydrateMockVisaStatusHistory(visaId);
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("visa_status_history")
@@ -513,11 +368,6 @@ export async function getVisaStatusHistory(visaId: string): Promise<VisaStatusHi
 }
 
 async function getCurrentVisaStatus(visaId: string): Promise<VisaStatus> {
-  if (!isSupabaseConfigured()) {
-    const visa = mockVisas.find((v) => v.id === visaId);
-    if (!visa) throw new Error("Visa not found");
-    return visa.status;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("visas")

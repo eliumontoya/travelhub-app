@@ -8,8 +8,7 @@ import type { Feature } from "@/types";
  * `profiles` read/write query shapes and the row mapping.
  *
  * This file only covers `data/profiles.ts`. Account resolution in
- * `src/lib/auth/roles.ts` (currentMockAccountId / setCurrentMockAccountId) is
- * out of scope for this batch and is left for phase 5.
+ * `src/lib/auth/roles.ts` is covered separately by roles.test.ts.
  */
 const db = vi.hoisted(() => {
   type Row = Record<string, unknown>;

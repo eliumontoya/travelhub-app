@@ -1,11 +1,5 @@
 import { Service, ServiceType } from "@/types";
-import { mockServiceChecklistItems, mockServices } from "@/lib/mock-data";
-import { isSupabaseConfigured, uid } from "@/lib/data/shared";
-import {
-  DEFAULT_SERVICE_TYPE,
-  getServiceClient,
-  nowIso,
-} from "@/lib/data/service-shared";
+import { DEFAULT_SERVICE_TYPE, getServiceClient } from "@/lib/data/service-shared";
 
 export * from "@/lib/data/service-documents";
 export * from "@/lib/data/service-checklist";
@@ -26,27 +20,6 @@ export async function ensureServiceForAssignment(
   tripId: string,
   clientId: string
 ): Promise<Service> {
-  if (!isSupabaseConfigured()) {
-    const existing = mockServices.find(
-      (s) =>
-        s.tripId === tripId &&
-        s.clientId === clientId &&
-        s.serviceType === DEFAULT_SERVICE_TYPE
-    );
-    if (existing) return existing;
-    const service: Service = {
-      id: uid(),
-      tripId,
-      clientId,
-      serviceType: DEFAULT_SERVICE_TYPE,
-      status: "active",
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    };
-    mockServices.push(service);
-    return service;
-  }
-
   const supabase = await getServiceClient();
   const { data, error } = await supabase
     .from("services")
@@ -69,17 +42,6 @@ export async function getServiceForClientTrip(
   clientId: string,
   tripId: string
 ): Promise<Service | null> {
-  if (!isSupabaseConfigured()) {
-    return (
-      mockServices.find(
-        (s) =>
-          s.clientId === clientId &&
-          s.tripId === tripId &&
-          s.serviceType === DEFAULT_SERVICE_TYPE
-      ) ?? null
-    );
-  }
-
   const supabase = await getServiceClient();
   const { data, error } = await supabase
     .from("services")
@@ -93,12 +55,6 @@ export async function getServiceForClientTrip(
 }
 
 export async function getServicesForTrip(tripId: string): Promise<Service[]> {
-  if (!isSupabaseConfigured()) {
-    return mockServices
-      .filter((s) => s.tripId === tripId)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  }
-
   const supabase = await getServiceClient();
   const { data, error } = await supabase
     .from("services")
@@ -115,10 +71,6 @@ export async function hasOwnedServiceRequirements(
 ): Promise<boolean> {
   const service = await getServiceForClientTrip(clientId, tripId);
   if (!service) return false;
-
-  if (!isSupabaseConfigured()) {
-    return mockServiceChecklistItems.some((item) => item.serviceId === service.id);
-  }
 
   const supabase = await getServiceClient();
   const { data, error } = await supabase

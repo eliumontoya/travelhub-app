@@ -1,6 +1,5 @@
 import { TripDay } from "@/types";
-import { mockTripDays } from "@/lib/mock-data";
-import { createServerSupabase, isSupabaseConfigured, sanitizeNote, uid } from "@/lib/data/shared";
+import { createServerSupabase, sanitizeNote } from "@/lib/data/shared";
 import { getTripById } from "@/lib/data/trips";
 
 // ---------- Trip days ----------
@@ -9,19 +8,6 @@ export type CreateTripDayInput = { tripId: string; date: string; notes?: string;
 export type UpdateTripDayInput = Partial<{ date: string; notes: string; sortOrder: number }>;
 
 export async function createTripDay(input: CreateTripDayInput): Promise<TripDay> {
-  if (!isSupabaseConfigured()) {
-    const day: TripDay = {
-      id: uid(),
-      tripId: input.tripId,
-      date: input.date,
-      notes: sanitizeNote(input.notes),
-      sortOrder:
-        input.sortOrder ??
-        mockTripDays.filter((d) => d.tripId === input.tripId).length,
-    };
-    mockTripDays.push(day);
-    return day;
-  }
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("trip_days")
@@ -38,14 +24,6 @@ export async function createTripDay(input: CreateTripDayInput): Promise<TripDay>
 }
 
 export async function updateTripDay(id: string, input: UpdateTripDayInput): Promise<TripDay> {
-  if (!isSupabaseConfigured()) {
-    const day = mockTripDays.find((d) => d.id === id);
-    if (!day) throw new Error("Día no encontrado");
-    if (input.date !== undefined) day.date = input.date;
-    if (input.notes !== undefined) day.notes = sanitizeNote(input.notes);
-    if (input.sortOrder !== undefined) day.sortOrder = input.sortOrder;
-    return day;
-  }
   const supabase = await createServerSupabase();
   const patch: Record<string, unknown> = {};
   if (input.date !== undefined) patch.date = input.date;
@@ -64,14 +42,9 @@ export async function updateTripDay(id: string, input: UpdateTripDayInput): Prom
 // Soft delete (issue #23): marca deleted_at en vez de borrar la fila, para
 // poder deshacer dentro de la misma sesión (toast "Deshacer"). Los items de
 // ese día NO se marcan individualmente: quedan ocultos porque las consultas
-// de lectura (assembleTripWithDetails / mock getTripWithDetails) ya excluyen
-// items cuyo trip_day padre está soft-deleted.
+// de lectura (assembleTripWithDetails) ya excluyen items cuyo trip_day padre
+// está soft-deleted.
 export async function deleteTripDay(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const day = mockTripDays.find((d) => d.id === id);
-    if (day) day.deletedAt = new Date().toISOString();
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("trip_days")
@@ -81,11 +54,6 @@ export async function deleteTripDay(id: string): Promise<void> {
 }
 
 export async function restoreTripDay(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const day = mockTripDays.find((d) => d.id === id);
-    if (day) day.deletedAt = undefined;
-    return;
-  }
   const supabase = await createServerSupabase();
   const { error } = await supabase.from("trip_days").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
@@ -104,10 +72,9 @@ export function rowToTripDay(row: Record<string, unknown>): TripDay {
 export type GenerateTripDaysResult = { created: number; totalDays: number };
 
 // Recorre start_date..end_date del viaje día por día, crea los trip_days que
-// falten (createTripDay ya resuelve mock/Supabase) y luego reescribe el
-// sort_order de TODOS los días del viaje en orden cronológico, para que los
-// días recién generados queden intercalados correctamente y no simplemente
-// al final de la lista.
+// falten (createTripDay) y luego reescribe el sort_order de TODOS los días del
+// viaje en orden cronológico, para que los días recién generados queden
+// intercalados correctamente y no simplemente al final de la lista.
 export async function generateTripDays(tripId: string): Promise<GenerateTripDaysResult> {
   const trip = await getTripById(tripId);
   if (!trip) throw new Error("Viaje no encontrado");
@@ -150,13 +117,6 @@ function enumerateDates(startDate: string, endDate: string): string[] {
 }
 
 export async function reorderTripDays(order: { id: string; sortOrder: number }[]): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    for (const { id, sortOrder } of order) {
-      const day = mockTripDays.find((d) => d.id === id);
-      if (day) day.sortOrder = sortOrder;
-    }
-    return;
-  }
   const supabase = await createServerSupabase();
   await Promise.all(
     order.map(({ id, sortOrder }) =>
