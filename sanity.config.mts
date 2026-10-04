@@ -23,15 +23,9 @@ export default {
     },
     e2e: {
       enabled: true,
-      // Mock project: deterministic, no external services, no Vercel deploy.
-      args: ["--project=mock"],
-      // Parity with CI: blank Supabase env vars so the app falls back to
-      // mock mode even though .env.local exists locally. Real env vars take
-      // precedence over .env.local in Next, so "" reliably disables them.
-      env: {
-        NEXT_PUBLIC_SUPABASE_URL: "",
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
-      },
+      // Seeded-state e2e: fresh local database before every run.
+      args: ["--project=local"],
+      pre: "npm run db:reset",
     },
   },
 };
