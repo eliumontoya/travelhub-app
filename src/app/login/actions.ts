@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export async function signIn(formData: FormData) {
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "").trim();
   const redirectTo = String(formData.get("redirectTo") ?? "/dashboard");
 
   if (!isSupabaseConfigured()) {
