@@ -1,22 +1,23 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
+/**
+ * Smoke tests for the deployed preview target (BASE_URL). They assert real,
+ * session-independent behavior instead of "the page returned something":
+ * the operator login form renders, and unauthenticated visitors are kept out
+ * of the dashboard. Deeper flows are covered by the `local` project specs
+ * against the seeded Supabase stack (issue #396 removed the idle `<500`
+ * smoke specs).
+ */
 test.describe("Login flow", () => {
-  test("muestra el formulario de login o aviso de Supabase no configurado", async ({
-    page,
-  }) => {
+  test("muestra el formulario real de login de operadores", async ({ page }) => {
     await page.goto("/login");
-
-    const hasForm = await page.locator('form[action]').count();
-    const hasWarning = await page.locator("text=Supabase no está configurado").count();
-    const hasTravelHub = await page.locator("text=TravelHub").count();
-
-    expect(hasForm + hasWarning + hasTravelHub).toBeGreaterThanOrEqual(1);
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+    await expect(page.getByRole("button", { name: "Iniciar sesión" })).toBeVisible();
   });
 
-  test("redirige a /dashboard desde la raíz sin auth (modo mock)", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForURL("**/*", { timeout: 10000 });
-    const url = page.url();
-    expect(url.includes("/dashboard") || url.includes("/login")).toBe(true);
+  test("mantiene al visitante sin sesión fuera del dashboard", async ({ page }) => {
+    await page.goto("/dashboard/trips/new");
+    await expect(page).toHaveURL(/\/login/);
   });
 });

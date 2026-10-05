@@ -53,14 +53,22 @@ Decisiones:
 - Commit: (pendiente)
 
 ### T3 — Limpieza de tests ociosos
-- [ ] Estado: pendiente
-- Eliminar specs smoke sin valor en `e2e/preview`: `create-trip.spec.ts`,
-  `create-client.spec.ts`, `calendar-export.spec.ts`, `public-trip.spec.ts`.
-- Endurecer `e2e/preview/login.spec.ts` (aserciones reales, no "cualquier
-  texto").
-- Evaluar test "rutas adyacentes" en `dashboard.spec.ts` (posible duplicado).
-- Documentar la decisión en `Changes.md` / doc fuente correspondiente.
-- Verificación: suite e2e local + compilación playwright.
+- [x] Estado: completada
+- Eliminados specs smoke sin valor en `e2e/preview`: `create-trip.spec.ts`,
+  `create-client.spec.ts`, `calendar-export.spec.ts`, `public-trip.spec.ts`
+  (solo verificaban `status < 500`, sin aserciones de comportamiento; los
+  flujos reales quedan cubiertos en `e2e/local`).
+- `e2e/preview/login.spec.ts` endurecido: verifica el formulario real de
+  login y que el dashboard rechace visitas sin sesión (verificado contra
+  dev local con BASE_URL). Nota: `preview` corre contra deploys de Vercel
+  con Supabase configurado, donde ambas aserciones también aplican.
+- Test "rutas adyacentes" de `dashboard.spec.ts` se conserva: bajo costo y
+  cubre regresión cruzada con aserciones reales.
+- Hallazgo de suite: los specs e2e no son re-ejecutables sin `db:reset`
+  (crean proveedores/actividades/viajes sin limpiar). Fallos en suite
+  completa sin reset son contaminación de datos, preexistente. Documentado
+  en `architecture.md` (entorno local con Supabase CLI).
+- Verificación: preview 2 passed; suite local tras `db:reset` — ver T4.
 - Commit: (pendiente)
 
 ### T4 — Verificación final y cierre
