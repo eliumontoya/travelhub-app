@@ -362,6 +362,11 @@ anon key local correspondiente). `supabase/seed.sql` carga datos de prueba
 (cuentas admin/agent, clientes, viajes) equivalentes a los fixtures que la app
 necesita para funcionar en local.
 
+La suite e2e (`npm run test:e2e`) asume el estado del seed: algunos specs
+crean datos (proveedores, actividades, viajes) y no limpian después, así que
+en corridas repetidas hay que restaurar primero con `npm run db:reset`
+(issue #396).
+
 ## Convenciones de código
 
 - Sin comentarios en TS/TSX salvo que expliquen un porqué no obvio (SQL sí
