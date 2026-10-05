@@ -72,10 +72,10 @@ Chain strategy: size-exception
 
 ### Fase 5 — `create-trip.spec.ts` (WU5)
 
-- [ ] 5.1 Mantener el título único existente (`E2E Roadtrip ${uniqueSuffix()}`) y documentar que es la clave de limpieza.
-- [ ] 5.2 Agregar `test.afterAll` que borre el viaje creado por id (`deleteRowsByEq(request, "trips", "id", tripId)`) y el cliente creado por email (`deleteRowsByEq(request, "clients", "email", "e2e-new-client@example.com")`, ajustando si el email debe llevar sufijo único para no borrar un cliente ajeno).
-- [ ] 5.3 Conservar el resto del flujo y aserciones (guard de clientes, itinerario, publicación, vista pública, portal del cliente, vuelta a borrador).
-- [ ] 5.4 Verificar (RED→GREEN): `npx playwright test --project=local create-trip` en dos corridas seguidas sin `db:reset` pasa y no deja viaje ni cliente.
+- [x] 5.1 Mantener el título único existente (`E2E Roadtrip ${uniqueSuffix()}`) y documentar que es la clave de limpieza.
+- [x] 5.2 Agregar `test.afterAll` que borre el viaje creado por id (`deleteRowsByEq(request, "trips", "id", tripId)`) y el cliente creado por email. El email pasa a `e2e-new-client+${suffix}@example.com` (sufijo único de corrida): el prefijo `e2e-` garantiza que nunca colisiona con un cliente real, y el sufijo evita borrar un cliente ajeno. Se documenta la razón en un comentario.
+- [x] 5.3 Conservar el resto del flujo y aserciones (guard de clientes, itinerario, publicación, vista pública, portal del cliente, vuelta a borrador).
+- [x] 5.4 Verificar (RED→GREEN): `npx playwright test --project=local create-trip` en dos corridas seguidas sin `db:reset` pasa y no deja viaje ni cliente.
 
 ### Fase 6 — Warmup del `webServer` (WU6)
 
