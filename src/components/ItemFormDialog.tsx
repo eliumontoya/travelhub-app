@@ -3,21 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Item, ItemDocument, ItemType, Supplier } from "@/types";
-import { itemTypeMeta } from "@/lib/item-meta";
-import { LocationInput } from "@/components/LocationInput";
-import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
-import { RichTextEditor } from "@/components/RichTextEditor";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 import { shouldAutofillSupplierLocation } from "@/lib/item-location";
 import { getSupplierTypeForItem } from "@/lib/item-supplier-compatibility";
 import { MetadataFields } from "@/components/item-form/MetadataFields";
+import { ItemCommonFields } from "@/components/item-form/ItemCommonFields";
 import { ItemDocumentsSection } from "@/components/item-form/ItemDocumentsSection";
 import { appendSerializedMetadata } from "@/lib/item-form-fields";
 
 export { appendSerializedMetadata };
-
-const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
 
 type DocWithUrl = ItemDocument & { url: string | null };
 
@@ -208,115 +203,26 @@ export function ItemFormDialog({
             {item ? "Editar item" : "Agregar item"}
           </h3>
 
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Tipo</label>
-            <select
-              name="type"
-              value={selectedType}
-              onChange={(e) => handleItemTypeChange(e.target.value as ItemType)}
-              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-            >
-              {itemTypes.map((t) => (
-                <option key={t} value={t}>
-                  {itemTypeMeta[t].label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {requiredSupplierType && (
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Proveedor</label>
-              <SupplierCombobox
-                key={requiredSupplierType}
-                suppliers={suppliers}
-                name="supplierId"
-                requiredSupplierType={requiredSupplierType}
-                value={selectedSupplierId}
-                onChange={handleSupplierChange}
-                onSupplierCreated={handleSupplierCreated}
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Título</label>
-            <input
-              name="title"
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Hora inicio</label>
-              <input
-                type="time"
-                name="startTime"
-                defaultValue={item?.startTime}
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Hora fin</label>
-              <input
-                type="time"
-                name="endTime"
-                defaultValue={item?.endTime}
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Ubicación</label>
-            <LocationInput
-              defaultValue={item?.location}
-              defaultLat={item?.lat}
-              defaultLng={item?.lng}
-              value={locationValue}
-              onValueChange={setLocationValue}
-              lat={latValue}
-              lng={lngValue}
-              onCoordinatesChange={(lat, lng) => {
-                setLatValue(lat);
-                setLngValue(lng);
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">
-                Código de confirmación
-              </label>
-              <input
-                name="confirmationCode"
-                defaultValue={item?.confirmationCode}
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Costo</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="cost"
-                defaultValue={item?.cost}
-                placeholder="Solo visible internamente salvo que actives el resumen de costos"
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Notas</label>
-            <RichTextEditor name="notes" defaultValue={item?.notes} placeholder="Detalles del item (admite negrita, listas, enlaces…)" />
-          </div>
+          <ItemCommonFields
+            item={item}
+            selectedType={selectedType}
+            onTypeChange={handleItemTypeChange}
+            suppliers={suppliers}
+            selectedSupplierId={selectedSupplierId}
+            requiredSupplierType={requiredSupplierType}
+            onSupplierChange={handleSupplierChange}
+            onSupplierCreated={handleSupplierCreated}
+            titleValue={titleValue}
+            onTitleChange={setTitleValue}
+            locationValue={locationValue}
+            onLocationValueChange={setLocationValue}
+            latValue={latValue}
+            lngValue={lngValue}
+            onCoordinatesChange={(lat, lng) => {
+              setLatValue(lat);
+              setLngValue(lng);
+            }}
+          />
 
           <MetadataFields
             type={selectedType}

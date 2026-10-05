@@ -273,6 +273,7 @@ src/
       whatsapp-ai.ts           eventos, sanitización y métricas WhatsApp/IA
     ics.ts                  -- generación de archivos .ics
     item-meta.ts            -- labels/iconos por tipo de item, formateo de fechas
+    item-form-fields.ts     -- esquema de campos metadata por tipo de item (labels, opciones, serialización)
   types/index.ts            -- tipos de dominio (Client, Trip, TripDay, Item, …)
   middleware.ts              -- protección de /dashboard/** por rol
 ```
