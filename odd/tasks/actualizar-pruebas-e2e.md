@@ -72,7 +72,11 @@ Decisiones:
 - Commit: (pendiente)
 
 ### T4 — Verificación final y cierre
-- [ ] Estado: pendiente
-- Suite e2e local completa verde (`npm run test:e2e`).
-- Lint + tsc limpios en archivos tocados.
-- Resumen en el issue #396 (comentario) y cierre del doc ODD.
+- [x] Estado: completada (suite verde tras db:reset)
+- Suite e2e local completa tras `npm run db:reset`: **35 passed, 1 skipped**
+  (el fixme de #404); preview project: 2 passed (contra dev local).
+- tsc y eslint limpios.
+- Commits de la feature: a7b02a6, e422d14, e8ecd1b.
+- Resumen publicado como comentario en el issue #396.
+- Hallazgos para seguimiento: bug #404 (preview borrador roto) y la
+  no-re-ejecutabilidad de la suite sin db:reset (documentada, no corregida).
