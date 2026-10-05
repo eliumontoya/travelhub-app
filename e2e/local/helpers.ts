@@ -31,6 +31,101 @@ export const LOCAL_SUPABASE_URL =
 export const LOCAL_SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+// Service-role key needed for the REST cleanup helpers below: row mutations
+// bypass RLS only with the service role. Same value the `webServer` env in
+// `playwright.config.ts` injects for the local stack.
+export const LOCAL_SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+
+/**
+ * REST options for the service role. The REST client always returns the
+ * affected rows so callers can report how many rows they cleaned up.
+ */
+const SERVICE_ROLE_HEADERS = {
+  apikey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+  Authorization: `Bearer ${LOCAL_SUPABASE_SERVICE_ROLE_KEY}`,
+};
+
+/** Short, human-readable suffix that is unique per Playwright run. */
+export function uniqueSuffix(): string {
+  return Date.now().toString(36);
+}
+
+/**
+ * Append a per-run suffix to a readable base name. Specs that create
+ * persistent entities use this so a repeated run (or a retry) never collides
+ * with a residual row from an earlier attempt (issue #406).
+ */
+export function uniqueName(base: string): string {
+  return `${base} ${uniqueSuffix()}`;
+}
+
+type RowFilters = Record<string, string>;
+
+async function deleteRows(
+  request: APIRequestContext,
+  table: string,
+  filters: RowFilters,
+): Promise<number> {
+  const response = await request.delete(`${LOCAL_SUPABASE_URL}/rest/v1/${table}`, {
+    params: filters,
+    headers: { ...SERVICE_ROLE_HEADERS, Prefer: "return=representation" },
+  });
+  expect(response.ok()).toBeTruthy();
+  const rows = (await response.json()) as unknown[];
+  return rows.length;
+}
+
+/**
+ * Delete every row in `table` matching an exact column value. Returns the
+ * number of deleted rows.
+ */
+export async function deleteRowsByEq(
+  request: APIRequestContext,
+  table: string,
+  column: string,
+  value: string,
+  extraFilters: RowFilters = {},
+): Promise<number> {
+  return deleteRows(request, table, { ...extraFilters, [column]: `eq.${value}` });
+}
+
+/**
+ * Delete every row in `table` whose `column` matches a LIKE pattern (`*` is
+ * the PostgREST wildcard). Useful to remove residuals that share a readable
+ * prefix owned by a spec. Returns the number of deleted rows.
+ */
+export async function deleteRowsByNameLike(
+  request: APIRequestContext,
+  table: string,
+  column: string,
+  pattern: string,
+  extraFilters: RowFilters = {},
+): Promise<number> {
+  return deleteRows(request, table, { ...extraFilters, [column]: `like.${pattern}` });
+}
+
+/**
+ * Patch every row in `table` matching an exact column value with a JSON body.
+ * Returns the number of updated rows.
+ */
+export async function patchRowsByEq(
+  request: APIRequestContext,
+  table: string,
+  column: string,
+  value: string,
+  body: Record<string, unknown>,
+): Promise<number> {
+  const response = await request.patch(`${LOCAL_SUPABASE_URL}/rest/v1/${table}`, {
+    params: { [column]: `eq.${value}` },
+    data: body,
+    headers: { ...SERVICE_ROLE_HEADERS, Prefer: "return=representation" },
+  });
+  expect(response.ok()).toBeTruthy();
+  const rows = (await response.json()) as unknown[];
+  return rows.length;
+}
 
 /** Sign in an operator (admin/agent) through the real `/login` form. */
 export async function loginAs(
