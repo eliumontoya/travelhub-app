@@ -274,9 +274,18 @@ src/
     ics.ts                  -- generación de archivos .ics
     item-meta.ts            -- labels/iconos por tipo de item, formateo de fechas
     item-form-fields.ts     -- esquema de campos metadata por tipo de item (labels, opciones, serialización)
-  types/index.ts            -- tipos de dominio (Client, Trip, TripDay, Item, …)
+  types/index.ts            -- barril de tipos de dominio (Client, Trip, TripDay, Item, …):
+                               re-exporta los tipos ya migrados
+
+> Migración progresiva (issue #374): los tipos de dominio se mueven a
+> `src/lib/data/<dominio>.types.ts` junto a su módulo de datos; `types/index.ts`
+> queda como barril de re-exports.
   middleware.ts              -- protección de /dashboard/** por rol
 ```
+
+> Migración progresiva de tipos de dominio (issue #374): cada familia se mueve a
+> `src/lib/data/<dominio>.types.ts`, junto a su módulo de datos; primer dominio
+> migrado, visas (`src/lib/data/visas.types.ts`).
 
 ## Modelo de datos (resumen)
 
