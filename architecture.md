@@ -273,9 +273,14 @@ src/
       whatsapp-ai.ts           eventos, sanitización y métricas WhatsApp/IA
     ics.ts                  -- generación de archivos .ics
     item-meta.ts            -- labels/iconos por tipo de item, formateo de fechas
-  types/index.ts            -- tipos de dominio (Client, Trip, TripDay, Item, …)
+  types/index.ts            -- barril de tipos de dominio (Client, Trip, TripDay, Item, …):
+                               re-exporta los tipos ya migrados
   middleware.ts              -- protección de /dashboard/** por rol
 ```
+
+> Migración progresiva de tipos de dominio (issue #374): cada familia se mueve a
+> `src/lib/data/<dominio>.types.ts`, junto a su módulo de datos; primer dominio
+> migrado, visas (`src/lib/data/visas.types.ts`).
 
 ## Modelo de datos (resumen)
 
