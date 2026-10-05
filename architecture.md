@@ -61,7 +61,10 @@ Cliente (browser)
   descargas/importaciones de archivos y la consulta de estado de vuelos.
 - `src/middleware.ts` protege todas las rutas bajo `/dashboard/**`,
   redirigiendo a `/login` si no hay sesión de Supabase; el rol se resuelve
-  desde la sesión (`profiles`).
+  con el resolver compartido `resolveAccountProfile`
+  (`src/lib/auth/profile.ts`). Es una puerta de navegación por rol: **no** es
+  la frontera de autorización de las Server Actions; cada acción aplica su
+  propio guard (ver "Multi-cuenta y roles").
 - Las rutas de `/client/**` no pasan por el middleware: cada página y Server
   Action resuelve la sesión de cliente con `getClientSession()`
   (`src/lib/client-auth.ts`) y redirige a `/client/login` si no existe.
@@ -164,10 +167,20 @@ Segunda superficie autenticada, separada del workspace del agente:
   Supabase Auth de la autorización de la app: rol (`admin`/`agent`), features
   habilitadas y `travel_agent_id` opcional. RLS de auto-lectura + lectura de
   admin; el provisionamiento es manual.
-- `src/lib/auth/roles.ts` resuelve la cuenta y expone los guards
-  `requireFeature`/`requireAdmin`; `src/lib/auth/features.ts` es el catálogo
-  de features. El admin habilita features por agente en
-  `/dashboard/settings/accounts`.
+- `src/lib/auth/profile.ts` es la única ruta de resolución de cuenta:
+  `normalizeRole` y `resolveAccountProfile` (puro, Edge-safe) leen el perfil de
+  `profiles` y normalizan rol y features; lo reutilizan el middleware, el layout
+  y `src/lib/auth/roles.ts`, que expone los guards:
+  - **Server Actions y Route Handlers** (semántica de throw): `requireRole(...roles)`
+    — punto de extensión para roles futuros —, `requireUser()` (rechaza sesión
+    inexistente) y el predicado sin throw `isCurrentUserAdmin()` para acciones
+    que devuelven errores tipados como `{ ok: false }`. Cada Server Action de
+    dashboard que muta datos inicia con su guard de rol; `signOutAction` es la
+    única exención.
+  - **Server Components / páginas** (semántica de redirect): `requireFeature`/
+    `requireAdmin`.
+  `src/lib/auth/features.ts` es el catálogo de features. El admin habilita
+  features por agente en `/dashboard/settings/accounts`.
 - El catálogo de agentes de viaje se administra en `/dashboard/travel-agents`
   (`data/travel-agents.ts`, `0041_travel_agents.sql`).
 
