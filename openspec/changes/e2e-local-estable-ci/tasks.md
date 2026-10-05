@@ -54,13 +54,14 @@ Chain strategy: size-exception
 
 ### Fase 3 — `traveler-activities.spec.ts` (WU3)
 
-- [ ] 3.1 Definir los títulos con sufijo único por corrida: `uniqueName("E2E paseo por Trastevere")`, `uniqueName("E2E cena en Trastevere")`, `uniqueName("E2E actividad de Ana")`.
-- [ ] 3.2 Agregar `test.beforeEach` que borre actividades residuales del día del seed (`deleteRowsByNameLike(request, "trip_items", "title", "E2E %")`), acotado al `trip_day_id` del seed para no tocar items de otros días.
-- [ ] 3.3 Reemplazar el localizador posicional `page.getByText("Ver más detalles").nth(2)` por uno acotado a la fila del título único del test.
-- [ ] 3.4 Reemplazar los `.last()` de la variante mobile (`getByText("Editar actividad")`, `details input[name=title]`, `details input[name=startTime]`, `getByRole("button", { name: "Guardar cambios" })`, `getByRole("button", { name: "Eliminar" })`) por localizadores acotados a la fila del título único.
-- [ ] 3.5 Arreglar el localizador del formulario de alta dentro de `expandActivityForm` para que no choque con los `details input[name=title]` de actividades existentes del mismo día (scoping al formulario de alta, no al día entero).
-- [ ] 3.6 Agregar `test.afterAll` que borre las actividades creadas por el spec (por prefijo `E2E %` del día del seed), sin depender de que el borrado por UI haya corrido.
-- [ ] 3.7 Verificar (RED→GREEN): `npx playwright test --project=local traveler-activities` en dos corridas seguidas sin `db:reset` pasa; el `strict mode violation` de `input[name=title]` no reaparece.
+- [x] 3.1 Definir los títulos con sufijo único por corrida: `uniqueName("E2E paseo por Trastevere")`, `uniqueName("E2E cena en Trastevere")`, `uniqueName("E2E actividad de Ana")`.
+- [x] 3.2 Agregar `test.beforeEach` que borre actividades residuales del día del seed (`deleteRowsByNameLike(request, "items", "title", "E2E *")`, acotado al `trip_day_id` del seed para no tocar items de otros días). Nota: la tabla real es `items` (migración `0001_init.sql`), no `trip_items`.
+- [x] 3.3 Reemplazar el localizador posicional `page.getByText("Ver más detalles").nth(2)` por uno acotado a la fila del título único del test (`activityCard(page, title)`).
+- [x] 3.4 Reemplazar los `.last()` de la variante mobile (`getByText("Editar actividad")`, `details input[name=title]`, `details input[name=startTime]`, `getByRole("button", { name: "Guardar cambios" })`, `getByRole("button", { name: "Eliminar" })`) por localizadores acotados a la fila del título único.
+- [x] 3.5 Arreglar el localizador del formulario de alta dentro de `expandActivityForm` para que no choque con los `details input[name=title]` de actividades existentes del mismo día (scoping al panel del formulario de alta, no al día entero).
+- [x] 3.6 Agregar `test.afterAll` que borre las actividades creadas por el spec (por prefijo `E2E *` del día del seed), sin depender de que el borrado por UI haya corrido.
+- [x] 3.7 Verificar (RED→GREEN): `npx playwright test --project=local traveler-activities` en dos corridas seguidas sin `db:reset` pasa; el `strict mode violation` de `input[name=title]` no reaparece.
+- [x] 3.8 **Desviación del plan (agregada)**: el test 3 asigna `SEED.secondClient` al viaje seed, lo que auto-crea una fila en `services`; sin limpiarla, la segunda corrida deja un segundo viajero y rompe `service-documents` (localizador `Documentos` duplicado) y el propio test 3 (el buscador de "Gestionar clientes" oculta al cliente ya asignado). Se agrega `resetSeedTripAssignment(request)` en `beforeEach` + `afterAll` que borra `services` y `trip_clients` de `secondClient` en el viaje seed.
 
 ### Fase 4 — `service-documents.spec.ts` (WU4)
 
