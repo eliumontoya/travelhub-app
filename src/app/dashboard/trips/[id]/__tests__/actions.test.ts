@@ -43,7 +43,6 @@ import {
   getServiceWithChecklist,
   getServicesForTrip,
   getTripById,
-  markUploadProcessed,
   markUploadReviewed,
   requestReUpload,
   updateItem,

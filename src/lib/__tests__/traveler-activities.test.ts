@@ -104,6 +104,8 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdmin: () => state.client,
 }));
 
+vi.mock("@/lib/auth/roles", () => ({ requireRole: vi.fn() }));
+
 import {
   canClientAddActivities,
   createTravelerActivity,
@@ -111,6 +113,7 @@ import {
   rowToItem,
   updateTravelerActivity,
 } from "@/lib/data";
+import { requireRole } from "@/lib/auth/roles";
 import { editItemAction } from "@/app/dashboard/trips/[id]/actions";
 
 function seedTrip(overrides: Record<string, unknown> = {}) {
@@ -167,7 +170,10 @@ function rpcItemRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-beforeEach(() => state.reset());
+beforeEach(() => {
+  state.reset();
+  vi.mocked(requireRole).mockResolvedValue("agent");
+});
 
 describe("traveler activity data operations (Supabase contract)", () => {
   it("calls create_traveler_activity with sanitized fields and maps the returned row", async () => {
