@@ -65,10 +65,10 @@ Chain strategy: size-exception
 
 ### Fase 4 — `service-documents.spec.ts` (WU4)
 
-- [ ] 4.1 Agregar `test.beforeEach` que borre el documento solicitado residual: `deleteRowsByEq(request, "service_checklist_items", "label", "Copia de pasaporte")` (su upload cae por `on delete cascade`).
-- [ ] 4.2 Agregar en el mismo `beforeEach` la restauración de `Seguro de viaje`: `patchRowsByEq(request, "service_uploads", "checklist_item_id", "5c220000-0000-4000-8000-000000000002", { status: "uploaded" })`.
-- [ ] 4.3 No tocar las aserciones de comportamiento: `1/3 revisados`, `1 pendiente de revisión`, `Seguro de viaje` oculto antes del lazy load, foco/`Escape` del diálogo, `2/3 revisados`, `2/4 revisados`, y las aserciones del viaje archivado.
-- [ ] 4.4 Verificar (RED→GREEN): `npx playwright test --project=local service-documents` en dos corridas seguidas sin `db:reset` pasa; las aserciones iniciales se sostienen.
+- [x] 4.1 Agregar `test.beforeEach` que borre el documento solicitado residual: `deleteRowsByEq(request, "service_checklist_items", "label", "Copia de pasaporte")` (su upload cae por `on delete cascade`).
+- [x] 4.2 Agregar en el mismo `beforeEach` la restauración de `Seguro de viaje`: `patchRowsByEq(request, "service_uploads", "checklist_item_id", "5c220000-0000-4000-8000-000000000002", { status: "uploaded" })`. Ids/tablas verificados contra `supabase/seed.sql` y la migración `20260919000000_service_documents.sql`.
+- [x] 4.3 No tocar las aserciones de comportamiento: `1/3 revisados`, `1 pendiente de revisión`, `Seguro de viaje` oculto antes del lazy load, foco/`Escape` del diálogo, `2/3 revisados`, `2/4 revisados`, y las aserciones del viaje archivado.
+- [x] 4.4 Verificar (RED→GREEN): `npx playwright test --project=local service-documents` en dos corridas seguidas sin `db:reset` pasa; las aserciones iniciales se sostienen.
 
 ### Fase 5 — `create-trip.spec.ts` (WU5)
 
