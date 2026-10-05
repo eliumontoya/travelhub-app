@@ -36,12 +36,20 @@ Decisiones:
 - Commit: (pendiente)
 
 ### T2 — Prueba e2e de creación de viaje con features principales
-- [ ] Estado: pendiente
-- Nuevo spec `e2e/local/create-trip.spec.ts` (proyecto local, Supabase real):
-  login agente → `/dashboard/trips/new` → crear viaje → editor → agregar día
-  e ítems por tipo (flight, hotel, activity, note) → verificar persistencia →
-  publicar y confirmar visibilidad pública del slug nuevo.
-- Verificación: suite e2e local.
+- [x] Estado: completada (2 tests pasan)
+- Nuevo spec `e2e/local/create-trip.spec.ts` (Supabase real):
+  1. Guardía cliente-side exige al menos un cliente (MinClientsGuard).
+  2. Formulario real: título, fechas, viajeros, moneda, cliente c1 existente
+     (combobox) + cliente nuevo creado en el form → redirect al editor.
+  3. Itinerario: agregar día → item vuelo (metadata) → item nota;
+     persistencia tras reload.
+  4. Publicar (toggle) → anónimo ve el itinerario en /t/{slug} y el cliente
+     c1 lo ve en su portal.
+  5. Limpieza: vuelve a draft para dejar el seed estable.
+- Notas: los campos de metadata del item dialog usan prefijo `metadata_`;
+  "instructions" es un RichTextEditor (no textarea); el link "Vista previa"
+  puede quedar stale tras publicar (se usa ensureTripStatus + pathname).
+- Verificación: spec verde, tsc y eslint limpios.
 - Commit: (pendiente)
 
 ### T3 — Limpieza de tests ociosos
