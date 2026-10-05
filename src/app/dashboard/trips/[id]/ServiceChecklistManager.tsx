@@ -1,49 +1,17 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import type {
-  ServiceChecklistItemWithUpload,
-  ServiceDocumentSummary,
-  ServiceWithChecklist,
-} from "@/types";
-
-type AddChecklistItemAction = (
-  serviceId: string,
-  formData: FormData,
-) => Promise<void>;
-type UpdateChecklistItemAction = (
-  checklistItemId: string,
-  formData: FormData,
-) => Promise<void>;
-type DeleteChecklistItemAction = (checklistItemId: string) => Promise<void>;
-type ReorderChecklistItemsAction = (
-  serviceId: string,
-  orderedIds: string[],
-) => Promise<void>;
-type MarkUploadReviewedAction = (uploadId: string) => Promise<void>;
-type RequestReUploadAction = (
-  uploadId: string,
-  formData: FormData,
-) => Promise<void>;
-type GetServiceChecklistAction = (
-  serviceId: string,
-) => Promise<ServiceWithChecklist>;
-
-function statusLabel(item: ServiceChecklistItemWithUpload) {
-  const status = item.upload?.status;
-  if (status === "processed") return { icon: "✓", text: "Procesado" };
-  if (status === "reviewed") return { icon: "✓", text: "Revisado" };
-  if (status === "re_upload_requested")
-    return { icon: "!", text: "Re-subir solicitado" };
-  if (status === "uploaded")
-    return { icon: "↻", text: "Pendiente de revisión" };
-  return { icon: "□", text: "Pendiente" };
-}
-
-function itemHasReviewableUpload(item: ServiceChecklistItemWithUpload) {
-  return item.upload?.status === "uploaded";
-}
+import {
+  useServiceChecklist,
+  type AddChecklistItemAction,
+  type DeleteChecklistItemAction,
+  type GetServiceChecklistAction,
+  type MarkUploadReviewedAction,
+  type ReorderChecklistItemsAction,
+  type RequestReUploadAction,
+  type UpdateChecklistItemAction,
+} from "./service-checklist/useServiceChecklist";
+import { ChecklistItemRow } from "./service-checklist/ChecklistItemRow";
+import type { ServiceDocumentSummary } from "@/types";
 
 export function ServiceChecklistManager({
   summaries,
@@ -69,132 +37,37 @@ export function ServiceChecklistManager({
   markUploadReviewedAction: MarkUploadReviewedAction;
   requestReUploadAction: RequestReUploadAction;
 }) {
-  const router = useRouter();
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [isPending, startTransition] = useTransition();
-  const [globalError, setGlobalError] = useState<string | null>(null);
-  const [detailError, setDetailError] = useState<string | null>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
-    null,
-  );
-  const [selectedChecklist, setSelectedChecklist] =
-    useState<ServiceWithChecklist | null>(null);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [reUploadItemId, setReUploadItemId] = useState<string | null>(null);
-
-  async function refreshChecklist(serviceId: string) {
-    setDetailError(null);
-    try {
-      setSelectedChecklist(await getServiceChecklistAction(serviceId));
-    } catch (err) {
-      setDetailError(
-        err instanceof Error
-          ? err.message
-          : "No se pudieron cargar los documentos.",
-      );
-    }
-  }
-
-  function runAction(action: () => Promise<void>, refreshServiceId?: string) {
-    setGlobalError(null);
-    startTransition(async () => {
-      try {
-        await action();
-        if (refreshServiceId) await refreshChecklist(refreshServiceId);
-        router.refresh();
-      } catch (err) {
-        setGlobalError(err instanceof Error ? err.message : "Error inesperado");
-      }
-    });
-  }
-
-  function openChecklist(serviceId: string) {
-    setSelectedChecklist(null);
-    setSelectedServiceId(serviceId);
-    dialogRef.current?.showModal();
-    startTransition(() => {
-      void refreshChecklist(serviceId);
-    });
-  }
-
-  function closeChecklist() {
-    dialogRef.current?.close();
-  }
-
-  function handleDialogClose() {
-    const serviceId = selectedServiceId;
-    setSelectedServiceId(null);
-    setSelectedChecklist(null);
-    setEditingItemId(null);
-    setReUploadItemId(null);
-    if (serviceId) triggerRefs.current[serviceId]?.focus();
-  }
-
-  function handleAddItem(
-    serviceId: string,
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    runAction(async () => {
-      await addChecklistItemAction(serviceId, formData);
-      form.reset();
-    }, serviceId);
-  }
-
-  function handleUpdateItem(
-    checklistItemId: string,
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    runAction(async () => {
-      await updateChecklistItemAction(checklistItemId, formData);
-      setEditingItemId(null);
-    });
-  }
-
-  function handleDeleteItem(checklistItemId: string) {
-    if (!confirm("¿Eliminar este item del checklist?")) return;
-    runAction(() => deleteChecklistItemAction(checklistItemId));
-  }
-
-  function handleReorder(
-    serviceId: string,
-    items: ServiceChecklistItemWithUpload[],
-    checklistItemId: string,
-    direction: "up" | "down",
-  ) {
-    const index = items.findIndex((item) => item.id === checklistItemId);
-    const swapWith = direction === "up" ? index - 1 : index + 1;
-    if (index < 0 || swapWith < 0 || swapWith >= items.length) return;
-    const next = [...items];
-    [next[index], next[swapWith]] = [next[swapWith], next[index]];
-    runAction(() =>
-      reorderChecklistItemsAction(
-        serviceId,
-        next.map((item) => item.id),
-      ),
-    );
-  }
-
-  function handleMarkReviewed(uploadId: string) {
-    runAction(() => markUploadReviewedAction(uploadId));
-  }
-
-  function handleRequestReUpload(
-    uploadId: string,
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    runAction(async () => {
-      await requestReUploadAction(uploadId, formData);
-      setReUploadItemId(null);
-    });
-  }
+  const {
+    isPending,
+    globalError,
+    detailError,
+    selectedChecklist,
+    editingItemId,
+    reUploadItemId,
+    setEditingItemId,
+    setReUploadItemId,
+    dialogRef,
+    triggerRefs,
+    openChecklist,
+    closeChecklist,
+    handleDialogClose,
+    handleAddItem,
+    handleUpdateItem,
+    handleDeleteItem,
+    handleReorder,
+    handleMarkReviewed,
+    handleRequestReUpload,
+  } = useServiceChecklist({
+    actions: {
+      getServiceChecklistAction,
+      addChecklistItemAction,
+      updateChecklistItemAction,
+      deleteChecklistItemAction,
+      reorderChecklistItemsAction,
+      markUploadReviewedAction,
+      requestReUploadAction,
+    },
+  });
 
   if (summaries.length === 0) {
     return (
@@ -329,231 +202,36 @@ export function ServiceChecklistManager({
                 </p>
               ) : (
                 <ul className="space-y-3">
-                  {selectedChecklist.items.map((item, index) => {
-                    const { icon, text } = statusLabel(item);
-                    const isEditing = editingItemId === item.id;
-                    const isRequestingReUpload = reUploadItemId === item.id;
-                    return (
-                      <li
-                        key={item.id}
-                        className="rounded-lg border border-[var(--operator-border)] p-3 dark:border-[var(--operator-border)]"
-                      >
-                        {isEditing ? (
-                          <form
-                            onSubmit={(event) =>
-                              handleUpdateItem(item.id, event)
-                            }
-                            className="flex flex-col gap-2"
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <input
-                                name="label"
-                                defaultValue={item.label}
-                                required
-                                className="min-w-0 flex-1 rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)]"
-                              />
-                              <label className="flex items-center gap-1.5 text-sm text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">
-                                <input
-                                  name="required"
-                                  type="checkbox"
-                                  defaultChecked={item.required}
-                                  value="on"
-                                />{" "}
-                                Obligatorio
-                              </label>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="submit"
-                                disabled={isPending}
-                                className="rounded-lg bg-[var(--operator-brand)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--operator-brand-strong)] disabled:opacity-50"
-                              >
-                                Guardar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingItemId(null)}
-                                disabled={isPending}
-                                className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-xs font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </form>
-                        ) : (
-                          <>
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span aria-hidden="true">{icon}</span>
-                                  <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
-                                    {item.label}
-                                  </span>
-                                  {item.required && (
-                                    <span className="text-xs text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">
-                                      *
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                                  {text}
-                                </p>
-                                {item.upload && (
-                                  <div className="mt-1 text-xs text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                                    {item.upload.url && !item.upload.fileRemoved ? (
-                                      <a
-                                        href={item.upload.url}
-                                        download={item.upload.filename}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="font-medium text-[var(--operator-brand)] underline underline-offset-2 hover:text-[var(--operator-brand)] dark:text-[var(--operator-gold)] dark:hover:text-[var(--operator-brand)]"
-                                      >
-                                        Descargar {item.upload.filename}
-                                      </a>
-                                    ) : (
-                                      item.upload.filename
-                                    )}
-                                  </div>
-                                )}
-                                {item.upload?.status ===
-                                  "re_upload_requested" &&
-                                  item.upload.agentComment && (
-                                    <p className="mt-1 text-xs text-[var(--operator-brand)] dark:text-[var(--operator-gold)]">
-                                      Comentario: {item.upload.agentComment}
-                                    </p>
-                                  )}
-                              </div>
-                              {!isArchived && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    disabled={isPending || index === 0}
-                                    onClick={() =>
-                                      handleReorder(
-                                        selectedChecklist.id,
-                                        selectedChecklist.items,
-                                        item.id,
-                                        "up",
-                                      )
-                                    }
-                                    className="px-1 text-xs text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink)] disabled:opacity-25"
-                                    aria-label="Mover arriba"
-                                  >
-                                    ▲
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      isPending ||
-                                      index ===
-                                        selectedChecklist.items.length - 1
-                                    }
-                                    onClick={() =>
-                                      handleReorder(
-                                        selectedChecklist.id,
-                                        selectedChecklist.items,
-                                        item.id,
-                                        "down",
-                                      )
-                                    }
-                                    className="px-1 text-xs text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink)] disabled:opacity-25"
-                                    aria-label="Mover abajo"
-                                  >
-                                    ▼
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingItemId(item.id)}
-                                    disabled={isPending}
-                                    className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]"
-                                    aria-label="Editar documento"
-                                  >
-                                    ✏️
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    disabled={isPending}
-                                    className="text-sm text-[var(--operator-coral)] hover:text-[var(--operator-coral)]"
-                                    aria-label="Eliminar documento"
-                                  >
-                                    🗑️
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            {!isArchived &&
-                              itemHasReviewableUpload(item) &&
-                              item.upload && (
-                                <div className="mt-3 flex flex-col gap-2 border-t border-[var(--operator-border)] pt-2 dark:border-[var(--operator-border)]">
-                                  {isRequestingReUpload ? (
-                                    <form
-                                      onSubmit={(event) =>
-                                        handleRequestReUpload(
-                                          item.upload!.id,
-                                          event,
-                                        )
-                                      }
-                                      className="flex flex-col gap-2"
-                                    >
-                                      <textarea
-                                        name="comment"
-                                        placeholder="¿Por qué se solicita re-subir?"
-                                        required
-                                        rows={2}
-                                        className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm dark:border-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)]"
-                                      />
-                                      <div className="flex gap-2">
-                                        <button
-                                          type="submit"
-                                          disabled={isPending}
-                                          className="rounded-lg bg-[var(--operator-gold)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--operator-accent-strong)] disabled:opacity-50"
-                                        >
-                                          Solicitar re-subida
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setReUploadItemId(null)
-                                          }
-                                          disabled={isPending}
-                                          className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-xs font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                                        >
-                                          Cancelar
-                                        </button>
-                                      </div>
-                                    </form>
-                                  ) : (
-                                    <div className="flex flex-wrap gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleMarkReviewed(item.upload!.id)
-                                        }
-                                        disabled={isPending}
-                                        className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                                      >
-                                        Marcar como revisado
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setReUploadItemId(item.id)
-                                        }
-                                        disabled={isPending}
-                                        className="rounded-lg bg-[var(--operator-gold)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--operator-accent-strong)] disabled:opacity-50"
-                                      >
-                                        Solicitar re-subida
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                          </>
-                        )}
-                      </li>
-                    );
-                  })}
+                  {selectedChecklist.items.map((item, index) => (
+                    <ChecklistItemRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      itemsLength={selectedChecklist.items.length}
+                      isArchived={isArchived}
+                      isPending={isPending}
+                      isEditing={editingItemId === item.id}
+                      isRequestingReUpload={reUploadItemId === item.id}
+                      onStartEdit={() => setEditingItemId(item.id)}
+                      onCancelEdit={() => setEditingItemId(null)}
+                      onSubmitEdit={(event) => handleUpdateItem(item.id, event)}
+                      onDelete={() => handleDeleteItem(item.id)}
+                      onReorder={(direction) =>
+                        handleReorder(
+                          selectedChecklist.id,
+                          selectedChecklist.items,
+                          item.id,
+                          direction,
+                        )
+                      }
+                      onMarkReviewed={() => handleMarkReviewed(item.upload!.id)}
+                      onStartReUpload={() => setReUploadItemId(item.id)}
+                      onCancelReUpload={() => setReUploadItemId(null)}
+                      onSubmitReUpload={(event) =>
+                        handleRequestReUpload(item.upload!.id, event)
+                      }
+                    />
+                  ))}
                 </ul>
               )}
               {!isArchived && (

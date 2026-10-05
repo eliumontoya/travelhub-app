@@ -218,6 +218,7 @@ src/
       clients/[id]/          ficha de cliente (ver/editar, historial)
       trips/new/              alta de viaje (+ cliente nuevo o existente)
       trips/[id]/             editor de viaje: días, items, publicar
+        trips/[id]/service-checklist/   hook y fila del checklist de servicios
         trips/[id]/sections/    secciones server del editor (header, días,
                                 itinerario, rail) extraídas del page compositor
       trips/[id]/quote/       cotización del viaje
