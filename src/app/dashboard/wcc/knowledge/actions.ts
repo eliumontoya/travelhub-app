@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth/roles";
 import {
   createWccKnowledgeEntry,
   updateWccKnowledgeEntry,
@@ -31,6 +32,7 @@ export async function createKnowledgeAction(
   previousState: WccKnowledgeMutationResult = initialResult,
   formData: FormData
 ): Promise<WccKnowledgeMutationResult> {
+  await requireRole("admin", "agent");
   void previousState;
   const result = await createWccKnowledgeEntry(inputFromForm(formData));
   if (result.ok) revalidateKnowledge(result.entryId);
@@ -42,6 +44,7 @@ export async function updateKnowledgeAction(
   previousState: WccKnowledgeMutationResult = initialResult,
   formData: FormData
 ): Promise<WccKnowledgeMutationResult> {
+  await requireRole("admin", "agent");
   void previousState;
   const result = await updateWccKnowledgeEntry(entryId, inputFromForm(formData));
   if (result.ok) revalidateKnowledge(entryId);
@@ -53,6 +56,7 @@ export async function updateKnowledgeStatusAction(
   previousState: WccKnowledgeMutationResult = initialResult,
   formData: FormData
 ): Promise<WccKnowledgeMutationResult> {
+  await requireRole("admin", "agent");
   void previousState;
   const result = await updateWccKnowledgeStatus(entryId, formData.get("status"));
   if (result.ok) revalidateKnowledge(entryId);

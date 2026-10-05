@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { filterFeatures } from "@/lib/auth/features";
 import type { AccountProfile, AccountRole, Feature } from "@/types";
+import { resolveAccountProfile } from "@/lib/auth/profile";
 
-export function normalizeRole(value: unknown): AccountRole | null {
-  if (value === "admin" || value === "agent") {
-    return value;
-  }
-  return null;
-}
+// Public API unchanged: `normalizeRole` stays re-exported from this module.
+export { normalizeRole } from "@/lib/auth/profile";
 
 export function hasRole(role: AccountRole | null, allowed: AccountRole[]): boolean {
   if (!role) return false;
@@ -21,6 +18,40 @@ export function canAccessFeature(profile: AccountProfile | null, feature: Featur
   return profile.features.includes(feature);
 }
 
+/**
+ * Identity-only helper: resolve the authenticated Supabase Auth user. Does not
+ * touch `profiles`, so it is safe for places that only render identity (e.g.
+ * the dashboard layout's profile menu email).
+ */
+export async function getCurrentUser(): Promise<User | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
+/**
+ * Throw-style identity helper for Server Actions and Route Handlers. Throws
+ * `Error("Unauthorized")` when there is no authenticated session.
+ */
+export async function requireUser(): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+  return user;
+}
+
+/**
+ * Non-throwing admin predicate for Server Actions that return discriminated
+ * unions instead of throwing. Never throws when no account resolves.
+ */
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const account = await getCurrentAccount();
+  return account?.role === "admin";
+}
+
 export async function getCurrentAccount(): Promise<AccountProfile | null> {
   const supabase = await createClient();
   const {
@@ -28,23 +59,7 @@ export async function getCurrentAccount(): Promise<AccountProfile | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, role, features, travel_agent_id")
-    .eq("id", user.id)
-    .single();
-
-  if (error || !data) return null;
-
-  const role = normalizeRole(data.role);
-  if (!role) return null;
-
-  return {
-    id: data.id,
-    role,
-    features: filterFeatures(data.features ?? []),
-    travelAgentId: data.travel_agent_id ?? undefined,
-  };
+  return resolveAccountProfile(supabase, user.id);
 }
 
 export async function getCurrentUserRole(): Promise<AccountRole | null> {

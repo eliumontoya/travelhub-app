@@ -13,9 +13,11 @@ import {
   uploadClientCoverImage,
   uploadClientDocument,
 } from "@/lib/data";
+import { requireRole } from "@/lib/auth/roles";
 import { validateClientPin } from "@/lib/client-pin-validation";
 
 export async function updateClientAction(clientId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   const phone = String(formData.get("phone") ?? "").trim() || undefined;
@@ -35,6 +37,7 @@ export async function updateClientAction(clientId: string, formData: FormData) {
 }
 
 export async function uploadClientDocumentAction(clientId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
   await uploadClientDocument(clientId, file);
@@ -42,15 +45,18 @@ export async function uploadClientDocumentAction(clientId: string, formData: For
 }
 
 export async function deleteClientDocumentAction(clientId: string, documentId: string) {
+  await requireRole("admin", "agent");
   await deleteClientDocument(documentId);
   revalidatePath(`/dashboard/clients/${clientId}`);
 }
 
 export async function getClientDocumentsAction(clientId: string) {
+  await requireRole("admin", "agent");
   return getClientDocuments(clientId);
 }
 
 export async function uploadClientCoverAction(clientId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
   await uploadClientCoverImage(clientId, file);
@@ -58,11 +64,13 @@ export async function uploadClientCoverAction(clientId: string, formData: FormDa
 }
 
 export async function removeClientCoverAction(clientId: string) {
+  await requireRole("admin", "agent");
   await removeClientCoverImage(clientId);
   revalidatePath(`/dashboard/clients/${clientId}`);
 }
 
 export async function setClientTagsAction(clientId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
   const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
   for (const name of newTagNames) {
@@ -76,6 +84,7 @@ export async function setClientTagsAction(clientId: string, formData: FormData) 
 }
 
 export async function updateClientPinAction(clientId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const pin = String(formData.get("pin") ?? "");
   const confirmPin = String(formData.get("confirmPin") ?? "");
 

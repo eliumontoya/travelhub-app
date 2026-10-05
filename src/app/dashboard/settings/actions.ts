@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { updateSiteSettings, uploadSiteLogo } from "@/lib/data";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth/roles";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,6 +14,7 @@ export async function updateSettingsAction(
   _prevState: SettingsFormState,
   formData: FormData
 ): Promise<SettingsFormState> {
+  await requireRole("admin", "agent");
   const email = String(formData.get("email") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const agencyName = String(formData.get("agencyName") ?? "").trim();

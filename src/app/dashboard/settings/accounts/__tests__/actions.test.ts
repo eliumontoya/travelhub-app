@@ -1,22 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Feature } from "@/types";
 
-// Mocks for server-only modules. `updateProfileFeaturesAction` reads the
-// current account via getCurrentAccount (which itself touches
-// `@/lib/supabase/server`) and writes via updateProfileFeatures.
+// Mocks for server-only modules. `updateProfileFeaturesAction` authorizes the
+// caller via the non-throwing `isCurrentUserAdmin` predicate (so typed errors
+// need no try/catch) and writes via updateProfileFeatures.
 // `revalidatePath` is the server-action post-write hook we want to assert.
 const {
-  getCurrentAccountMock,
+  isCurrentUserAdminMock,
   updateProfileFeaturesMock,
   revalidatePathMock,
 } = vi.hoisted(() => ({
-  getCurrentAccountMock: vi.fn(),
+  isCurrentUserAdminMock: vi.fn(),
   updateProfileFeaturesMock: vi.fn(),
   revalidatePathMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/roles", () => ({
-  getCurrentAccount: getCurrentAccountMock,
+  isCurrentUserAdmin: isCurrentUserAdminMock,
 }));
 
 vi.mock("@/lib/data/profiles", () => ({
@@ -43,24 +43,16 @@ describe("updateProfileFeaturesAction", () => {
       }),
     );
     // Default: an admin session. Individual tests override.
-    getCurrentAccountMock.mockResolvedValue({
-      id: "admin-1",
-      role: "admin",
-      features: [],
-    });
+    isCurrentUserAdminMock.mockResolvedValue(true);
   });
 
   it("returns an authorization error for a non-admin account without writing (threat case b)", async () => {
-    getCurrentAccountMock.mockResolvedValue({
-      id: "agent-1",
-      role: "agent",
-      features: ["trips", "clients"],
-      travelAgentId: "a1",
-    });
+    isCurrentUserAdminMock.mockResolvedValue(false);
 
     const result = await updateProfileFeaturesAction("agent-1", ["trips", "suppliers"]);
 
     expect(result).toEqual({ ok: false, error: "No autorizado." });
+    expect(isCurrentUserAdminMock).toHaveBeenCalledTimes(1);
     expect(updateProfileFeaturesMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
@@ -93,8 +85,8 @@ describe("updateProfileFeaturesAction", () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  it("returns an authorization error when no account can be resolved", async () => {
-    getCurrentAccountMock.mockResolvedValue(null);
+  it("returns an authorization error when the predicate resolves false without throwing", async () => {
+    isCurrentUserAdminMock.mockResolvedValue(false);
 
     const result = await updateProfileFeaturesAction("agent-1", ["trips"]);
 

@@ -17,11 +17,15 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { createClient } from "@/lib/supabase/server";
+import { resolveAccountProfile, type ProfileResolverClient } from "@/lib/auth/profile";
 import {
   hasRole,
   canAccessFeature,
   normalizeRole,
   getCurrentAccount,
+  getCurrentUser,
+  requireUser,
+  isCurrentUserAdmin,
   getCurrentUserRole,
   getCurrentTravelAgentId,
   requireRole,
@@ -217,6 +221,124 @@ describe("getCurrentAccount (Supabase session)", () => {
     const account = await getCurrentAccount();
     expect(account?.features).toEqual(["trips", "clients"]);
     expect(account?.features).not.toContain("bogus");
+  });
+});
+
+describe("resolveAccountProfile (shared pure resolver)", () => {
+  function fakeClient(row: ProfileRow) {
+    const single = vi.fn().mockResolvedValue({
+      data: row,
+      error: row ? null : { message: "not found" },
+    });
+    const eq = vi.fn().mockReturnValue({ single });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    const client = { from } as unknown as ProfileResolverClient;
+    return { client, from, select, eq, single };
+  }
+
+  it("selects the profile row for the given user and maps travel_agent_id", async () => {
+    const { client, from, select, eq } = fakeClient({
+      id: "user-1",
+      role: "agent",
+      features: ["trips"],
+      travel_agent_id: "agent-9",
+    });
+
+    const account = await resolveAccountProfile(client, "user-1");
+
+    expect(from).toHaveBeenCalledWith("profiles");
+    expect(select).toHaveBeenCalledWith("id, role, features, travel_agent_id");
+    expect(eq).toHaveBeenCalledWith("id", "user-1");
+    expect(account).toEqual({
+      id: "user-1",
+      role: "agent",
+      features: ["trips"],
+      travelAgentId: "agent-9",
+    });
+  });
+
+  it("drops unknown feature strings while keeping recognized ones", async () => {
+    const { client } = fakeClient({
+      id: "user-1",
+      role: "agent",
+      features: ["trips", "bogus", "settings"],
+      travel_agent_id: null,
+    });
+
+    const account = await resolveAccountProfile(client, "user-1");
+
+    expect(account?.features).toEqual(["trips", "settings"]);
+  });
+
+  it("returns undefined travelAgentId when the row has no link", async () => {
+    const { client } = fakeClient({
+      id: "admin-1",
+      role: "admin",
+      features: [],
+      travel_agent_id: null,
+    });
+
+    const account = await resolveAccountProfile(client, "admin-1");
+
+    expect(account).toEqual({ id: "admin-1", role: "admin", features: [] });
+    expect(account?.travelAgentId).toBeUndefined();
+  });
+
+  it("returns null when the profile row is missing", async () => {
+    const { client } = fakeClient(null);
+    expect(await resolveAccountProfile(client, "user-1")).toBeNull();
+  });
+
+  it("returns null when the persisted role is unrecognized", async () => {
+    const { client } = fakeClient({
+      id: "user-1",
+      role: "superuser",
+      features: ["trips"],
+      travel_agent_id: null,
+    });
+    expect(await resolveAccountProfile(client, "user-1")).toBeNull();
+  });
+});
+
+describe("getCurrentUser / requireUser / isCurrentUserAdmin (Supabase session)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("getCurrentUser returns the authenticated user", async () => {
+    mockSupabase({ id: "user-1" }, null);
+    await expect(getCurrentUser()).resolves.toEqual({ id: "user-1" });
+  });
+
+  it("getCurrentUser returns null without a session", async () => {
+    mockSupabase(null, null);
+    await expect(getCurrentUser()).resolves.toBeNull();
+  });
+
+  it("requireUser resolves the authenticated user", async () => {
+    mockSupabase({ id: "user-1" }, null);
+    await expect(requireUser()).resolves.toEqual({ id: "user-1" });
+  });
+
+  it("requireUser throws Unauthorized without a session", async () => {
+    mockSupabase(null, null);
+    await expect(requireUser()).rejects.toThrow("Unauthorized");
+  });
+
+  it("isCurrentUserAdmin is true for an admin profile", async () => {
+    mockAccount(ADMIN);
+    await expect(isCurrentUserAdmin()).resolves.toBe(true);
+  });
+
+  it("isCurrentUserAdmin is false for an agent profile", async () => {
+    mockAccount(AGENT);
+    await expect(isCurrentUserAdmin()).resolves.toBe(false);
+  });
+
+  it("isCurrentUserAdmin is false without throwing when no account resolves", async () => {
+    mockSupabase(null, null);
+    await expect(isCurrentUserAdmin()).resolves.toBe(false);
   });
 });
 

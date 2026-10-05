@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth/roles";
 import { Client } from "@/types";
 import { createClient, deleteClient, getClientByEmail, getClientById } from "@/lib/data";
 
 export async function createClientAction(
   formData: FormData
 ): Promise<{ client?: Client; error?: string }> {
+  await requireRole("admin", "agent");
   const name = (formData.get("name") as string)?.trim();
   if (!name) {
     return { error: "El nombre es obligatorio." };
@@ -43,6 +45,7 @@ export async function deleteClientAction(
   clientId: string,
   formData: FormData
 ): Promise<void> {
+  await requireRole("admin", "agent");
   const client = await getClientById(clientId);
   if (!client) return;
 

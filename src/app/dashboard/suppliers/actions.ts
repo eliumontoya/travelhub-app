@@ -1,6 +1,7 @@
 "use server";
 
 import { Supplier } from "@/types";
+import { requireRole } from "@/lib/auth/roles";
 import {
   createSupplier,
   updateSupplier,
@@ -26,6 +27,7 @@ function parseSupplierTags(formData: FormData): string[] {
 export async function createSupplierAction(
   formData: FormData
 ): Promise<{ supplier?: Supplier; error?: string }> {
+  await requireRole("admin", "agent");
   const name = (formData.get("name") as string)?.trim();
   if (!name) {
     return { error: "El nombre es obligatorio." };
@@ -57,6 +59,7 @@ export async function updateSupplierAction(
   supplierId: string,
   formData: FormData
 ): Promise<{ supplier?: Supplier; error?: string }> {
+  await requireRole("admin", "agent");
   const name = (formData.get("name") as string)?.trim();
   if (!name) {
     return { error: "El nombre es obligatorio." };
@@ -85,6 +88,7 @@ export async function updateSupplierAction(
 export async function softDeleteSupplierAction(
   supplierId: string
 ): Promise<{ ok: boolean; error?: string; itemCount?: number }> {
+  await requireRole("admin", "agent");
   try {
     const result = await softDeleteSupplier(supplierId);
     if (!result.ok) {
@@ -103,6 +107,7 @@ export async function softDeleteSupplierAction(
 export async function forceDeleteSupplierAction(
   supplierId: string
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireRole("admin", "agent");
   try {
     await softDeleteSupplier(supplierId, true);
     return { ok: true };
@@ -114,6 +119,7 @@ export async function forceDeleteSupplierAction(
 export async function restoreSupplierAction(
   supplierId: string
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireRole("admin", "agent");
   try {
     await restoreSupplier(supplierId);
     return { ok: true };

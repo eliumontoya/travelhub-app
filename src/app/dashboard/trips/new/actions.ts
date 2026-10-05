@@ -8,11 +8,13 @@ import {
   getOrCreateTag,
 } from "@/lib/data";
 import { slugify } from "@/lib/slugify";
+import { requireRole } from "@/lib/auth/roles";
 import { TripCurrency } from "@/types";
 
 const validCurrencies: TripCurrency[] = ["MXN", "USD", "EUR"];
 
 export async function createTripAction(formData: FormData) {
+  await requireRole("admin", "agent");
   const title = String(formData.get("title") ?? "").trim();
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");

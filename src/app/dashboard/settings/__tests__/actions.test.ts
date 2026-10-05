@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { redirectMock, revalidatePathMock, updateSiteSettingsMock, uploadSiteLogoMock } = vi.hoisted(() => ({
+const {
+  requireRoleMock,
+  redirectMock,
+  revalidatePathMock,
+  updateSiteSettingsMock,
+  uploadSiteLogoMock,
+} = vi.hoisted(() => ({
+  requireRoleMock: vi.fn(),
   redirectMock: vi.fn((path: string) => {
     throw new Error(`NEXT_REDIRECT:${path}`);
   }),
@@ -17,6 +24,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
 }));
 
+vi.mock("@/lib/auth/roles", () => ({
+  requireRole: requireRoleMock,
+}));
+
 vi.mock("@/lib/data", () => ({
   updateSiteSettings: updateSiteSettingsMock,
   uploadSiteLogo: uploadSiteLogoMock,
@@ -27,7 +38,8 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
 }));
 
-import { updateSettingsAction } from "../actions";
+import { requireRole } from "@/lib/auth/roles";
+import { updateSettingsAction, signOutAction } from "../actions";
 
 function validSettingsFormData() {
   const formData = new FormData();
@@ -41,6 +53,7 @@ function validSettingsFormData() {
 describe("updateSettingsAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(requireRole).mockResolvedValue("agent");
     updateSiteSettingsMock.mockResolvedValue({});
     uploadSiteLogoMock.mockResolvedValue("https://example.com/uploaded-logo.png");
   });
@@ -50,6 +63,7 @@ describe("updateSettingsAction", () => {
       "NEXT_REDIRECT:/dashboard?settingsSaved=1",
     );
 
+    expect(requireRole).toHaveBeenCalledWith("admin", "agent");
     expect(updateSiteSettingsMock).toHaveBeenCalledWith({
       email: "contacto@example.com",
       phone: "+52 555 000 0000",
@@ -72,5 +86,30 @@ describe("updateSettingsAction", () => {
     expect(updateSiteSettingsMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it("denies an unauthorized caller without persisting", async () => {
+    vi.mocked(requireRole).mockRejectedValue(new Error("Unauthorized"));
+
+    await expect(updateSettingsAction(null, validSettingsFormData())).rejects.toThrow(
+      "Unauthorized",
+    );
+
+    expect(requireRole).toHaveBeenCalledWith("admin", "agent");
+    expect(updateSiteSettingsMock).not.toHaveBeenCalled();
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("signOutAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("signs out without requiring a role", async () => {
+    await expect(signOutAction()).rejects.toThrow("NEXT_REDIRECT:/login");
+
+    expect(requireRole).not.toHaveBeenCalled();
+    expect(redirectMock).toHaveBeenCalledWith("/login");
   });
 });
