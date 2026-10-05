@@ -79,18 +79,18 @@ Chain strategy: size-exception
 
 ### Fase 6 — Warmup del `webServer` (WU6)
 
-- [ ] 6.1 Crear `e2e/global-setup.ts` con `export default async function globalSetup()` que: si `process.env.BASE_URL` está definido, retorna sin hacer nada; en caso contrario crea un `APIRequestContext` con `baseURL: "http://localhost:3000"` y timeout acotado, y hace GET a `/login`, `/dashboard` y `/t/${SEED.tripSlug}`.
-- [ ] 6.2 El warmup NO debe abortar la suite si un GET falla (el `webServer` ya validó su `url`); capturar el error y continuar.
-- [ ] 6.3 En `playwright.config.ts`, agregar `globalSetup: "./e2e/global-setup.ts"`.
-- [ ] 6.4 En `playwright.config.ts`, agregar un comentario sobre `retries: process.env.CI ? 2 : 0` que explique que los specs son idempotentes desde el issue #406 y que por eso el retry arranca limpio (D7).
-- [ ] 6.5 Verificar: `npm run test:e2e -- --project=local` pasa; el log del `webServer` no muestra compilación on-demand de `/login`, `/dashboard` ni `/t/...` durante el primer test.
+- [x] 6.1 Crear `e2e/global-setup.ts` con `export default async function globalSetup()` que: si `process.env.BASE_URL` está definido, retorna sin hacer nada; en caso contrario crea un `APIRequestContext` con `baseURL: "http://localhost:3000"` y timeout acotado, y hace GET a `/login`, `/dashboard` y `/t/${SEED.tripSlug}`.
+- [x] 6.2 El warmup NO debe abortar la suite si un GET falla (el `webServer` ya validó su `url`); capturar el error y continuar.
+- [x] 6.3 En `playwright.config.ts`, agregar `globalSetup: "./e2e/global-setup.ts"`.
+- [x] 6.4 En `playwright.config.ts`, agregar un comentario sobre `retries: process.env.CI ? 2 : 0` que explique que los specs son idempotentes desde el issue #406 y que por eso el retry arranca limpio (D7).
+- [x] 6.5 Verificar: `npm run test:e2e -- --project=local` pasa; el log del `webServer` no muestra compilación on-demand de `/login`, `/dashboard` ni `/t/...` durante el primer test.
 
 ### Fase 7 — Documentación (WU7)
 
-- [ ] 7.1 Reescribir la sección e2e de `architecture.md` (~líneas 365-368): la suite ya es idempotente; `npm run db:reset` **ya no es requisito** entre corridas repetidas (referenciar issue #406).
-- [ ] 7.2 Documentar en `architecture.md` el pre-calentamiento del `webServer` (`globalSetup`) y la nota de que `[WebServer] ⨯ Error: The destination stream closed early` es ruido benigno de abort de streaming, salvo que el servidor deje de responder.
-- [ ] 7.3 Verificar la tabla de fuente de verdad de `README.md`: la fila "Tests" apunta a `architecture.md`; confirmar que no requiere edición y dejar constancia en el PR.
-- [ ] 7.4 Verificar que no quede ninguna mención obsoleta a "hay que restaurar primero con `npm run db:reset`" para la suite e2e.
+- [x] 7.1 Reescribir la sección e2e de `architecture.md` (~líneas 365-368): la suite ya es idempotente; `npm run db:reset` **ya no es requisito** entre corridas repetidas (referenciar issue #406).
+- [x] 7.2 Documentar en `architecture.md` el pre-calentamiento del `webServer` (`globalSetup`) y la nota de que `[WebServer] ⨯ Error: The destination stream closed early` es ruido benigno de abort de streaming, salvo que el servidor deje de responder.
+- [x] 7.3 Verificar la tabla de fuente de verdad de `README.md`: la fila "Tests" apunta a `architecture.md`; confirmar que no requiere edición y dejar constancia en el PR.
+- [x] 7.4 Verificar que no quede ninguna mención obsoleta a "hay que restaurar primero con `npm run db:reset`" para la suite e2e.
 
 ### Fase 8 — Verificación (WU8)
 
