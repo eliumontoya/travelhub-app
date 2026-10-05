@@ -46,11 +46,11 @@ Chain strategy: size-exception
 
 ### Fase 2 — `supplier-item-compatibility.spec.ts` (WU2)
 
-- [ ] 2.1 Agregar `test.beforeEach` que borre residuos: `deleteRowsByNameLike(request, "suppliers", "name", "Same Session Tour Operator%")`. El proveedor residual del propio spec es el que hoy rompe `toHaveCount(2)`.
-- [ ] 2.2 Reemplazar el nombre fijo `"Same Session Tour Operator"` por `uniqueName("Same Session Tour Operator")` y usar esa variable en el fill, la aserción de valor del combobox y el `toContainText`.
-- [ ] 2.3 Acotar la aserción del catálogo (`await expect(options).toHaveCount(2)`) al catálogo base, excluyendo cualquier proveedor creado por el propio spec (p. ej. contando solo los nombres del seed o filtrando por el sufijo de corrida). Debe conservar la cobertura de: solo proveedores activos y compatibles con la categoría, sin `Grand Fiesta Americana` ni `María Sazón`.
-- [ ] 2.4 Agregar `test.afterAll` que borre el proveedor creado por id (`deleteRowsByEq(request, "suppliers", "id", createdSupplierId)`), sosteniendo el id entre tests vía variable de módulo o un `secondClient`-style store.
-- [ ] 2.5 Verificar (RED→GREEN): `npx playwright test --project=local supplier-item-compatibility` en dos corridas seguidas sin `db:reset` pasa; el conteo de opciones ya no crece en la segunda.
+- [x] 2.1 Agregar `test.beforeEach` que borre residuos: `deleteRowsByNameLike(request, "suppliers", "name", "Same Session Tour Operator*")`. El proveedor residual del propio spec es el que hoy rompe `toHaveCount(2)`.
+- [x] 2.2 Reemplazar el nombre fijo `"Same Session Tour Operator"` por `uniqueName("Same Session Tour Operator")` y usar esa variable en el fill, la aserción de valor del combobox y el `toContainText`.
+- [x] 2.3 Acotar la aserción del catálogo (`await expect(options).toHaveCount(2)`) al catálogo base, excluyendo cualquier proveedor creado por el propio spec (filtro `hasNotText` por el prefijo legible). Conserva la cobertura de: solo proveedores activos y compatibles con la categoría, sin `Grand Fiesta Americana` ni `María Sazón`.
+- [x] 2.4 Agregar `test.afterAll` que borre el proveedor creado por id (`deleteRowsByEq(request, "suppliers", "id", createdSupplierId)`), sosteniendo el id entre tests vía variable de módulo.
+- [x] 2.5 Verificar (RED→GREEN): `npx playwright test --project=local supplier-item-compatibility` en dos corridas seguidas sin `db:reset` pasa; el conteo de opciones ya no crece en la segunda.
 
 ### Fase 3 — `traveler-activities.spec.ts` (WU3)
 
