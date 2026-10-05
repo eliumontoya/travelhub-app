@@ -6,8 +6,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DashboardSidebarNav } from "@/components/DashboardSidebarNav";
 import { signOutAction } from "@/app/dashboard/settings/actions";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { getCurrentUserRole } from "@/lib/auth/roles";
+import { getCurrentUser, getCurrentUserRole } from "@/lib/auth/roles";
 import { ALL_CLIENTS_PAGE_SIZE, ALL_TRIPS_PAGE_SIZE, getClients, getTripsWithClients } from "@/lib/data";
 import { getChangelog } from "@/lib/changelog";
 
@@ -16,14 +15,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let email: string | null = null;
-  if (isSupabaseConfigured()) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    email = user?.email ?? null;
-  }
+  const user = await getCurrentUser();
+  const email = user?.email ?? null;
 
   const role = await getCurrentUserRole();
   const isAdmin = role === "admin";
