@@ -1,5 +1,32 @@
 import { expect, test } from "@playwright/test";
-import { SEED, ensureTripStatus, findSupplierIdByName, loginAsAdmin } from "./helpers";
+import {
+  SEED,
+  deleteRowsByEq,
+  deleteRowsByNameLike,
+  ensureTripStatus,
+  findSupplierIdByName,
+  loginAsAdmin,
+  uniqueName,
+} from "./helpers";
+
+// Readable prefix shared by every supplier this spec creates. A repeated run
+// (or a retry) deletes leftover rows with this prefix before each test so the
+// category catalog starts from the seed set (issue #406).
+const CREATED_SUPPLIER_PREFIX = "Same Session Tour Operator";
+
+// Held across tests so `afterAll` can remove the supplier created here even if
+// the UI flow never saved it to an itinerary item.
+let createdSupplierId: string | null = null;
+
+test.beforeEach(async ({ request }) => {
+  await deleteRowsByNameLike(request, "suppliers", "name", `${CREATED_SUPPLIER_PREFIX}*`);
+});
+
+test.afterAll(async ({ request }) => {
+  if (createdSupplierId) {
+    await deleteRowsByEq(request, "suppliers", "id", createdSupplierId);
+  }
+});
 
 test.describe("supplier discovery", () => {
   test("shows and selects only the active category-compatible supplier catalog", async ({
@@ -17,8 +44,13 @@ test.describe("supplier discovery", () => {
     await supplierInput.focus();
 
     const options = itemDialog.getByRole("listbox").getByRole("option");
-    await expect(options).toHaveCount(2);
-    await expect(options).toContainText(["Aventuras Mayas Tour Op", "EcoTurismo Patagonia"]);
+    // A residual supplier created by an earlier run of this spec would inflate
+    // the raw option count. Scope the catalog assertion to the seed catalog by
+    // excluding this spec's own readable prefix; the coverage (only active,
+    // category-compatible suppliers) is preserved.
+    const baseOptions = options.filter({ hasNotText: CREATED_SUPPLIER_PREFIX });
+    await expect(baseOptions).toHaveCount(2);
+    await expect(baseOptions).toContainText(["Aventuras Mayas Tour Op", "EcoTurismo Patagonia"]);
     await expect(itemDialog.getByRole("listbox")).not.toContainText("Grand Fiesta Americana");
     await expect(itemDialog.getByRole("listbox")).not.toContainText("María Sazón");
 
@@ -35,21 +67,22 @@ test.describe("supplier discovery", () => {
     const createSupplierDialog = page.locator("dialog[open]").filter({ hasText: "Crear proveedor" });
     await expect(createSupplierDialog.locator("#supplier-type")).toHaveValue("tour_operator");
 
-    const createdSupplierName = "Same Session Tour Operator";
+    const createdSupplierName = uniqueName(CREATED_SUPPLIER_PREFIX);
     await createSupplierDialog.locator("#supplier-name").fill(createdSupplierName);
     await createSupplierDialog.getByRole("button", { name: "Crear", exact: true }).click();
 
     await expect(itemDialog).toBeVisible();
     await expect(supplierInput).toHaveValue(createdSupplierName);
-    const createdSupplierId = await supplierId.inputValue();
-    expect(createdSupplierId).not.toBe("");
+    const selectedSupplierId = await supplierId.inputValue();
+    expect(selectedSupplierId).not.toBe("");
+    createdSupplierId = selectedSupplierId;
 
     await supplierInput.press("ArrowDown");
     await expect(supplierInput).toHaveAttribute("aria-activedescendant", /.+/);
     await supplierInput.press("Enter");
     await expect(itemDialog).toBeVisible();
     await expect(supplierInput).toHaveValue(createdSupplierName);
-    await expect(supplierId).toHaveValue(createdSupplierId);
+    await expect(supplierId).toHaveValue(selectedSupplierId);
   });
 
   test("keeps supplier state compatible with the selected item type", async ({ page, request }) => {

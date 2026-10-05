@@ -1,10 +1,13 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 import {
   SEED,
+  deleteRowsByEq,
+  deleteRowsByNameLike,
   ensureTripStatus,
   loginAsAdmin,
   setClientPin,
   signInClient,
+  uniqueName,
 } from "./helpers";
 
 const daySelector = `#day-${SEED.firstDayId}`;
@@ -15,13 +18,65 @@ declare global {
   }
 }
 
+/**
+ * Item card that owns `title`. Anchoring row-scoped locators on the card keeps
+ * them independent from the number of residual rows around it (issue #406).
+ */
+function activityCard(page: Page, title: string) {
+  return page
+    .getByText(title, { exact: true })
+    .locator("xpath=ancestor::div[contains(@class, 'rounded-[1rem]')][1]");
+}
+
+/**
+ * Expand the create-activity form for the seed day and return the panel that
+ * contains only that form. Scoping to the panel (not the whole day) keeps its
+ * `input[name=title]` from colliding with the `details input[name=title]` of
+ * activities already on that day.
+ */
 async function expandActivityForm(page: Page) {
   const day = page.locator(daySelector);
   await day.getByRole("button", { name: "+ Agregar actividad a este día" }).click();
-  return day;
+  return day
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Agregar una actividad" }) })
+    .first();
+}
+
+/** Delete every activity this spec created, scoped to the seed day. */
+async function deleteCreatedActivities(request: APIRequestContext): Promise<void> {
+  await deleteRowsByNameLike(request, "items", "title", "E2E *", {
+    trip_day_id: `eq.${SEED.firstDayId}`,
+  });
+}
+
+/**
+ * Restore the seed client assignment for the seeded trip. Test 3 temporarily
+ * assigns `SEED.secondClient`, which auto-creates a service row; without this
+ * reset a repeated run finds a second traveler card (breaking
+ * `service-documents`) and the "Gestionar clientes" search hides the client
+ * because it is already assigned.
+ */
+async function resetSeedTripAssignment(request: APIRequestContext): Promise<void> {
+  await deleteRowsByEq(request, "services", "client_id", SEED.secondClientId, {
+    trip_id: `eq.${SEED.tripId}`,
+  });
+  await deleteRowsByEq(request, "trip_clients", "client_id", SEED.secondClientId, {
+    trip_id: `eq.${SEED.tripId}`,
+  });
 }
 
 test.describe.configure({ mode: "serial" });
+
+test.beforeEach(async ({ request }) => {
+  await deleteCreatedActivities(request);
+  await resetSeedTripAssignment(request);
+});
+
+test.afterAll(async ({ request }) => {
+  await deleteCreatedActivities(request);
+  await resetSeedTripAssignment(request);
+});
 
 test.describe("Traveler-created activities", () => {
   test("keeps anonymous itinerary viewing, calendar export, and the agent lock available", async ({
@@ -68,26 +123,27 @@ test.describe("Traveler-created activities", () => {
     page,
     browser,
   }) => {
-    const title = "E2E paseo por Trastevere";
-    const updatedTitle = "E2E cena en Trastevere";
+    const title = uniqueName("E2E paseo por Trastevere");
+    const updatedTitle = uniqueName("E2E cena en Trastevere");
 
     await signInClient(page);
     await page.goto(`/t/${SEED.tripSlug}`);
 
-    const day = await expandActivityForm(page);
-    await day.locator("input[name=title]").fill(title);
-    await day.locator("input[name=startTime]").fill("19:30");
-    await day.locator("input[name=location]").fill("Trastevere");
-    await day.locator("textarea[name=notes]").fill("Mesa junto a la plaza");
-    await day.getByRole("button", { name: "Agregar actividad", exact: true }).click();
+    const addForm = await expandActivityForm(page);
+    await addForm.locator("input[name=title]").fill(title);
+    await addForm.locator("input[name=startTime]").fill("19:30");
+    await addForm.locator("input[name=location]").fill("Trastevere");
+    await addForm.locator("textarea[name=notes]").fill("Mesa junto a la plaza");
+    await addForm.getByRole("button", { name: "Agregar actividad", exact: true }).click();
     await expect(page.getByText("Actividad agregada.")).toBeVisible();
 
     await page.reload();
     await expect(page.getByText(title, { exact: true })).toBeVisible();
     await expect(page.getByText(/19:30|7:30/)).toBeVisible();
     await expect(page.getByText("Trastevere", { exact: true }).first()).toBeVisible();
-    await page.getByText("Ver más detalles").nth(2).click();
-    await expect(page.locator("div").filter({ hasText: /^Mesa junto a la plaza$/ }).first()).toBeVisible();
+    const card = activityCard(page, title);
+    await card.getByText("Ver más detalles").click();
+    await expect(card.locator("div").filter({ hasText: /^Mesa junto a la plaza$/ }).first()).toBeVisible();
 
     const mobileContext = await browser.newContext({ viewport: { width: 375, height: 812 } });
     const mobile = await mobileContext.newPage();
@@ -96,16 +152,18 @@ test.describe("Traveler-created activities", () => {
       await mobile.goto(`/t/${SEED.tripSlug}`);
       await expect(mobile.getByText(title, { exact: true })).toBeVisible();
 
-      await mobile.getByText("Editar actividad").last().click();
-      await mobile.locator("details input[name=title]").last().fill(updatedTitle);
+      const mobileCard = activityCard(mobile, title);
+      await mobileCard.getByText("Editar actividad").click();
+      await mobileCard.locator("details input[name=title]").fill(updatedTitle);
       // The stored Postgres `time` renders as HH:MM:SS, which the activity
       // schema rejects on update; set a valid HH:MM before saving.
-      await mobile.locator("details input[name=startTime]").last().fill("20:00");
-      await mobile.getByRole("button", { name: "Guardar cambios" }).last().click();
+      await mobileCard.locator("details input[name=startTime]").fill("20:00");
+      await mobileCard.getByRole("button", { name: "Guardar cambios" }).click();
       await expect(mobile.getByText("Actividad actualizada.")).toBeVisible();
-      await expect(mobile.getByText(updatedTitle, { exact: true })).toBeVisible();
+      const updatedCard = activityCard(mobile, updatedTitle);
+      await expect(updatedCard.getByText(updatedTitle, { exact: true })).toBeVisible();
 
-      await mobile.getByRole("button", { name: "Eliminar" }).last().click();
+      await updatedCard.getByRole("button", { name: "Eliminar" }).click();
       await expect(mobile.getByText(updatedTitle, { exact: true })).toHaveCount(0);
     } finally {
       await mobileContext.close();
@@ -115,7 +173,7 @@ test.describe("Traveler-created activities", () => {
   test("hides another traveler's controls while retaining assigned creation controls", async ({
     page,
   }) => {
-    const title = "E2E actividad de Ana";
+    const title = uniqueName("E2E actividad de Ana");
 
     // Admin setup: seed a PIN for c2 and assign c2 to the published trip.
     await loginAsAdmin(page);
@@ -134,9 +192,9 @@ test.describe("Traveler-created activities", () => {
     await page.context().clearCookies();
     await signInClient(page);
     await page.goto(`/t/${SEED.tripSlug}`);
-    const day = await expandActivityForm(page);
-    await day.locator("input[name=title]").fill(title);
-    await day.getByRole("button", { name: "Agregar actividad", exact: true }).click();
+    const addForm = await expandActivityForm(page);
+    await addForm.locator("input[name=title]").fill(title);
+    await addForm.getByRole("button", { name: "Agregar actividad", exact: true }).click();
     await expect(page.getByText("Actividad agregada.")).toBeVisible();
 
     // The other assigned traveler c2 gets creation controls but not edit
@@ -146,7 +204,7 @@ test.describe("Traveler-created activities", () => {
     await page.goto(`/t/${SEED.tripSlug}`);
     await expect(page.getByRole("heading", { name: SEED.tripTitle })).toBeVisible();
     await expect(
-      day.getByRole("button", { name: "+ Agregar actividad a este día" }),
+      page.locator(daySelector).getByRole("button", { name: "+ Agregar actividad a este día" }),
     ).toBeVisible();
     await expect(page.getByText(title, { exact: true })).toBeVisible();
     await expect(page.getByText("Editar actividad")).toHaveCount(0);

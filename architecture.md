@@ -375,10 +375,26 @@ anon key local correspondiente). `supabase/seed.sql` carga datos de prueba
 (cuentas admin/agent, clientes, viajes) equivalentes a los fixtures que la app
 necesita para funcionar en local.
 
-La suite e2e (`npm run test:e2e`) asume el estado del seed: algunos specs
-crean datos (proveedores, actividades, viajes) y no limpian después, así que
-en corridas repetidas hay que restaurar primero con `npm run db:reset`
-(issue #396).
+La suite e2e (`npm run test:e2e -- --project=local`) es idempotente desde el
+issue #406: cada spec restaura en `beforeEach` el estado que posee, usa
+nombres únicos por corrida y borra sus propias filas en `afterAll` vía REST,
+por lo que una corrida repetida (o un reintento) parte de un estado
+equivalente al seed. `npm run db:reset` **ya no es requisito** entre corridas
+repetidas de la suite local completa; solo hace falta al cambiar migraciones
+o `supabase/seed.sql`.
+
+Antes del primer test, `e2e/global-setup.ts` (`globalSetup`) precalienta el
+`webServer` con GETs best-effort a `/login`, `/dashboard` y la ruta pública
+del viajero seed `/t/<slug>`, de modo que la compilación on-demand de
+`npm run dev` ocurre antes de que arranque el primer test y no compite con su
+presupuesto de timeout. Si algún GET falla no aborta la suite: el `webServer`
+ya validó su propia `url`.
+
+Durante la corrida, el log `[WebServer] ⨯ Error: The destination stream
+closed early` es ruido benigno de abort de streaming (un test cierra o navega
+mientras el dev-server todavía escribe la respuesta). El servidor sobrevive:
+evidencias de CI en el run 37255713862, donde 32 tests pasaron alrededor del
+error. Solo hay que tratarlo como fallo si el servidor deja de responder.
 
 ## Convenciones de código
 

@@ -1,9 +1,26 @@
 import { expect, test } from "@playwright/test";
-import { SEED, ensureTripStatus, loginAsAdmin } from "./helpers";
+import { SEED, deleteRowsByEq, ensureTripStatus, loginAsAdmin, patchRowsByEq } from "./helpers";
+
+// Deterministic seed ids (see `supabase/seed.sql`). The service belongs to the
+// seeded trip/client; the checklist item is the `Seguro de viaje` upload the
+// spec marks as reviewed and must restore to its seed status.
+const SEED_CHECKLIST_SEGURO_ID = "5c220000-0000-4000-8000-000000000002";
+const REQUESTED_DOCUMENT_LABEL = "Copia de pasaporte";
 
 test.describe.configure({ mode: "serial" });
 
 test.describe("Service documents", () => {
+  test.beforeEach(async ({ request }) => {
+    // Remove the requested document a previous run added; its upload, if any,
+    // falls with `on delete cascade`.
+    await deleteRowsByEq(request, "service_checklist_items", "label", REQUESTED_DOCUMENT_LABEL);
+    // "Marcar como revisado" is not reversible from the UI, so restore the
+    // seed status directly to keep `1/3 revisados` / `1 pendiente` stable.
+    await patchRowsByEq(request, "service_uploads", "checklist_item_id", SEED_CHECKLIST_SEGURO_ID, {
+      status: "uploaded",
+    });
+  });
+
   test("loads traveler detail lazily and keeps review and checklist counts current", async ({
     page,
   }) => {

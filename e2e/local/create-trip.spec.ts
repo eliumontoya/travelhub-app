@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { SEED, ensureTripStatus, loginAsAgent, signInClient } from "./helpers";
+import {
+  SEED,
+  deleteRowsByEq,
+  ensureTripStatus,
+  loginAsAgent,
+  signInClient,
+  uniqueSuffix,
+} from "./helpers";
 
 /**
  * Core use case (issue #396): an agent creates a trip through the dashboard
@@ -11,7 +18,24 @@ import { SEED, ensureTripStatus, loginAsAgent, signInClient } from "./helpers";
  * client portal return to the seed state for later runs.
  */
 
-const tripTitle = `E2E Roadtrip ${Date.now().toString(36)}`;
+// Per-run suffix shared by the trip title and the new client email. It is the
+// cleanup key: `afterAll` uses them to delete exactly the rows this run
+// created, so no reset is needed between runs (issue #406).
+const runSuffix = uniqueSuffix();
+const tripTitle = `E2E Roadtrip ${runSuffix}`;
+// `e2e-new-client@example.com` plus the run suffix; the `e2e-` prefix means
+// deleting by this address can never match a real client.
+const newClientEmail = `e2e-new-client+${runSuffix}@example.com`;
+
+// Held across tests so `afterAll` can delete the created trip by id.
+let createdTripId: string | null = null;
+
+test.afterAll(async ({ request }) => {
+  if (createdTripId) {
+    await deleteRowsByEq(request, "trips", "id", createdTripId);
+  }
+  await deleteRowsByEq(request, "clients", "email", newClientEmail);
+});
 
 test("rejects a trip without at least one client", async ({ page }) => {
   await loginAsAgent(page);
@@ -45,7 +69,7 @@ test("creates a trip, builds its itinerary, publishes it and the traveler sees i
   await expect(page.locator('input[type="hidden"][name="clientIds"]')).toHaveCount(1);
 
   await page.locator('input[name="newClientName"]').fill(`Cliente E2E ${tripTitle}`);
-  await page.locator('input[name="newClientEmail"]').fill("e2e-new-client@example.com");
+  await page.locator('input[name="newClientEmail"]').fill(newClientEmail);
 
   await page.getByRole("button", { name: "Crear viaje" }).click();
 
@@ -54,6 +78,7 @@ test("creates a trip, builds its itinerary, publishes it and the traveler sees i
   await expect(page.getByRole("heading", { name: tripTitle, exact: true })).toBeVisible();
   const tripUrl = page.url();
   const tripId = tripUrl.split("/").pop()!;
+  createdTripId = tripId;
 
   // Build the itinerary: one day, then a flight and a note on it.
   await page.getByRole("button", { name: "+ Agregar día" }).first().click();

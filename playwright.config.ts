@@ -36,8 +36,15 @@ const hasRemoteTarget = !!process.env.BASE_URL;
 const bypassToken = process.env.VERCEL_PROTECTION_BYPASS || "";
 
 export default defineConfig({
+  // Best-effort route warmup so the dev server compiles the first routes
+  // before the first test starts (issue #406).
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // Retries are safe because the specs are idempotent since issue #406: each
+  // spec restores the state it owns in `beforeEach`, uses per-run unique
+  // names, and tears its own rows down in `afterAll`, so an attempt starts
+  // from seed-equivalent state instead of stacking residual data.
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "html" : "list",
   timeout: 30_000,
