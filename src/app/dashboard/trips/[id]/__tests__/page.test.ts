@@ -1,7 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const page = readFileSync(new URL("../page.tsx", import.meta.url), "utf8");
+const page = [
+  "../page.tsx",
+  "../sections/TripHeaderSection.tsx",
+  "../sections/DaysNavSection.tsx",
+  "../sections/ItinerarySection.tsx",
+  "../sections/DayCard.tsx",
+  "../sections/TripSidebarActionsSection.tsx",
+  "../sections/TripSidebarDetailsSection.tsx",
+]
+  .map((path) => readFileSync(new URL(path, import.meta.url), "utf8"))
+  .join("\n");
 
 describe("TripEditorPage visual structure", () => {
   it("keeps configuration controls while presenting the itinerary in the corporate burgundy and gold system", () => {

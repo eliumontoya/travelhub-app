@@ -12,60 +12,11 @@ import {
   getTripInternalNotes,
   getServiceDocumentSummariesForTrip,
 } from "@/lib/data";
-import {
-  itemTypeMeta,
-  formatDateLong,
-  formatDateTime,
-  formatAssignedClients,
-  formatCost,
-  formatTags,
-  computeTripCompleteness,
-} from "@/lib/item-meta";
-import { getApproxUtcOffsetLabel } from "@/lib/timezone";
-import { formatItemMetadataSummary, getItemFlightNumber } from "@/lib/item-display";
-import { ItemFormDialog } from "@/components/ItemFormDialog";
-import { ItemTypeIcon } from "@/components/ItemTypeIcon";
-import { MoveItemToDayDialog } from "@/components/MoveItemToDayDialog";
-import { DayFormDialog } from "@/components/DayFormDialog";
-import { TravelAgentCombobox } from "@/components/TravelAgentCombobox";
-import { GenerateDaysButton } from "@/components/GenerateDaysButton";
-import { TripInstructionsDialog } from "@/components/TripInstructionsDialog";
-import { TripInternalNotesDialog } from "@/components/TripInternalNotesDialog";
-import { TripCommissionDialog } from "@/components/TripCommissionDialog";
-import { TripCurrencyDialog } from "@/components/TripCurrencyDialog";
-import { TripTravelerCountDialog } from "@/components/TripTravelerCountDialog";
-import { TripBudgetDialog } from "@/components/TripBudgetDialog";
-import { TripClientsManager } from "@/components/TripClientsManager";
-import { TripTagsManager } from "@/components/TripTagsManager";
-import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
-import { TripPhotoGallery } from "@/components/TripPhotoGallery";
-import { TripCoverImage } from "@/components/TripCoverImage";
-import { TripDocuments } from "@/components/TripDocuments";
-import { PackingListManager } from "@/components/PackingListManager";
-import { ReorderButtons } from "@/components/ReorderButtons";
-import { ServiceChecklistManager } from "./ServiceChecklistManager";
-import { CopyUrlButtonClient } from "@/components/CopyUrlButton";
-import { CopyTripSummaryButtonClient } from "@/components/CopyTripSummaryButton";
-import { FlightStatusBadge } from "@/components/FlightStatusBadge";
-import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
-import { TripPublishSubmitButton } from "@/components/TripPublishSubmitButton";
-import { DuplicateTripButton } from "@/components/DuplicateTripButton";
-import { DeleteTripDialog } from "@/components/DeleteTripDialog";
-import { DuplicateItemDialog } from "@/components/DuplicateItemDialog";
-import { WeatherBadge } from "@/components/WeatherBadge";
-import { LocationActions } from "@/components/LocationMap";
-import { NoteHtml } from "@/components/NoteHtml";
+import { computeTripCompleteness } from "@/lib/item-meta";
 import { travelerPreviewHref } from "@/lib/trip-visibility";
-import { resolveItemLocation } from "@/lib/item-location";
-import type { ItemWithSupplier } from "@/types";
 import { getDailyWeather } from "@/lib/weather";
 import { UndoToastHost } from "@/components/UndoToast";
-import { PrintButton } from "@/components/PrintButton";
-import {
-  TripEditorShortcuts,
-  ADD_DAY_TRIGGER_ID,
-  ADD_ITEM_LAST_DAY_TRIGGER_ID,
-} from "@/components/TripEditorShortcuts";
+import { TripEditorShortcuts } from "@/components/TripEditorShortcuts";
 import {
   addDayAction,
   addItemAction,
@@ -115,18 +66,25 @@ import {
   requestReUploadAction,
   getServiceChecklistForTripAction,
 } from "./actions";
+import { TripHeaderSection } from "./sections/TripHeaderSection";
+import { DaysNavSection } from "./sections/DaysNavSection";
+import { ItinerarySection } from "./sections/ItinerarySection";
+import type { DayCardActions } from "./sections/DayCard";
+import {
+  TripSidebarActionsSection,
+  type TripSidebarActionsActions,
+} from "./sections/TripSidebarActionsSection";
+import {
+  TripSidebarDetailsSection,
+  type TripSidebarDetailsActions,
+} from "./sections/TripSidebarDetailsSection";
+import { countDaysInRange } from "./sections/trip-editor-meta";
 
 const documentsEnabled = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 const photosEnabled = documentsEnabled;
 const coversEnabled = photosEnabled;
-
-const statusMeta = {
-  draft: { label: "Borrador", color: "border border-[#f0bd79]/45 bg-[#5c123e] text-[#f7dfbc]" },
-  published: { label: "Publicado", color: "border border-[#f0bd79]/45 bg-[#f0bd79] text-[#4a1834]" },
-  archived: { label: "Archivado", color: "border border-[#f0bd79]/35 bg-[#321426] text-[#f7dfbc]" },
-};
 
 export default async function TripEditorPage({
   params,
@@ -169,6 +127,69 @@ export default async function TripEditorPage({
     })
   );
 
+  const dayCardActions: DayCardActions = {
+    moveDay: moveDayAction.bind(null, trip.id, dayOrder),
+    editDay: editDayAction.bind(null, trip.id),
+    deleteDay: deleteDayAction.bind(null, trip.id),
+    restoreDay: restoreDayAction.bind(null, trip.id),
+    addItem: addItemAction.bind(null, trip.id),
+    moveItem: moveItemAction.bind(null, trip.id),
+    moveItemToDay: moveItemToDayAction,
+    editItem: editItemAction.bind(null, trip.id),
+    deleteItem: deleteItemAction.bind(null, trip.id),
+    restoreItem: restoreItemAction.bind(null, trip.id),
+    duplicateItem: duplicateItemAction.bind(null, trip.id),
+    getItemDocuments: getItemDocumentsAction,
+    uploadDocument: uploadDocumentAction.bind(null, trip.id),
+    deleteDocument: deleteDocumentAction.bind(null, trip.id),
+  };
+
+  const sidebarActions: TripSidebarActionsActions = {
+    toggleShowCosts: setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient),
+    setClients: setTripClientsAction.bind(null, trip.id),
+    setTags: setTripTagsAction.bind(null, trip.id),
+    setAgent: updateTripAssignedAgentAction.bind(null, trip.id),
+    updateInstructions: updateTripInstructionsAction.bind(null, trip.id, trip.slug),
+    updateInternalNotes: updateTripInternalNotesAction.bind(null, trip.id),
+    updateCurrency: updateTripCurrencyAction.bind(null, trip.id),
+    updateTravelerCount: updateTripTravelerCountAction.bind(null, trip.id, trip.slug),
+    updateBudget: updateTripBudgetAction.bind(null, trip.id),
+    updateCommission: updateTripCommissionAction.bind(null, trip.id),
+    saveAsTemplate: saveTripAsTemplateAction.bind(null, trip.id),
+    duplicate: duplicateTripAction.bind(null, trip.id),
+  };
+
+  const detailsActions: TripSidebarDetailsActions = {
+    cover: {
+      onUpload: uploadTripCoverAction.bind(null, trip.id, trip.slug),
+      onRemove: removeTripCoverAction.bind(null, trip.id, trip.slug),
+    },
+    photos: {
+      onUpload: uploadTripPhotoAction.bind(null, trip.id, trip.slug),
+      onDelete: deleteTripPhotoAction.bind(null, trip.id, trip.slug),
+    },
+    documents: {
+      onUpload: uploadTripDocumentAction.bind(null, trip.id, trip.slug),
+      onDelete: deleteTripDocumentAction.bind(null, trip.id, trip.slug),
+      onRefresh: getTripDocumentsAction.bind(null, trip.id),
+    },
+    packing: {
+      onAdd: addPackingItemAction.bind(null, trip.id),
+      onToggle: togglePackingItemAction.bind(null, trip.id),
+      onDelete: deletePackingItemAction.bind(null, trip.id),
+    },
+    checklist: {
+      getServiceChecklistAction: getServiceChecklistForTripAction.bind(null, trip.id),
+      addChecklistItemAction: addChecklistItemAction.bind(null, trip.id),
+      updateChecklistItemAction: updateChecklistItemAction.bind(null, trip.id),
+      deleteChecklistItemAction: deleteChecklistItemAction.bind(null, trip.id),
+      reorderChecklistItemsAction: reorderChecklistItemsAction.bind(null, trip.id),
+      markUploadReviewedAction: markUploadReviewedAction.bind(null, trip.id),
+      requestReUploadAction: requestReUploadAction.bind(null, trip.id),
+    },
+    deleteTrip: deleteTripAction.bind(null, trip.id),
+  };
+
   return (
     <main className="mx-auto max-w-7xl bg-[#fdf7f3] px-4 py-6 text-[#321426] selection:bg-[#f0bd79] selection:text-[#321426] print:max-w-3xl print:bg-white print:py-0 dark:bg-[#21111a] dark:text-[#fdf7f3]">
       <Link href="/dashboard/trips" className="text-sm font-medium text-[#731044] underline-offset-4 hover:text-[#4a1834] hover:underline print:hidden dark:text-[#f0bd79]">
@@ -176,681 +197,59 @@ export default async function TripEditorPage({
       </Link>
 
       <section className="mt-4 overflow-hidden rounded-2xl border border-[#4a1834]/15 bg-[#fffdfb] shadow-[0_22px_55px_rgba(74,24,52,0.12)] print:mt-0 print:border-0 print:shadow-none dark:border-[#f0bd79]/20 dark:bg-[#2b1520]">
-        <div className="border-b border-[#f0bd79]/35 bg-[#4a1834] p-5 text-[#fffdfb] sm:p-7">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-[-0.02em] text-[#fffdfb] sm:text-3xl">{trip.title}</h1>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-medium print:hidden ${statusMeta[trip.status].color}`}>
-                  {statusMeta[trip.status].label}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-[#f7dfbc]">
-                {formatAssignedClients(trip.clients)} · {trip.travelerCount}{" "}
-                {trip.travelerCount === 1 ? "viajero" : "viajeros"}
-              </p>
-              <p className="mt-1 text-sm text-[#f0bd79]">
-                {formatDateLong(trip.startDate)} – {formatDateLong(trip.endDate)}
-              </p>
-              {trip.tags.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-1.5 print:hidden">
-                  {formatTags(trip.tags).map((name) => (
-                    <li
-                      key={name}
-                      className="rounded-full border border-[#f0bd79]/35 bg-[#5c123e] px-2.5 py-1 text-xs font-medium text-[#f7dfbc]"
-                    >
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2 print:hidden lg:justify-end">
-              <form action={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}>
-                <TripPublishSubmitButton isPublished={trip.status === "published"} />
-              </form>
-              <Link
-                href={travelerHref}
-                target="_blank"
-                className="rounded-lg border border-[#f0bd79]/55 bg-[#fffdfb] px-4 py-2 text-sm font-semibold text-[#4a1834] shadow-[0_8px_18px_rgba(27,8,19,0.18)] transition hover:bg-[#f7dfbc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
-              >
-                {trip.status === "draft" ? "Vista previa borrador" : "Vista previa"}
-              </Link>
-              <Link
-                href={`/dashboard/trips/${trip.id}/quote`}
-                className="rounded-lg border border-[#f0bd79]/55 bg-[#fffdfb] px-4 py-2 text-sm font-semibold text-[#4a1834] shadow-[0_8px_18px_rgba(27,8,19,0.18)] transition hover:bg-[#f7dfbc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
-              >
-                Cotización
-              </Link>
-              {trip.status === "published" && (
-                <>
-                  <CopyUrlButtonClient slug={trip.slug} />
-                  <ShareWhatsAppButton slug={trip.slug} title={trip.title} />
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {isPublished && (
-          <div className="border-b border-[#f0bd79]/35 bg-[#fff3e5] px-5 py-3 text-sm font-medium text-[#5c123e] print:hidden dark:bg-[#3a1c25] dark:text-[#f7dfbc]">
-            Viaje publicado bloqueado. Pásalo a borrador para editar días, itinerario o acciones.
-          </div>
-        )}
+        <TripHeaderSection
+          trip={trip}
+          travelerHref={travelerHref}
+          onTogglePublish={publishTripStatusAction.bind(null, trip.id, trip.status === "published" ? "draft" : "published")}
+        />
 
         <div className="grid gap-6 bg-[#fdf7f3] p-4 lg:grid-cols-[220px_minmax(0,1fr)_320px] lg:p-5 print:block print:bg-white print:p-0 dark:bg-[#21111a]">
-          <aside className="print:hidden">
-            <div className="sticky top-4 rounded-xl border border-[#e7c797] bg-[#fffdfb] p-3 shadow-[0_12px_30px_rgba(74,24,52,0.08)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-              <p className="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#731044] dark:text-[#f0bd79]">Días del viaje</p>
-              <nav className="mt-3 space-y-1">
-                {trip.days.map((day, idx) => (
-                  <a
-                    key={day.id}
-                    href={`#day-${day.id}`}
-                    className="group flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-[#5c123e] transition hover:bg-[#f8e7e7] hover:text-[#731044] dark:text-[#f7dfbc] dark:hover:bg-[#5c123e]"
-                  >
-                    <span className="min-w-0">
-                      <span className="block text-xs font-medium text-[#9b6479] group-hover:text-[#731044]">Día {idx + 1}</span>
-                      <span className="block truncate font-medium capitalize">{formatDateLong(day.date)}</span>
-                    </span>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${day.items.length === 0 ? "bg-[var(--operator-gold)]/15 text-[var(--operator-brand)] dark:bg-[var(--operator-gold)]/15 dark:text-[var(--operator-brand)]" : "bg-[var(--operator-surface-subtle)] text-[var(--operator-ink-muted)] dark:bg-[var(--operator-brand)] dark:text-[var(--operator-ink-subtle)]"}`}>
-                      {day.items.length}
-                    </span>
-                  </a>
-                ))}
-              </nav>
-              {isEditable && (
-              <div className="mt-4 space-y-2">
-                <DayFormDialog
-                  trigger={
-                    <button
-                      id={ADD_DAY_TRIGGER_ID}
-                      className="w-full rounded-lg border border-dashed border-[#b67a91] py-2 text-sm font-semibold text-[#731044] transition hover:bg-[#f8e7e7] dark:border-[#f0bd79]/45 dark:text-[#f0bd79] dark:hover:bg-[#5c123e]"
-                    >
-                      + Agregar día
-                    </button>
-                  }
-                  onSubmit={addDayAction.bind(null, trip.id)}
-                />
-                {tripDateRangeDays !== null && (
-                  <GenerateDaysButton
-                    totalDays={tripDateRangeDays}
-                    onGenerate={generateTripDaysAction.bind(null, trip.id)}
-                  />
-                )}
-              </div>
-              )}
-            </div>
-          </aside>
+          <DaysNavSection
+            trip={trip}
+            isEditable={isEditable}
+            tripDateRangeDays={tripDateRangeDays}
+            onAddDay={addDayAction.bind(null, trip.id)}
+            onGenerateDays={generateTripDaysAction.bind(null, trip.id)}
+          />
 
-          <section className="min-w-0 space-y-5 print:space-y-3">
-            <div className="rounded-xl border border-[#e7c797] bg-[#fff3e5] p-4 print:hidden dark:border-[#f0bd79]/25 dark:bg-[#3a1c25]">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-[#4a1834] dark:text-[#fffdfb]">Itinerario por días</h2>
-                  <p className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                    Configura las fechas e items del viaje desde esta línea de tiempo.
-                  </p>
-                </div>
-                {trip.days.length > 0 && (
-                  <a
-                    href={`#day-${trip.days[trip.days.length - 1].id}`}
-                    className="rounded-lg bg-[#731044] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(92,18,62,0.25)] transition hover:bg-[#5c123e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0bd79]"
-                  >
-                    Ir al último día
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {trip.days.map((day, dayWeatherIdx) => {
-              const itemOrder = day.items.map((i) => ({ id: i.id, sortOrder: i.sortOrder }));
-              const dayIdx = dayOrder.findIndex((d) => d.id === day.id);
-              const isLastDay = dayIdx === dayOrder.length - 1;
-
-              return (
-                <div
-                  key={day.id}
-                  id={`day-${day.id}`}
-                  className="scroll-mt-6 rounded-2xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_12px_30px_rgba(74,24,52,0.08)] sm:p-5 print:break-inside-avoid print:border-[var(--operator-border)] print:shadow-none dark:border-[#f0bd79]/25 dark:bg-[#2b1520]"
-                >
-                  <div className="mb-4 flex flex-col gap-3 border-b border-[#f0bd79]/35 pb-4 sm:flex-row sm:items-start sm:justify-between print:border-b-0 print:pb-0">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#731044] dark:text-[#f0bd79]">Día {dayIdx + 1}</p>
-                      <h3 className="mt-1 flex flex-wrap items-center gap-2 font-semibold capitalize text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
-                        {formatDateLong(day.date)}
-                        <WeatherBadge weather={dayWeather[dayWeatherIdx]} />
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                        {day.items.length === 0
-                          ? "Sin items todavía"
-                          : `${day.items.length} ${day.items.length === 1 ? "item configurado" : "items configurados"}`}
-                      </p>
-                    </div>
-                    {isEditable && (
-                    <div className="flex items-center gap-2 self-start print:hidden">
-                      <ReorderButtons
-                        disableUp={dayIdx === 0}
-                        disableDown={dayIdx === dayOrder.length - 1}
-                        onMoveUp={moveDayAction.bind(null, trip.id, dayOrder, day.id, "up")}
-                        onMoveDown={moveDayAction.bind(null, trip.id, dayOrder, day.id, "down")}
-                      />
-                      <DayFormDialog
-                        day={day}
-                        trigger={
-                          <button className="rounded-lg border border-[var(--operator-border)] px-2.5 py-1.5 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)] hover:text-[var(--operator-ink)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)] dark:hover:text-[var(--operator-brand)]">
-                            ✏️ Editar día
-                          </button>
-                        }
-                        onSubmit={editDayAction.bind(null, trip.id, day.id)}
-                        onDelete={deleteDayAction.bind(null, trip.id, day.id)}
-                        onUndoDelete={restoreDayAction.bind(null, trip.id, day.id)}
-                      />
-                    </div>
-                    )}
-                  </div>
-
-                  {day.notes && (
-                    <div className="mb-4 rounded-xl border border-dashed border-[var(--operator-border)] bg-[var(--operator-surface-subtle)] px-3 py-2 print:border-[var(--operator-border)] print:bg-white dark:border-[var(--operator-border)] dark:bg-[var(--operator-surface-subtle)]/20">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--operator-gold)] dark:text-[var(--operator-gold)]">
-                        Nota del día
-                      </p>
-                      <NoteHtml html={day.notes} className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]" />
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    {day.items.length === 0 && (
-                      <div className="rounded-xl border border-dashed border-[var(--operator-gold)]/50 bg-[var(--operator-gold)]/15/70 p-4 text-sm text-[var(--operator-brand)] print:hidden dark:border-[var(--operator-gold)]/50 dark:bg-[var(--operator-gold)]/15/20 dark:text-[var(--operator-brand)]">
-{isEditable ? "Este día está vacío. Agrega vuelos, hoteles, actividades o notas para completar el itinerario." : "Este día no tiene items."}
-                      </div>
-                    )}
-
-                    {day.items.map((item) => {
-                      const itemWithSupplier = item as ItemWithSupplier;
-                      const meta = itemTypeMeta[item.type];
-                      const itemIdx = itemOrder.findIndex((i) => i.id === item.id);
-                      const resolvedLocation = resolveItemLocation(itemWithSupplier);
-                      const tzLabel = getApproxUtcOffsetLabel(resolvedLocation?.lat ?? item.lat, resolvedLocation?.lng ?? item.lng);
-                      return (
-                        <div
-                          key={item.id}
-                          className="group flex flex-col gap-3 rounded-xl border border-[#f0bd79]/35 bg-[#fff8f1] p-3 transition hover:border-[#b67a91] hover:bg-[#fffdfb] sm:flex-row sm:items-start print:break-inside-avoid print:bg-white dark:border-[#f0bd79]/20 dark:bg-[#321426] dark:hover:border-[#f0bd79]"
-                        >
-                          <ItemTypeIcon type={item.type} title={meta.label} className="h-10 w-10" />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{item.title}</span>
-                              {item.startTime && (
-                                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-[var(--operator-ink-muted)] ring-1 ring-[var(--operator-border)] dark:bg-[var(--operator-brand-strong)] dark:text-[var(--operator-ink-subtle)] dark:ring-[var(--operator-border)]">
-                                  {item.startTime}
-                                  {tzLabel && ` · ${tzLabel}`}
-                                </span>
-                              )}
-                              {item.type === "flight" && (
-                                <FlightStatusBadge flightNumber={getItemFlightNumber(item)} />
-                              )}
-                            </div>
-                            {resolvedLocation && (
-                              <p className="mt-1 text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">{resolvedLocation.label}</p>
-                            )}
-                            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                              {item.cost !== undefined && (
-                                <p className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">Costo: {formatCost(item.cost, trip.currency)}</p>
-                              )}
-                              {item.confirmationCode && (
-                                <p className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">
-                                  Confirmación: {item.confirmationCode}
-                                </p>
-                              )}
-                            </div>
-                            {formatItemMetadataSummary(item) && (
-                              <p className={`mt-1 text-xs ${item.type === "flight" ? "font-medium text-[var(--operator-brand)] dark:text-[var(--operator-gold)]" : "text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]"}`}>
-                                {formatItemMetadataSummary(item)}
-                              </p>
-                            )}
-                            {resolvedLocation && (
-                              <div className="print:hidden">
-                                <LocationActions
-                                  lat={resolvedLocation.lat}
-                                  lng={resolvedLocation.lng}
-                                  address={resolvedLocation.address}
-                                  label={resolvedLocation.label}
-                                />
-                              </div>
-                            )}
-                          </div>
-                          {isEditable && (
-                          <div className="flex items-center gap-2 self-end sm:self-start print:hidden">
-                            <ReorderButtons
-                              disableUp={itemIdx === 0}
-                              disableDown={itemIdx === itemOrder.length - 1}
-                              onMoveUp={moveItemAction.bind(null, trip.id, itemOrder, item.id, "up")}
-                              onMoveDown={moveItemAction.bind(null, trip.id, itemOrder, item.id, "down")}
-                            />
-                            <MoveItemToDayDialog
-                              tripId={trip.id}
-                              itemId={item.id}
-                              days={trip.days.map((d) => ({ id: d.id, date: d.date }))}
-                              currentDayId={day.id}
-                              onMove={moveItemToDayAction}
-                              trigger={
-                                <button
-                                  type="button"
-                                  className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]"
-                                  aria-label="Mover a otro día"
-                                  title="Mover a otro día"
-                                >
-                                  📅
-                                </button>
-                              }
-                            />
-                            <ItemFormDialog
-                              item={item}
-                              allSuppliers={allSuppliers}
-                              trigger={
-                                <button className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]">
-                                  ✏️
-                                </button>
-                              }
-                              onSubmit={editItemAction.bind(null, trip.id, item.id)}
-                              onDelete={deleteItemAction.bind(null, trip.id, item.id)}
-                              onUndoDelete={restoreItemAction.bind(null, trip.id, item.id)}
-                              documentsEnabled={documentsEnabled}
-                              onLoadDocuments={getItemDocumentsAction.bind(null, item.id)}
-                              onUploadDocument={uploadDocumentAction.bind(null, trip.id, item.id)}
-                              onDeleteDocument={deleteDocumentAction.bind(null, trip.id)}
-                            />
-                            <DuplicateItemDialog
-                              itemTitle={item.title}
-                              days={trip.days.map((d) => ({ id: d.id, date: d.date }))}
-                              sourceDayId={day.id}
-                              onDuplicate={duplicateItemAction.bind(null, trip.id, item.id)}
-                              trigger={
-                                <button
-                                  type="button"
-                                  title="Duplicar en otro día"
-                                  className="text-sm text-[var(--operator-ink-subtle)] hover:text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-muted)] dark:hover:text-[var(--operator-ink-subtle)]"
-                                >
-                                  ⧉
-                                </button>
-                              }
-                            />
-                          </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {isEditable && (
-                    <ItemFormDialog
-                      allSuppliers={allSuppliers}
-                      trigger={
-                        <button
-                          id={isLastDay ? ADD_ITEM_LAST_DAY_TRIGGER_ID : undefined}
-                          className="w-full rounded-xl border border-dashed border-[#b67a91] py-3 text-sm font-semibold text-[#731044] transition hover:bg-[#f8e7e7] print:hidden dark:border-[#f0bd79]/45 dark:text-[#f0bd79] dark:hover:bg-[#5c123e]"
-                        >
-                          + Agregar item a este día
-                        </button>
-                      }
-                      onSubmit={addItemAction.bind(null, trip.id, day.id)}
-                    />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {isEditable && (
-            <div className="flex flex-col gap-2 sm:flex-row lg:hidden print:hidden">
-              <DayFormDialog
-                trigger={
-                  <button
-                    className="w-full rounded-lg border border-dashed border-[var(--operator-border)] py-3 text-sm text-[var(--operator-ink-muted)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                  >
-                    + Agregar día
-                  </button>
-                }
-                onSubmit={addDayAction.bind(null, trip.id)}
-              />
-              {tripDateRangeDays !== null && (
-                <GenerateDaysButton
-                  totalDays={tripDateRangeDays}
-                  onGenerate={generateTripDaysAction.bind(null, trip.id)}
-                />
-              )}
-            </div>
-            )}
-          </section>
+          <ItinerarySection
+            trip={trip}
+            isEditable={isEditable}
+            dayOrder={dayOrder}
+            dayWeather={dayWeather}
+            tripDateRangeDays={tripDateRangeDays}
+            allSuppliers={allSuppliers}
+            documentsEnabled={documentsEnabled}
+            actions={dayCardActions}
+            onAddDay={addDayAction.bind(null, trip.id)}
+            onGenerateDays={generateTripDaysAction.bind(null, trip.id)}
+          />
 
           <aside className="space-y-4 print:hidden">
-            <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-              <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Acciones</h2>
-              <div className="mt-3 grid grid-cols-1 gap-2">
-                {isEditable ? (
-                <>
-                <form action={setShowCostsToClientAction.bind(null, trip.id, trip.slug, !trip.showCostsToClient)}>
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                  >
-                    {trip.showCostsToClient ? "Ocultar costos al cliente" : "Mostrar costos al cliente"}
-                  </button>
-                </form>
-                <TripClientsManager
-                  clients={clients}
-                  assignedClientIds={trip.clients.map((c) => c.id)}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Gestionar clientes
-                    </button>
-                  }
-                  onSubmit={setTripClientsAction.bind(null, trip.id)}
-                />
-                <TripTagsManager
-                  tags={tags}
-                  assignedTagIds={trip.tags.map((t) => t.id)}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Gestionar tags
-                    </button>
-                  }
-                  onSubmit={setTripTagsAction.bind(null, trip.id)}
-                />
-                <form action={updateTripAssignedAgentAction.bind(null, trip.id)} className="space-y-2">
-                  <label className="block text-sm font-medium text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">
-                    Agente asignado
-                  </label>
-                  <TravelAgentCombobox
-                    travelAgents={travelAgents}
-                    name="assignedAgentId"
-                    defaultValue={trip.assignedAgentId}
-                  />
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                  >
-                    Guardar agente
-                  </button>
-                </form>
-                <TripInstructionsDialog
-                  trip={trip}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Instrucciones
-                    </button>
-                  }
-                  onSubmit={updateTripInstructionsAction.bind(null, trip.id, trip.slug)}
-                />
-                <TripInternalNotesDialog
-                  internalNotes={internalNotes}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Notas internas
-                    </button>
-                  }
-                  onSubmit={updateTripInternalNotesAction.bind(null, trip.id)}
-                />
-                <TripCurrencyDialog
-                  trip={trip}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Moneda ({trip.currency})
-                    </button>
-                  }
-                  onSubmit={updateTripCurrencyAction.bind(null, trip.id)}
-                />
-                <TripTravelerCountDialog
-                  trip={trip}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      # Viajeros
-                    </button>
-                  }
-                  onSubmit={updateTripTravelerCountAction.bind(null, trip.id, trip.slug)}
-                />
-                <TripBudgetDialog
-                  trip={trip}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Presupuesto
-                    </button>
-                  }
-                  onSubmit={updateTripBudgetAction.bind(null, trip.id)}
-                />
-                <TripCommissionDialog
-                  trip={trip}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Comisión
-                    </button>
-                  }
-                  onSubmit={updateTripCommissionAction.bind(null, trip.id)}
-                />
-                </>
-                ) : (
-                  <p className="rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-300">
-                    Las acciones de edición están bloqueadas mientras el viaje está publicado.
-                  </p>
-                )}
-                {isEditable && (
-                <>
-                <CopyTripSummaryButtonClient trip={trip} />
-                <SaveAsTemplateDialog
-                  defaultTitle={trip.title}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-left text-sm font-medium text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)] dark:border-[var(--operator-border)] dark:text-[var(--operator-ink-subtle)] dark:hover:bg-[var(--operator-brand)]"
-                    >
-                      Guardar como plantilla
-                    </button>
-                  }
-                  onSubmit={saveTripAsTemplateAction.bind(null, trip.id)}
-                />
-                <DuplicateTripButton onDuplicate={duplicateTripAction.bind(null, trip.id)} />
-                </>
-                )}
-                <PrintButton />
-              </div>
-            </section>
-
-
-            <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-              <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Finanzas</h2>
-              {(hasAnyCost || trip.budget !== undefined) ? (
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">Costo total</span>
-                    <span className="font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{formatCost(totalCost, trip.currency)}</span>
-                  </div>
-                  {trip.budget !== undefined && (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">Presupuesto</span>
-                        <span className="font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">{formatCost(trip.budget, trip.currency)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                          {budgetDiff !== undefined && budgetDiff < 0 ? "Excedido" : "Disponible"}
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            budgetDiff !== undefined && budgetDiff < 0
-                              ? "text-[var(--operator-coral)] dark:text-[var(--operator-coral)]"
-                              : "text-green-700 dark:text-green-400"
-                          }`}
-                        >
-                          {formatCost(Math.abs(budgetDiff ?? 0), trip.currency)}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-[var(--operator-ink-subtle)]">Sin costos registrados.</p>
-              )}
-            </section>
-
-            <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-[#4a1834] dark:text-[#fffdfb]">Completitud</h2>
-                <span className="text-sm font-medium text-[var(--operator-ink)] dark:text-[var(--operator-ink-subtle)]">
-                  {completeness.documentPercentage}%
-                </span>
-              </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#f8e7e7] dark:bg-[#5c123e]">
-                <div
-                  className="h-full rounded-full bg-[#731044]"
-                  style={{ width: `${completeness.documentPercentage}%` }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                {completeness.itemsWithDocuments} de {completeness.totalItems} items tienen documentos.
-              </p>
-              {completeness.emptyDays.length > 0 && (
-                <p className="mt-2 text-xs font-medium text-[var(--operator-brand)] dark:text-[var(--operator-gold)]">
-                  {completeness.emptyDays.length === 1
-                    ? `1 día sin items: ${formatDateLong(completeness.emptyDays[0].date)}`
-                    : `${completeness.emptyDays.length} días sin items`}
-                </p>
-              )}
-            </section>
-
-            {isEditable && (
-            <TripCoverImage
-              coverImageUrl={trip.coverImageUrl}
-              coversEnabled={coversEnabled}
-              onUpload={uploadTripCoverAction.bind(null, trip.id, trip.slug)}
-              onRemove={removeTripCoverAction.bind(null, trip.id, trip.slug)}
+            <TripSidebarActionsSection
+              trip={trip}
+              isEditable={isEditable}
+              clients={clients}
+              tags={tags}
+              travelAgents={travelAgents}
+              internalNotes={internalNotes}
+              totalCost={totalCost}
+              hasAnyCost={hasAnyCost}
+              budgetDiff={budgetDiff}
+              completeness={completeness}
+              actions={sidebarActions}
             />
-            )}
-
-            {isEditable && (
-            <TripPhotoGallery
-              photos={trip.photos}
-              photosEnabled={photosEnabled}
-              onUpload={uploadTripPhotoAction.bind(null, trip.id, trip.slug)}
-              onDelete={deleteTripPhotoAction.bind(null, trip.id, trip.slug)}
-            />
-            )}
-
-            {isEditable && (
-            <TripDocuments
-              documents={trip.documents}
-              documentsEnabled={documentsEnabled}
-              onUpload={uploadTripDocumentAction.bind(null, trip.id, trip.slug)}
-              onDelete={deleteTripDocumentAction.bind(null, trip.id, trip.slug)}
-              onRefresh={getTripDocumentsAction.bind(null, trip.id)}
-            />
-            )}
-
-            <ServiceChecklistManager
-              tripId={trip.id}
-              summaries={serviceDocumentSummaries}
+            <TripSidebarDetailsSection
+              trip={trip}
+              isEditable={isEditable}
               clientNameById={clientNameById}
-              isArchived={trip.status === "archived"}
-              getServiceChecklistAction={getServiceChecklistForTripAction.bind(null, trip.id)}
-              addChecklistItemAction={addChecklistItemAction.bind(null, trip.id)}
-              updateChecklistItemAction={updateChecklistItemAction.bind(null, trip.id)}
-              deleteChecklistItemAction={deleteChecklistItemAction.bind(null, trip.id)}
-              reorderChecklistItemsAction={reorderChecklistItemsAction.bind(null, trip.id)}
-              markUploadReviewedAction={markUploadReviewedAction.bind(null, trip.id)}
-              requestReUploadAction={requestReUploadAction.bind(null, trip.id)}
+              serviceDocumentSummaries={serviceDocumentSummaries}
+              feedback={feedback}
+              documentsEnabled={documentsEnabled}
+              photosEnabled={photosEnabled}
+              coversEnabled={coversEnabled}
+              actions={detailsActions}
             />
-
-            {trip.statusHistory.length > 0 && (
-              <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-                <h2 className="mb-2 text-sm font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Historial de estado</h2>
-                <ul className="space-y-1.5">
-                  {[...trip.statusHistory].reverse().slice(0, 3).map((entry) => (
-                    <li key={entry.id} className="text-sm text-[var(--operator-ink-muted)] dark:text-[var(--operator-ink-subtle)]">
-                      <span className="block text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{formatDateTime(entry.changedAt)}</span>
-                      <span>
-                        {entry.fromStatus ? (
-                          <>
-                            {statusMeta[entry.fromStatus].label} →{" "}
-                            <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
-                              {statusMeta[entry.toStatus].label}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            Creado como{" "}
-                            <span className="font-medium text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">
-                              {statusMeta[entry.toStatus].label}
-                            </span>
-                          </>
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {feedback.length > 0 && (
-              <section className="rounded-xl border border-[#e7c797] bg-[#fffdfb] p-4 shadow-[0_10px_24px_rgba(74,24,52,0.06)] dark:border-[#f0bd79]/25 dark:bg-[#2b1520]">
-                <h3 className="mb-4 font-semibold text-[var(--operator-brand)] dark:text-[var(--operator-brand)]">Feedback recibido</h3>
-                <div className="space-y-3">
-                  {feedback.map((f) => (
-                    <div key={f.id} className="rounded-lg border border-[var(--operator-border)] p-3 dark:border-[var(--operator-border)]">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-full bg-[var(--operator-gold)]/15 px-3 py-1 text-xs font-semibold text-[var(--operator-brand)]">
-                          Calificación {f.rating}/5
-                        </span>
-                        <span className="text-xs text-[var(--operator-ink-subtle)] dark:text-[var(--operator-ink-muted)]">{formatDateLong(f.createdAt.slice(0, 10))}</span>
-                      </div>
-                      {f.comment && <p className="mt-1 text-sm text-[#5c123e] dark:text-[#f7dfbc]">{f.comment}</p>}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {isEditable && (
-            <PackingListManager
-              items={trip.packingItems}
-              onAdd={addPackingItemAction.bind(null, trip.id)}
-              onToggle={togglePackingItemAction.bind(null, trip.id)}
-              onDelete={deletePackingItemAction.bind(null, trip.id)}
-            />
-            )}
-
-            <section className="rounded-xl border border-[var(--operator-coral)]/40 bg-[var(--operator-coral)]/10/60 p-4 dark:border-[var(--operator-coral)]/40 dark:bg-[var(--operator-coral)]/10/10">
-              <h2 className="text-sm font-semibold text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">Zona de peligro</h2>
-              <p className="mt-2 text-sm text-[var(--operator-coral)] dark:text-[var(--operator-coral)]">
-                Borra definitivamente este viaje y sus datos relacionados.
-              </p>
-              <div className="mt-3">
-                <DeleteTripDialog tripTitle={trip.title} action={deleteTripAction.bind(null, trip.id)} />
-              </div>
-            </section>
           </aside>
         </div>
       </section>
@@ -859,12 +258,4 @@ export default async function TripEditorPage({
       <UndoToastHost />
     </main>
   );
-}
-
-function countDaysInRange(startDate: string, endDate: string): number | null {
-  if (!startDate || !endDate) return null;
-  const start = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return null;
-  return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 }
