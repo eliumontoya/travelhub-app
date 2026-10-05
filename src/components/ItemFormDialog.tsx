@@ -10,13 +10,9 @@ import { showUndoToast } from "@/components/UndoToast";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 import { shouldAutofillSupplierLocation } from "@/lib/item-location";
-import { ItemTypeIcon } from "@/components/ItemTypeIcon";
 import { getSupplierTypeForItem } from "@/lib/item-supplier-compatibility";
-import {
-  appendSerializedMetadata,
-  metadataDefaultValue,
-  metadataFieldsByType,
-} from "@/lib/item-form-fields";
+import { MetadataFields } from "@/components/item-form/MetadataFields";
+import { appendSerializedMetadata } from "@/lib/item-form-fields";
 
 export { appendSerializedMetadata };
 
@@ -371,49 +367,12 @@ export function ItemFormDialog({
             <RichTextEditor name="notes" defaultValue={item?.notes} placeholder="Detalles del item (admite negrita, listas, enlaces…)" />
           </div>
 
-          {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
-            <div key={`${selectedType}-${metadataAutofillVersion}`} className="border-t border-[var(--operator-border)] pt-4">
-              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--operator-brand)]">
-                <ItemTypeIcon type={selectedType} title={itemTypeMeta[selectedType].label} className="h-8 w-8" />
-                <span>Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}</span>
-              </h4>
-              <div className="space-y-3">
-                {metadataFieldsByType[selectedType].map((field) => (
-                  <div key={field.name}>
-                    <label className="block text-sm font-medium text-[var(--operator-ink)]">{field.label}</label>
-                    {field.type === "textarea" ? (
-                      <textarea
-                        name={`metadata_${field.name}`}
-                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
-                        rows={2}
-                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-                      />
-                    ) : field.type === "select" && field.options ? (
-                      <select
-                        name={`metadata_${field.name}`}
-                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name) ?? ""}
-                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-                      >
-                        <option value="">Seleccionar...</option>
-                        {field.options.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={field.type}
-                        name={`metadata_${field.name}`}
-                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
-                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <MetadataFields
+            type={selectedType}
+            item={item}
+            metadataAutofill={metadataAutofill}
+            autofillVersion={metadataAutofillVersion}
+          />
 
           {item && (
             <div className="border-t border-[var(--operator-border)] pt-4">
