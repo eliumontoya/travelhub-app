@@ -80,10 +80,10 @@ Chain strategy: size-exception
 
 ### Phase 6 — Verification (WU6)
 
-- [ ] 6.1 `npx tsc --noEmit` — no type errors.
-- [ ] 6.2 `npm run lint` — no new lint errors in changed files.
-- [ ] 6.3 `npm run test` — unit suite green (new `item-form-fields.test.ts` included, `structured-items.test.ts` unmodified).
-- [ ] 6.4 `npm run build` — production build clean.
-- [ ] 6.5 Start the local Supabase stack and run `npm run test:e2e -- --project=local` — green; this is the behavioral net for supplier autofill, type switch, and the documents section.
-- [ ] 6.6 Confirm the size budget from 5.2 in the final diff and that no file outside the planned change set was modified.
-- [ ] 6.7 Report evidence per command (exact command + observed result) and any pre-existing failure not attributable to this change.
+- [x] 6.1 `npx tsc --noEmit` — no type errors.
+- [x] 6.2 `npm run lint` — no new lint errors in changed files.
+- [x] 6.3 `npm run test` — unit suite green (new `item-form-fields.test.ts` included, `structured-items.test.ts` unmodified).
+- [x] 6.4 `npm run build` — production build clean.
+- [x] 6.5 Start the local Supabase stack and run `npm run test:e2e -- --project=local` — green; this is the behavioral net for supplier autofill, type switch, and the documents section.
+- [x] 6.6 Confirm the size budget from 5.2 in the final diff and that no file outside the planned change set was modified.
+- [x] 6.7 Report evidence per command (exact command + observed result) and any pre-existing failure not attributable to this change.
