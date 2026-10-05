@@ -18,7 +18,7 @@ specs idempotentes, reintentos sin estado sucio heredado, y warmup del webServer
 | 3 | Apply fases 1–5: helpers REST + specs idempotentes | done | dd080ca, b34b2ca, a36ae03, 293adbf, 86210c6 — RED→GREEN por spec, doble corrida sin reset |
 | 4 | Apply fases 6–7: globalSetup warmup + docs | done | 03fa617, 19f2f8b — suite completa 35 passed / 1 skipped |
 | 5 | Verify fases 8: doble corrida completa sin reset + typecheck + lint | done | 8.1–8.4 PASS; 8.5 variante contaminación 7 passed; residuos 0. Ver archive-report.md |
-| 6 | Archive + PR | in_progress | archive 2026-10-05-e2e-local-estable-ci |
+| 6 | Archive + PR | done | archive 2026-10-05-e2e-local-estable-ci (0a0508e); PR #407 (revisión nativa approved, lineage review-99a0d5c0a96eb1e9) |
 
 ## Decisiones (design.md)
 
