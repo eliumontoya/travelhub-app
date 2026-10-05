@@ -219,6 +219,8 @@ src/
       trips/new/              alta de viaje (+ cliente nuevo o existente)
       trips/[id]/             editor de viaje: días, items, publicar
         trips/[id]/service-checklist/   hook y fila del checklist de servicios
+        trips/[id]/sections/    secciones server del editor (header, días,
+                                itinerario, rail) extraídas del page compositor
       trips/[id]/quote/       cotización del viaje
       suppliers/              catálogo de proveedores
       travel-agents/          catálogo de agentes de viaje
@@ -275,9 +277,18 @@ src/
     ics.ts                  -- generación de archivos .ics
     item-meta.ts            -- labels/iconos por tipo de item, formateo de fechas
     item-form-fields.ts     -- esquema de campos metadata por tipo de item (labels, opciones, serialización)
-  types/index.ts            -- tipos de dominio (Client, Trip, TripDay, Item, …)
+  types/index.ts            -- barril de tipos de dominio (Client, Trip, TripDay, Item, …):
+                               re-exporta los tipos ya migrados
+
+> Migración progresiva (issue #374): los tipos de dominio se mueven a
+> `src/lib/data/<dominio>.types.ts` junto a su módulo de datos; `types/index.ts`
+> queda como barril de re-exports.
   middleware.ts              -- protección de /dashboard/** por rol
 ```
+
+> Migración progresiva de tipos de dominio (issue #374): cada familia se mueve a
+> `src/lib/data/<dominio>.types.ts`, junto a su módulo de datos; primer dominio
+> migrado, visas (`src/lib/data/visas.types.ts`).
 
 ## Modelo de datos (resumen)
 
