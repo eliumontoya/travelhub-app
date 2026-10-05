@@ -215,6 +215,7 @@ src/
   app/
     dashboard/              -- área autenticada (agente/admin)
       page.tsx               listado de clientes y viajes
+      filters/               bloques de filtro reutilizables (combobox, badges)
       clients/[id]/          ficha de cliente (ver/editar, historial)
       trips/new/              alta de viaje (+ cliente nuevo o existente)
       trips/[id]/             editor de viaje: días, items, publicar
