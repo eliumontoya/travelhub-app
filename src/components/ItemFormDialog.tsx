@@ -3,167 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Item, ItemDocument, ItemType, Supplier } from "@/types";
-import { itemTypeMeta } from "@/lib/item-meta";
-import { LocationInput } from "@/components/LocationInput";
-import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { showUndoToast } from "@/components/UndoToast";
-import { RichTextEditor } from "@/components/RichTextEditor";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from "@/lib/constants";
 import { shouldAutofillSupplierLocation } from "@/lib/item-location";
-import { ItemTypeIcon } from "@/components/ItemTypeIcon";
 import { getSupplierTypeForItem } from "@/lib/item-supplier-compatibility";
+import { MetadataFields } from "@/components/item-form/MetadataFields";
+import { ItemCommonFields } from "@/components/item-form/ItemCommonFields";
+import { ItemDocumentsSection } from "@/components/item-form/ItemDocumentsSection";
+import { appendSerializedMetadata } from "@/lib/item-form-fields";
 
-const itemTypes = Object.keys(itemTypeMeta) as ItemType[];
-
-type MetadataFieldDef = {
-  name: string;
-  label: string;
-  type: "text" | "time" | "date" | "select" | "textarea";
-  options?: { value: string; label: string }[];
-  required?: boolean;
-};
-
-const metadataFieldsByType: Record<ItemType, MetadataFieldDef[]> = {
-  flight: [
-    { name: "airline", required: true, label: "Aerolínea", type: "text" },
-    { name: "flightNumber", required: true, label: "Número de vuelo", type: "text" },
-    { name: "departureAirport", required: true, label: "Aeropuerto de salida", type: "text" },
-    { name: "arrivalAirport", required: true, label: "Aeropuerto de llegada", type: "text" },
-    { name: "departureTime", required: true, label: "Hora de salida", type: "time" },
-    { name: "arrivalTime", required: true, label: "Hora de llegada", type: "time" },
-    { name: "terminal", label: "Terminal", type: "text" },
-    { name: "gate", label: "Puerta", type: "text" },
-    { name: "seat", label: "Asiento", type: "text" },
-    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
-  ],
-  hotel: [
-    { name: "hotelName", required: true, label: "Nombre del hotel", type: "text" },
-    { name: "address", required: true, label: "Dirección", type: "text" },
-    { name: "checkIn", required: true, label: "Check-in", type: "date" },
-    { name: "checkOut", required: true, label: "Check-out", type: "date" },
-    { name: "roomType", required: true, label: "Tipo de habitación", type: "text" },
-    {
-      name: "boardBasis",
-      required: true,
-      label: "Régimen",
-      type: "select",
-      options: [
-        { value: "Solo alojamiento", label: "Solo alojamiento" },
-        { value: "Desayuno incluido", label: "Desayuno incluido" },
-        { value: "Media pensión", label: "Media pensión" },
-        { value: "Pensión completa", label: "Pensión completa" },
-        { value: "Todo incluido", label: "Todo incluido" },
-      ],
-    },
-    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
-    { name: "hotelPhone", label: "Teléfono del hotel", type: "text" },
-    { name: "specialRequests", label: "Solicitudes especiales", type: "textarea" },
-  ],
-  activity: [
-    { name: "activityName", required: true, label: "Nombre de la actividad", type: "text" },
-    { name: "provider", required: true, label: "Proveedor", type: "text" },
-    { name: "address", required: true, label: "Dirección", type: "text" },
-    { name: "startTime", required: true, label: "Hora de inicio", type: "time" },
-    { name: "endTime", required: true, label: "Hora de fin", type: "time" },
-    { name: "duration", label: "Duración", type: "text" },
-    { name: "ticketType", label: "Tipo de entrada", type: "text" },
-    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
-    { name: "includes", label: "Incluye", type: "text" },
-    { name: "meetingPoint", label: "Punto de encuentro", type: "text" },
-  ],
-  restaurant: [
-    { name: "restaurantName", required: true, label: "Nombre del restaurante", type: "text" },
-    { name: "address", required: true, label: "Dirección", type: "text" },
-    { name: "cuisine", required: true, label: "Tipo de cocina", type: "text" },
-    { name: "dressCode", label: "Código de vestimenta", type: "text" },
-    { name: "reservationReference", label: "Referencia de reserva", type: "text" },
-    { name: "phone", label: "Teléfono", type: "text" },
-  ],
-  transport: [
-    { name: "company", required: true, label: "Empresa", type: "text" },
-    { name: "pickupLocation", required: true, label: "Lugar de recogida", type: "text" },
-    { name: "dropoffLocation", required: true, label: "Lugar de destino", type: "text" },
-    { name: "pickupTime", required: true, label: "Hora de recogida", type: "text" },
-    { name: "vehicleType", label: "Tipo de vehículo", type: "text" },
-    { name: "driverName", label: "Nombre del conductor", type: "text" },
-    { name: "driverPhone", label: "Teléfono del conductor", type: "text" },
-    { name: "bookingReference", label: "Referencia de reserva", type: "text" },
-  ],
-  note: [],
-};
-
-export function appendSerializedMetadata(formData: FormData, selectedType: ItemType) {
-  const mFields = metadataFieldsByType[selectedType];
-  const metadataValues: Record<string, string> = {};
-
-  for (const field of mFields) {
-    const val = String(formData.get(`metadata_${field.name}`) ?? "").trim();
-    if (val) metadataValues[field.name] = val;
-    formData.delete(`metadata_${field.name}`);
-  }
-
-  formData.set("metadata", JSON.stringify(Object.keys(metadataValues).length ? metadataValues : null));
-}
-
-function metadataDefaultValue(item: Item | undefined, fieldName: string): string | undefined {
-  if (!item?.metadata) return undefined;
-  const m = item.metadata as unknown as Record<string, unknown> | null;
-  if (!m) return undefined;
-  const val = m[fieldName];
-  return typeof val === "string" ? val : undefined;
-}
+export { appendSerializedMetadata };
 
 type DocWithUrl = ItemDocument & { url: string | null };
-
-function DocumentPreview({ doc }: { doc: DocWithUrl }) {
-  if (!doc.url) {
-    return <span className="truncate text-[var(--operator-ink)]">{doc.fileName}</span>;
-  }
-
-  if (doc.mimeType?.startsWith("image/")) {
-    return (
-      <a
-        href={doc.url}
-        target="_blank"
-        rel="noreferrer"
-        className="flex min-w-0 items-center gap-2 text-[var(--operator-brand)] hover:underline"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={doc.url}
-          alt={doc.fileName}
-          className="h-8 w-8 shrink-0 rounded object-cover"
-        />
-        <span className="truncate">{doc.fileName}</span>
-      </a>
-    );
-  }
-
-  if (doc.mimeType === "application/pdf") {
-    return (
-      <a
-        href={doc.url}
-        target="_blank"
-        rel="noreferrer"
-        className="flex min-w-0 items-center gap-2 text-[var(--operator-brand)] hover:underline"
-      >
-        <span aria-hidden className="shrink-0 text-lg">📄</span>
-        <span className="truncate">{doc.fileName}</span>
-      </a>
-    );
-  }
-
-  return (
-    <a
-      href={doc.url}
-      target="_blank"
-      rel="noreferrer"
-      className="truncate text-[var(--operator-brand)] hover:underline"
-    >
-      {doc.fileName}
-    </a>
-  );
-}
 
 export function ItemFormDialog({
   trigger,
@@ -352,205 +203,45 @@ export function ItemFormDialog({
             {item ? "Editar item" : "Agregar item"}
           </h3>
 
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Tipo</label>
-            <select
-              name="type"
-              value={selectedType}
-              onChange={(e) => handleItemTypeChange(e.target.value as ItemType)}
-              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-            >
-              {itemTypes.map((t) => (
-                <option key={t} value={t}>
-                  {itemTypeMeta[t].label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ItemCommonFields
+            item={item}
+            selectedType={selectedType}
+            onTypeChange={handleItemTypeChange}
+            suppliers={suppliers}
+            selectedSupplierId={selectedSupplierId}
+            requiredSupplierType={requiredSupplierType}
+            onSupplierChange={handleSupplierChange}
+            onSupplierCreated={handleSupplierCreated}
+            titleValue={titleValue}
+            onTitleChange={setTitleValue}
+            locationValue={locationValue}
+            onLocationValueChange={setLocationValue}
+            latValue={latValue}
+            lngValue={lngValue}
+            onCoordinatesChange={(lat, lng) => {
+              setLatValue(lat);
+              setLngValue(lng);
+            }}
+          />
 
-          {requiredSupplierType && (
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Proveedor</label>
-              <SupplierCombobox
-                key={requiredSupplierType}
-                suppliers={suppliers}
-                name="supplierId"
-                requiredSupplierType={requiredSupplierType}
-                value={selectedSupplierId}
-                onChange={handleSupplierChange}
-                onSupplierCreated={handleSupplierCreated}
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Título</label>
-            <input
-              name="title"
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Hora inicio</label>
-              <input
-                type="time"
-                name="startTime"
-                defaultValue={item?.startTime}
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Hora fin</label>
-              <input
-                type="time"
-                name="endTime"
-                defaultValue={item?.endTime}
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Ubicación</label>
-            <LocationInput
-              defaultValue={item?.location}
-              defaultLat={item?.lat}
-              defaultLng={item?.lng}
-              value={locationValue}
-              onValueChange={setLocationValue}
-              lat={latValue}
-              lng={lngValue}
-              onCoordinatesChange={(lat, lng) => {
-                setLatValue(lat);
-                setLngValue(lng);
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">
-                Código de confirmación
-              </label>
-              <input
-                name="confirmationCode"
-                defaultValue={item?.confirmationCode}
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--operator-ink)]">Costo</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="cost"
-                defaultValue={item?.cost}
-                placeholder="Solo visible internamente salvo que actives el resumen de costos"
-                className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--operator-ink)]">Notas</label>
-            <RichTextEditor name="notes" defaultValue={item?.notes} placeholder="Detalles del item (admite negrita, listas, enlaces…)" />
-          </div>
-
-          {selectedType !== "note" && metadataFieldsByType[selectedType].length > 0 && (
-            <div key={`${selectedType}-${metadataAutofillVersion}`} className="border-t border-[var(--operator-border)] pt-4">
-              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--operator-brand)]">
-                <ItemTypeIcon type={selectedType} title={itemTypeMeta[selectedType].label} className="h-8 w-8" />
-                <span>Detalles de {itemTypeMeta[selectedType].label.toLowerCase()}</span>
-              </h4>
-              <div className="space-y-3">
-                {metadataFieldsByType[selectedType].map((field) => (
-                  <div key={field.name}>
-                    <label className="block text-sm font-medium text-[var(--operator-ink)]">{field.label}</label>
-                    {field.type === "textarea" ? (
-                      <textarea
-                        name={`metadata_${field.name}`}
-                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
-                        rows={2}
-                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-                      />
-                    ) : field.type === "select" && field.options ? (
-                      <select
-                        name={`metadata_${field.name}`}
-                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name) ?? ""}
-                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-                      >
-                        <option value="">Seleccionar...</option>
-                        {field.options.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={field.type}
-                        name={`metadata_${field.name}`}
-                        defaultValue={metadataAutofill[field.name] ?? metadataDefaultValue(item, field.name)}
-                        className="mt-1 w-full rounded-lg border border-[var(--operator-border)] px-3 py-2 text-sm"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <MetadataFields
+            type={selectedType}
+            item={item}
+            metadataAutofill={metadataAutofill}
+            autofillVersion={metadataAutofillVersion}
+          />
 
           {item && (
-            <div className="border-t border-[var(--operator-border)] pt-4">
-              <label className="mb-2 block text-sm font-medium text-[var(--operator-ink)]">
-                Documentos adjuntos
-              </label>
-              {uploadError && (
-                <p className="mb-2 rounded-lg bg-[var(--operator-coral)]/10 px-3 py-2 text-sm text-[var(--operator-coral)]">
-                  {uploadError}
-                </p>
-              )}
-              {docsLoading && <p className="text-sm text-[var(--operator-ink-subtle)]">Cargando…</p>}
-              {!docsLoading && docs.length > 0 && (
-                <ul className="mb-3 space-y-1">
-                  {docs.map((doc) => (
-                    <li key={doc.id} className="flex items-center justify-between gap-2 text-sm">
-                      <DocumentPreview doc={doc} />
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteDocument(doc.id)}
-                        className="shrink-0 text-xs text-[var(--operator-coral)] hover:underline"
-                      >
-                        Eliminar
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {documentsEnabled ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <input ref={fileInputRef} type="file" className="text-sm" />
-                  <button
-                    type="button"
-                    onClick={handleUpload}
-                    disabled={isPending}
-                    className="rounded-lg border border-[var(--operator-border)] px-3 py-1.5 text-sm text-[var(--operator-ink)] hover:bg-[var(--operator-canvas)]"
-                  >
-                    Subir
-                  </button>
-                </div>
-              ) : (
-                <p className="text-sm text-[var(--operator-ink-subtle)]">
-                  Configura Supabase para subir documentos.
-                </p>
-              )}
-            </div>
+            <ItemDocumentsSection
+              docs={docs}
+              docsLoading={docsLoading}
+              uploadError={uploadError}
+              documentsEnabled={documentsEnabled}
+              isPending={isPending}
+              fileInputRef={fileInputRef}
+              onUpload={handleUpload}
+              onDeleteDocument={handleDeleteDocument}
+            />
           )}
 
           {error && <p className="text-sm text-[var(--operator-coral)]">{error}</p>}
