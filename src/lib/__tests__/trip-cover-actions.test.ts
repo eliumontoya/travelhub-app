@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { revalidatePath } from "next/cache";
 import { getTripById, uploadTripCoverImage, removeTripCoverImage } from "@/lib/data";
 
@@ -20,9 +20,16 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/roles", () => ({ requireRole: vi.fn() }));
+
+import { requireRole } from "@/lib/auth/roles";
 import * as actions from "@/app/dashboard/trips/[id]/actions";
 
 describe("trip cover actions", () => {
+  beforeEach(() => {
+    vi.mocked(requireRole).mockResolvedValue("agent");
+  });
+
   it("uploads and revalidates dashboard and public paths", async () => {
     const file = new File(["x"], "cover.jpg", { type: "image/jpeg" });
     const formData = new FormData();

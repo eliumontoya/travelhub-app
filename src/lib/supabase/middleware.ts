@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { AccountRole } from "@/types";
+import { resolveAccountProfile } from "@/lib/auth/profile";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -31,17 +32,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let role: AccountRole | null = null;
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    if (data?.role === "admin" || data?.role === "agent") {
-      role = data.role;
-    }
-  }
+  // Account resolution is shared with `getCurrentAccount()` so the middleware
+  // gate and the Server Action guards cannot drift.
+  const account = user ? await resolveAccountProfile(supabase, user.id) : null;
+  const role: AccountRole | null = account?.role ?? null;
 
   return { response, user, role };
 }

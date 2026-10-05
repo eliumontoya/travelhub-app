@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("@/lib/auth/roles", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/data", () => ({
   createItem: mocks.createItem,
   createTrip: vi.fn(),
@@ -40,11 +41,13 @@ vi.mock("@/lib/data", () => ({
   uploadTripPhoto: vi.fn(),
 }));
 
+import { requireRole } from "@/lib/auth/roles";
 import { addItemAction, editItemAction } from "@/app/dashboard/trips/[id]/actions";
 
 describe("item server action metadata validation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(requireRole).mockResolvedValue("agent");
   });
   it("rejects invalid metadata and does not save", async () => {
     mocks.getTripById.mockResolvedValueOnce({ id: "trip-1", status: "draft" });

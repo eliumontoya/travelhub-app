@@ -1,6 +1,7 @@
 "use server";
 
 import { TravelAgent } from "@/types";
+import { requireRole } from "@/lib/auth/roles";
 import {
   createTravelAgent,
   updateTravelAgent,
@@ -10,6 +11,7 @@ import {
 export async function createTravelAgentAction(
   formData: FormData
 ): Promise<{ agent?: TravelAgent; error?: string }> {
+  await requireRole("admin", "agent");
   const name = (formData.get("name") as string)?.trim();
   if (!name) {
     return { error: "El nombre es obligatorio." };
@@ -32,6 +34,7 @@ export async function updateTravelAgentAction(
   agentId: string,
   formData: FormData
 ): Promise<{ agent?: TravelAgent; error?: string }> {
+  await requireRole("admin", "agent");
   const name = (formData.get("name") as string)?.trim();
   if (!name) {
     return { error: "El nombre es obligatorio." };
@@ -53,6 +56,7 @@ export async function updateTravelAgentAction(
 export async function deleteTravelAgentAction(
   agentId: string
 ): Promise<{ ok: boolean; error?: string }> {
+  await requireRole("admin", "agent");
   try {
     await deleteTravelAgent(agentId);
     return { ok: true };

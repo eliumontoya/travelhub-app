@@ -122,6 +122,7 @@ async function getUploadForTrip(tripId: string, uploadId: string) {
 }
 
 export async function addDayAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const date = String(formData.get("date") ?? "");
   const notes = String(formData.get("notes") ?? "").trim() || undefined;
@@ -133,6 +134,7 @@ export async function addDayAction(tripId: string, formData: FormData) {
 export async function generateTripDaysAction(
   tripId: string
 ): Promise<{ ok: boolean; message: string }> {
+  await requireRole("admin", "agent");
   try {
     await assertTripEditable(tripId);
     const result = await generateTripDays(tripId);
@@ -150,6 +152,7 @@ export async function generateTripDaysAction(
 }
 
 export async function editDayAction(tripId: string, dayId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const date = String(formData.get("date") ?? "");
   const notes = String(formData.get("notes") ?? "").trim() || undefined;
@@ -158,12 +161,14 @@ export async function editDayAction(tripId: string, dayId: string, formData: For
 }
 
 export async function deleteDayAction(tripId: string, dayId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await deleteTripDay(dayId);
   revalidateTrip(tripId);
 }
 
 export async function restoreDayAction(tripId: string, dayId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await restoreTripDay(dayId);
   revalidateTrip(tripId);
@@ -175,6 +180,7 @@ export async function moveDayAction(
   dayId: string,
   direction: "up" | "down"
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const sorted = [...days].sort((a, b) => a.sortOrder - b.sortOrder);
   const idx = sorted.findIndex((d) => d.id === dayId);
@@ -191,6 +197,7 @@ export async function moveDayAction(
 }
 
 export async function addItemAction(tripId: string, dayId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
@@ -215,6 +222,7 @@ export async function addItemAction(tripId: string, dayId: string, formData: For
 }
 
 export async function editItemAction(tripId: string, itemId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const type = String(formData.get("type") ?? "note") as ItemType;
   const metadata = parseItemMetadata(type, formData.get("metadata"));
@@ -237,12 +245,14 @@ export async function editItemAction(tripId: string, itemId: string, formData: F
 }
 
 export async function deleteItemAction(tripId: string, itemId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await deleteItem(itemId);
   revalidateTrip(tripId);
 }
 
 export async function restoreItemAction(tripId: string, itemId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await restoreItem(itemId);
   revalidateTrip(tripId);
@@ -253,6 +263,7 @@ export async function moveItemToDayAction(
   itemId: string,
   formData: FormData
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const targetDayId = String(formData.get("targetDayId") ?? "").trim();
   if (!targetDayId) return;
@@ -265,6 +276,7 @@ export async function duplicateItemAction(
   sourceItemId: string,
   targetDayId: string
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await duplicateItem(sourceItemId, targetDayId);
   revalidateTrip(tripId);
@@ -276,6 +288,7 @@ export async function moveItemAction(
   itemId: string,
   direction: "up" | "down"
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder);
   const idx = sorted.findIndex((i) => i.id === itemId);
@@ -292,11 +305,13 @@ export async function moveItemAction(
 }
 
 export async function publishTripStatusAction(tripId: string, status: "draft" | "published" | "archived") {
+  await requireRole("admin", "agent");
   await updateTrip(tripId, { status });
   revalidateTrip(tripId);
 }
 
 export async function deleteTripAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const trip = await getTripById(tripId);
   if (!trip) throw new Error("Viaje no encontrado.");
   if (String(formData.get("confirmTitle") ?? "") !== trip.title) {
@@ -313,6 +328,7 @@ export async function setShowCostsToClientAction(
   slug: string,
   showCostsToClient: boolean
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await updateTrip(tripId, { showCostsToClient });
   revalidateTrip(tripId);
@@ -324,6 +340,7 @@ export async function updateTripInstructionsAction(
   slug: string,
   formData: FormData
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const instructions = String(formData.get("instructions") ?? "").trim();
   await updateTrip(tripId, { instructions: instructions || null });
@@ -332,6 +349,7 @@ export async function updateTripInstructionsAction(
 }
 
 export async function updateTripInternalNotesAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const internalNotes = String(formData.get("internalNotes") ?? "").trim();
   await updateTripInternalNotes(tripId, internalNotes || null);
@@ -339,6 +357,7 @@ export async function updateTripInternalNotesAction(tripId: string, formData: Fo
 }
 
 export async function updateTripCurrencyAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const rawCurrency = String(formData.get("currency") ?? "MXN") as TripCurrency;
   if (!validCurrencies.includes(rawCurrency)) return;
@@ -351,6 +370,7 @@ export async function updateTripTravelerCountAction(
   slug: string,
   formData: FormData
 ) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const raw = Number(formData.get("travelerCount"));
   if (!Number.isFinite(raw) || raw < 1) return;
@@ -361,6 +381,7 @@ export async function updateTripTravelerCountAction(
 }
 
 export async function updateTripBudgetAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const raw = String(formData.get("budget") ?? "").trim();
   await updateTrip(tripId, { budget: raw ? Number(raw) : null });
@@ -375,6 +396,7 @@ function parseNullableNumber(raw: FormDataEntryValue | null): number | null {
 // Solo agente: sale_price/commission_rate (issue #53) nunca se propagan a
 // revalidatePath(`/t/${slug}`) — la vista pública no depende de estos campos.
 export async function updateTripCommissionAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await updateTrip(tripId, {
     salePrice: parseNullableNumber(formData.get("salePrice")),
@@ -384,6 +406,7 @@ export async function updateTripCommissionAction(tripId: string, formData: FormD
 }
 
 export async function setTripClientsAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const clientIds = formData.getAll("clientIds").map(String).filter(Boolean);
   if (clientIds.length < 1) return; // no-op: server-side "mínimo 1 cliente" (defensa en profundidad)
@@ -393,6 +416,7 @@ export async function setTripClientsAction(tripId: string, formData: FormData) {
 }
 
 export async function setTripTagsAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const tagIds = formData.getAll("tagIds").map(String).filter(Boolean);
   const newTagNames = formData.getAll("newTagNames").map(String).filter(Boolean);
@@ -407,6 +431,7 @@ export async function setTripTagsAction(tripId: string, formData: FormData) {
 }
 
 export async function updateTripAssignedAgentAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const raw = String(formData.get("assignedAgentId") ?? "").trim();
   await updateTrip(tripId, { assignedAgentId: raw || null });
@@ -415,6 +440,7 @@ export async function updateTripAssignedAgentAction(tripId: string, formData: Fo
 }
 
 export async function addPackingItemAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const label = String(formData.get("label") ?? "").trim();
   if (!label) return;
@@ -423,18 +449,21 @@ export async function addPackingItemAction(tripId: string, formData: FormData) {
 }
 
 export async function togglePackingItemAction(tripId: string, itemId: string, checked: boolean) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await updatePackingItem(itemId, { checked });
   revalidateTrip(tripId);
 }
 
 export async function deletePackingItemAction(tripId: string, itemId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await deletePackingItem(itemId);
   revalidateTrip(tripId);
 }
 
 export async function uploadDocumentAction(tripId: string, itemId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
@@ -443,16 +472,19 @@ export async function uploadDocumentAction(tripId: string, itemId: string, formD
 }
 
 export async function deleteDocumentAction(tripId: string, documentId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await deleteDocument(documentId);
   revalidateTrip(tripId);
 }
 
 export async function getItemDocumentsAction(itemId: string) {
+  await requireRole("admin", "agent");
   return getItemDocuments(itemId);
 }
 
 export async function saveTripAsTemplateAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
   const template = await saveTripAsTemplate(tripId, title);
@@ -461,6 +493,7 @@ export async function saveTripAsTemplateAction(tripId: string, formData: FormDat
 }
 
 export async function uploadTripPhotoAction(tripId: string, slug: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
@@ -470,6 +503,7 @@ export async function uploadTripPhotoAction(tripId: string, slug: string, formDa
 }
 
 export async function deleteTripPhotoAction(tripId: string, slug: string, photoId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await deleteTripPhoto(photoId);
   revalidateTrip(tripId);
@@ -477,6 +511,7 @@ export async function deleteTripPhotoAction(tripId: string, slug: string, photoI
 }
 
 export async function uploadTripCoverAction(tripId: string, slug: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
@@ -486,6 +521,7 @@ export async function uploadTripCoverAction(tripId: string, slug: string, formDa
 }
 
 export async function removeTripCoverAction(tripId: string, slug: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await removeTripCoverImage(tripId);
   revalidateTrip(tripId);
@@ -493,6 +529,7 @@ export async function removeTripCoverAction(tripId: string, slug: string) {
 }
 
 export async function uploadTripDocumentAction(tripId: string, slug: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
@@ -502,6 +539,7 @@ export async function uploadTripDocumentAction(tripId: string, slug: string, for
 }
 
 export async function deleteTripDocumentAction(tripId: string, slug: string, documentId: string) {
+  await requireRole("admin", "agent");
   await assertTripEditable(tripId);
   await deleteTripDocument(documentId);
   revalidateTrip(tripId);
@@ -509,6 +547,7 @@ export async function deleteTripDocumentAction(tripId: string, slug: string, doc
 }
 
 export async function getTripDocumentsAction(tripId: string) {
+  await requireRole("admin", "agent");
   return getTripDocuments(tripId);
 }
 
@@ -517,6 +556,7 @@ export async function addChecklistItemAction(
   serviceId: string,
   formData: FormData
 ) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   await getServiceChecklistForTrip(tripId, serviceId);
   const label = String(formData.get("label") ?? "").trim();
@@ -532,6 +572,7 @@ export async function updateChecklistItemAction(
   checklistItemId: string,
   formData: FormData
 ) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   await getChecklistItemForTrip(tripId, checklistItemId);
   const label = String(formData.get("label") ?? "").trim();
@@ -545,6 +586,7 @@ export async function deleteChecklistItemAction(
   tripId: string,
   checklistItemId: string
 ) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   await getChecklistItemForTrip(tripId, checklistItemId);
   await deleteChecklistItem(checklistItemId);
@@ -556,6 +598,7 @@ export async function reorderChecklistItemsAction(
   serviceId: string,
   orderedIds: string[]
 ) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   const checklist = await getServiceChecklistForTrip(tripId, serviceId);
   if (!orderedIds.every((id) => checklist.items.some((item) => item.id === id))) {
@@ -569,6 +612,7 @@ export async function markUploadReviewedAction(
   tripId: string,
   uploadId: string
 ) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   await getUploadForTrip(tripId, uploadId);
   await markUploadReviewed(uploadId);
@@ -580,6 +624,7 @@ export async function requestReUploadAction(
   uploadId: string,
   formData: FormData
 ) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   await getUploadForTrip(tripId, uploadId);
   const comment = String(formData.get("comment") ?? "").trim();
@@ -593,6 +638,7 @@ export async function getServiceChecklistForTripAction(tripId: string, serviceId
 }
 
 export async function addChecklistItemToTripServicesAction(tripId: string, formData: FormData) {
+  await requireRole("admin", "agent");
   await assertServiceDocumentMutableTrip(tripId);
   const label = String(formData.get("label") ?? "").trim();
   const required =
@@ -606,6 +652,7 @@ export async function addChecklistItemToTripServicesAction(tripId: string, formD
 // menos 1 (regla de negocio en data.ts); título y slug quedan marcados como
 // copia para que el usuario ajuste fechas/detalles del nuevo itinerario.
 export async function duplicateTripAction(tripId: string) {
+  await requireRole("admin", "agent");
   const trip = await getTripById(tripId);
   if (!trip) return;
 
