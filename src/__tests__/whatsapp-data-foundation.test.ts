@@ -50,7 +50,7 @@ describe("WhatsApp inbound data foundation migration", () => {
 
 describe("WhatsApp inbound TypeScript contracts", () => {
   it("exports domain interfaces and status unions", () => {
-    const types = readFileSync(join(root, "src", "types", "index.ts"), "utf8");
+    const types = readFileSync(join(root, "src", "lib", "data", "whatsapp.types.ts"), "utf8");
 
     for (const exportName of [
       "WhatsAppContact",
