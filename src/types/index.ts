@@ -21,92 +21,13 @@ export interface AccountProfile {
 export * from "@/lib/data/clients.types";
 export * from "@/lib/data/items.types";
 export * from "@/lib/data/packing.types";
+export * from "@/lib/data/services.types";
 export * from "@/lib/data/settings.types";
+export * from "@/lib/data/suppliers.types";
 export * from "@/lib/data/tags.types";
+export * from "@/lib/data/travel-agents.types";
 export * from "@/lib/data/trips.types";
 export * from "@/lib/data/visas.types";
-
-export type ServiceType = "trip_documents";
-
-export type ServiceUploadStatus = "uploaded" | "reviewed" | "processed" | "re_upload_requested";
-
-export interface Service {
-  id: string;
-  tripId: string;
-  clientId: string;
-  serviceType: ServiceType;
-  status: "active" | "inactive";
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ServiceChecklistItem {
-  id: string;
-  serviceId: string;
-  label: string;
-  required: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ServiceUpload {
-  id: string;
-  serviceId: string;
-  checklistItemId: string;
-  filePath: string;
-  filename: string;
-  mimeType?: string;
-  status: ServiceUploadStatus;
-  agentComment?: string;
-  fileRemoved: boolean;
-  uploadedAt: string;
-  updatedAt: string;
-}
-
-export interface ServiceChecklistItemWithUpload extends ServiceChecklistItem {
-  upload?: ServiceUpload & { url: string | null };
-}
-
-export interface ServiceWithChecklist extends Service {
-  items: ServiceChecklistItemWithUpload[];
-}
-
-export interface ServiceDocumentSummary {
-  serviceId: string;
-  clientId: string;
-  processed: number;
-  total: number;
-  awaitingReview: number;
-}
-
-export interface Supplier {
-  id: string;
-  name: string;
-  type: string;
-  contactPhone?: string;
-  contactEmail?: string;
-  website?: string;
-  address?: string;
-  lat?: number;
-  lng?: number;
-  googlePlaceId?: string;
-  notes?: string;
-  tags: string[];
-  deletedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TravelAgent {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 type JsonRecord = Record<string, unknown>;
 

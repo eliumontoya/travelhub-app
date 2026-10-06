@@ -1,4 +1,4 @@
-import type { Supplier } from "@/types";
+import type { Supplier } from "@/lib/data/suppliers.types";
 
 export type ItemType =
   | "flight"
