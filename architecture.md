@@ -288,8 +288,10 @@ src/
 ```
 
 > Migración progresiva de tipos de dominio (issue #374): cada familia se mueve a
-> `src/lib/data/<dominio>.types.ts`, junto a su módulo de datos; primer dominio
-> migrado, visas (`src/lib/data/visas.types.ts`).
+> `src/lib/data/<dominio>.types.ts`, junto a su módulo de datos. Migración
+> completa (PR1–PR5): las 12 familias viven en `src/lib/data/*.types.ts` y
+> `types/index.ts` es un barril de solo re-exports. Regla vigente: una familia
+> de tipos nueva nace en su propio módulo de dominio, nunca en el barril.
 
 ## Modelo de datos (resumen)
 
