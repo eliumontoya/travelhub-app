@@ -40,10 +40,11 @@ test("hides a draft trip from anonymous visitors and from a signed-in traveler",
   await expectHidden(page);
 });
 
-// Preview-token draft access is broken end to end: RLS hides draft rows from
-// the anon client used by /t/[slug], so the editor's "Vista previa borrador"
-// link renders the not-found UI even for the agent. See issue #404.
-test.fixme("exposes the draft through the agent preview link only", async ({ page }) => {
+// Draft preview regression (issue #404): the preview token alone must
+// authorize the draft read — no agent session required. RLS hides draft rows
+// from the anon data client used by /t/[slug], so the navigation below runs
+// in a fresh anonymous context to exercise the real defect path.
+test("exposes the draft through the agent preview link only", async ({ page }) => {
   await loginAsAgent(page);
   await page.goto(`/dashboard/trips/${SEED.draftTripId}`);
 
@@ -52,6 +53,9 @@ test.fixme("exposes the draft through the agent preview link only", async ({ pag
   const previewHref = await previewLink.getAttribute("href");
   expect(previewHref).toBe(`/t/${DRAFT_SLUG}?preview=${encodeURIComponent(SEED.draftTripId)}`);
 
+  // The agent may open the preview link in another browser or share it with
+  // the traveler before publishing: assert it with no session at all.
+  await page.context().clearCookies();
   await page.goto(previewHref!);
   await expect(page.getByRole("heading", { name: SEED.draftTripTitle })).toBeVisible();
 });

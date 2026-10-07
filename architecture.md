@@ -71,6 +71,12 @@ Cliente (browser)
 - Las superficies públicas sin login son `/t/{slug}` (itinerario publicado) y
   `/c/{slug}` (historial de viajes publicados del cliente). Se apoyan en las
   políticas de Row Level Security para exponer únicamente datos publicados.
+  Excepción (issue #404): `/t/{slug}?preview={tripId}` sirve también borradores
+  — la fila y sus tablas hijas se resuelven por la vía autorizada server-side
+  (service role) y la visibilidad se valida en código de aplicación
+  (`isTravelerTripVisible`, fail closed), sin relajar RLS ni exponer campos de
+  operador. Sin service role configurado, el preview decae al camino anon y el
+  borrador sigue invisible.
 
 ## Capa de datos: fachada + módulos por dominio
 
