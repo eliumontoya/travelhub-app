@@ -401,16 +401,27 @@ o `supabase/seed.sql`.
 
 Antes del primer test, `e2e/global-setup.ts` (`globalSetup`) precalienta el
 `webServer` con GETs best-effort a `/login`, `/dashboard` y la ruta pública
-del viajero seed `/t/<slug>`, de modo que la compilación on-demand de
-`npm run dev` ocurre antes de que arranque el primer test y no compite con su
-presupuesto de timeout. Si algún GET falla no aborta la suite: el `webServer`
-ya validó su propia `url`.
+del viajero seed `/t/<slug>`: en local mueve la compilación on-demand del dev
+server fuera del presupuesto del primer test (issue #406) y en CI absorbe el
+calentamiento de primera petición del servidor de producción (issue #409). Si
+algún GET falla no aborta la suite: el `webServer` ya validó su propia `url`.
 
-Durante la corrida, el log `[WebServer] ⨯ Error: The destination stream
-closed early` es ruido benigno de abort de streaming (un test cierra o navega
-mientras el dev-server todavía escribe la respuesta). El servidor sobrevive:
-evidencias de CI en el run 37255713862, donde 32 tests pasaron alrededor del
-error. Solo hay que tratarlo como fallo si el servidor deja de responder.
+El servidor bajo test depende del entorno: en CI (`e2e-local`), la suite corre
+contra servidor de producción (`npm run build` + `npm run start`, con el build
+previo del workflow inyectando las mismas variables `NEXT_PUBLIC_*` locales
+que el paso de tests), porque el dev server en un runner de CI frío entrega
+las server actions tarde o aborta el stream (`destination stream closed
+early`), generando aserciones flaky y mutaciones tardías que compiten con la
+restauración de los reintentos (issue #409). En local, `playwright.config.ts`
+conserva `npm run dev` para iteración rápida.
+
+Durante la corrida contra el dev server (local), el log `[WebServer] ⨯ Error:
+The destination stream closed early` es ruido benigno de abort de streaming
+(un test cierra o navega mientras el servidor todavía escribe la respuesta).
+El servidor sobrevive: evidencias de CI en el run 37255713862, donde 32 tests
+pasaron alrededor del error. En CI el servidor es de producción (issue #409):
+ese error no debería aparecer; si reaparece y correlaciona con fallos de
+tests, ya no se trata como ruido sino como defecto a investigar.
 
 ## Convenciones de código
 

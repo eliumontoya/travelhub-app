@@ -11,11 +11,11 @@ declare module "@playwright/test" {
   }
 }
 
-// The `local` project runs against the local dev server backed by the seeded
+// The `local` project runs against the local server backed by the seeded
 // Supabase CLI stack (issue #372). These are the standard, public local demo
 // keys emitted by `supabase start`; they are safe to commit and are only used
-// by the local dev server started below. Override the env vars to point at a
-// different local stack.
+// by the local server started below (dev locally, production in CI). Override
+// the env vars to point at a different local stack.
 const LOCAL_SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
 const LOCAL_SUPABASE_ANON_KEY =
@@ -27,8 +27,10 @@ const LOCAL_SUPABASE_SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
-// `local` project runs against the local dev server (with local Supabase env
-// wired into the webServer below). `preview` project runs against the deployed
+// `local` project runs against the local server (dev server when run
+// locally, production server in CI — see the `webServer` block below) with
+// local Supabase env wired into the `webServer` block. `preview` project runs
+// against the deployed
 // Vercel preview URL supplied via BASE_URL. The presence of BASE_URL also
 // disables the top-level webServer so the preview job does not start a
 // redundant local server.
@@ -36,7 +38,9 @@ const hasRemoteTarget = !!process.env.BASE_URL;
 const bypassToken = process.env.VERCEL_PROTECTION_BYPASS || "";
 
 export default defineConfig({
-  // Best-effort route warmup so the dev server compiles the first routes
+  // Best-effort route warmup so the first test does not race the server's
+  // first-request cost (dev-server compilation locally; production warmup in
+  // CI, issue #409).
   // before the first test starts (issue #406).
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
@@ -81,7 +85,13 @@ export default defineConfig({
   webServer: hasRemoteTarget
     ? undefined
     : {
-        command: "npm run dev",
+        // In CI the suite runs against a production server (`next build &&
+        // next start`, built by the workflow before this config loads). The
+        // dev server under a cold CI runner delays or aborts server actions
+        // (`destination stream closed early`), producing flaky assertions and
+        // late mutations that race retry restorations (issue #409). Local
+        // runs keep `next dev` for fast iteration.
+        command: process.env.CI ? "npm run start" : "npm run dev",
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

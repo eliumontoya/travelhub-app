@@ -81,6 +81,15 @@ jobs:
       - name: Reset Supabase database (migrations + seed)
         run: supabase db reset
 
+      - name: Build Next.js production bundle
+        run: npm run build
+        env:
+          # Same local values the test step injects at runtime: NEXT_PUBLIC_
+          # vars are inlined into the client bundle at build time, so they
+          # must match what the server under test uses (issue #409).
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
       - name: Run Local Playwright Tests
         run: npx playwright test --project=local
         env:

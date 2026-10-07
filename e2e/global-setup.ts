@@ -2,15 +2,17 @@ import { request } from "@playwright/test";
 
 import { SEED } from "./local/helpers";
 
-// The `local` project always targets the dev server started by the `webServer`
-// block in `playwright.config.ts`.
+// The `local` project targets the local server started by the `webServer`
+// block in `playwright.config.ts` (dev server locally, production server in
+// CI).
 const WARMUP_BASE_URL = "http://localhost:3000";
 const WARMUP_TIMEOUT_MS = 15_000;
 
 /**
- * Pre-warm the routes the suite hits first so the on-demand compilation of
- * `npm run dev` happens before the first test runs, instead of racing that
- * test's 30s budget (issue #406). The `webServer` block already validated
+ * Pre-warm the routes the suite hits first. For the dev server (local runs)
+ * this moves on-demand compilation ahead of the first test's 30s budget
+ * (issue #406); for the production server (CI, issue #409) it absorbs
+ * first-request JIT/edge warmup. The `webServer` block already validated
  * that its own `url` responds, so a warmup failure must never abort the
  * suite: each request is best-effort and a real server problem surfaces in
  * the tests themselves.
