@@ -46,6 +46,15 @@ Tipos en `src/types/index.ts`: `VisaStatus`, `Visa`, `VisaFilters`,
 
 - [x] 11. PR5 (whatsapp + account, cierre del issue): rama `eliumontoya/refactor-types-pr5-whatsapp-profiles` sobre `main` (`e913d84`). Commit `refactor(types): extract account and whatsapp type families to colocated domain modules, reducing barrel to pure re-exports (issue #374)` — crea `src/lib/data/account.types.ts` (19 líneas: AccountRole, Feature, AccountProfile) y `src/lib/data/whatsapp.types.ts` (138 líneas: 9 enums exportados, WhatsAppKnowledgeEntry exportada, interfaces internas no exportadas + CrmSyncEvent/CrmSyncEventStatus + JsonRecord). El worker escaló una decisión: el test estructural preexistente `whatsapp-data-foundation.test.ts` leía `src/types/index.ts` como texto y afirmaba los nombres de WhatsApp ahí; autorizada la opción 1 — su readFileSync apunta ahora a `whatsapp.types.ts` (solo la ruta, aserciones intactas). **Barril final: 12 líneas, solo re-exports alfabéticos** (account, clients, items, packing, services, settings, suppliers, tags, travel-agents, trips, visas, whatsapp). Verificación: tsc 0 errores, 121 archivos / 911 tests OK, build exit 0. Revisión nativa **approved** (lineage `review-a50915dce77ba813`, autoridad quemada; informativos R3-001/002/003 menores). `architecture.md` actualizado al estado final (migración completa + regla vigente). PR cierra #374 (`Closes #374`).
 
+- [x] 12. **PR #421 merged** en `main` → merge commit `0414722` (2026-10-06, base `main` verificada). **Issue #374 CLOSED (COMPLETED)** automáticamente vía `Closes #374`. Estado final en `main`: 12 módulos de dominio en `src/lib/data/*.types.ts` (613 líneas en total, verbatim del barril original) + `src/types/index.ts` reducido a **12 líneas de solo re-exports alfabéticos** (de 613 líneas monolíticas). Criterio del issue cumplido al 100%: ningún import de llamador cambió en toda la serie (#412, #415, #417, #419, #421).
+
+## Trabajo posterior opcional (informativos acumulados de las revisiones RDD)
+- Convertir los `export *` del barril en re-exports explícitos (elimina la clase de hallazgos `R3-barrel-*`).
+- `R3-whatsapp-source-union-collapses`: evaluar el union `"whatsapp" | string` en `WhatsAppContact.source`.
+- `R3-client-empty-object-contract`: evaluar el `client: Client` de compatibilidad en `TripWithDetails`.
+- Limpieza: la rama `eliumontoya/refactor-types-pr3-trips-items-packing` quedó con un commit stray (`4af160b`) fuera de `main` (incidente del merge de #418); la rama es borrable.
+- Regla vigente (architecture.md): una familia de tipos nueva nace en su propio módulo de dominio, nunca en el barril.
+
 ## Siguientes PRs (mismo issue)
 
 - PR2: clients + tags + settings; PR3: trips + items + packing; PR4: services + suppliers + travel-agents; PR5: whatsapp/WCC + profiles. Al final, `src/types/index.ts` contiene solo re-exports.
