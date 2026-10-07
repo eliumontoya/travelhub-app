@@ -49,7 +49,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
   const previewToken = getPreviewToken(resolvedSearchParams);
-  const trip = await getTripWithDetails(slug);
+  const trip = await getTripWithDetails(slug, { previewToken });
 
   if (!trip || !isTravelerTripVisible(trip.status, trip.id, previewToken)) {
     return { title: "Itinerario no encontrado" };
@@ -81,7 +81,7 @@ export default async function PublicTripPage({
   const previewToken = getPreviewToken(resolvedSearchParams);
   const t = dictionary[lang];
   const [trip, contact, session] = await Promise.all([
-    getTripWithDetails(slug),
+    getTripWithDetails(slug, { previewToken }),
     getSiteSettings(),
     getClientSession(),
   ]);

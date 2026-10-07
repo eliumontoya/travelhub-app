@@ -1,4 +1,5 @@
 import { ClientDocument, ItemDocument, TripDocument, TripPhoto } from "@/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabase, sanitizeStorageKey } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { updateTrip } from "@/lib/data/trips";
@@ -55,8 +56,17 @@ export async function uploadItemDocument(itemId: string, file: File): Promise<It
 
 // Genera una URL firmada de corta duración para descargar/ver un documento
 // privado. Devuelve null si Supabase no está configurado o si falla.
-export async function getSignedDocumentUrl(path: string): Promise<string | null> {
-  const supabase = await createServerSupabase();
+//
+// El cliente es opcional para no romper a los callers existentes: por defecto
+// firma con el cliente anon/cookie (RLS aplica). La vista previa de borrador
+// (issue #404) pasa el cliente autorizado de `assemblePublicTripWithDetails`
+// porque el bucket es privado y el anon no puede firmar documentos de un
+// viaje en borrador (RLS solo publica `status='published'`).
+export async function getSignedDocumentUrl(
+  path: string,
+  client?: SupabaseClient
+): Promise<string | null> {
+  const supabase = client ?? (await createServerSupabase());
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, 3600);

@@ -4,8 +4,10 @@
 // pública de @/lib/data permanezca idéntica.
 
 import { Client, ClientHomeTrip, ItemWithSupplier, Supplier, Tag, Trip, TripFilters, TripWithDetails } from "@/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ALL_TRIPS_PAGE_SIZE, PaginationParams, PaginatedResult, canUseServiceRole, createServerSupabase, hasActiveTripFilters, paginationBounds } from "@/lib/data/shared";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { isTravelerTripVisible } from "@/lib/trip-visibility";
 import { rowToClient, rowToTag } from "@/lib/data/clients";
 import { PHOTOS_BUCKET, getSignedDocumentUrl, rowToDocument, rowToTripDocument, rowToTripPhoto } from "@/lib/data/documents";
 import { rowToPackingItem } from "@/lib/data/trip-packing";
@@ -392,23 +394,74 @@ export async function getTripById(id: string): Promise<TripWithDetails | null> {
 
 // Vista pública /t/[slug]: NUNCA selecciona ni expone sale_price/commission_rate
 // (issue #53, campos exclusivos del editor del agente). A diferencia de
-// getTripById, no usa select("*") — lista explícita de columnas públicas.
-export async function getTripWithDetails(slug: string): Promise<TripWithDetails | null> {
+// getTripById, no usa select("*") — lista explícita de columnas públicas. Se
+// comparte entre la ruta anon y la de vista previa de borrador para que ambas
+// expongan exactamente el mismo conjunto de columnas.
+const PUBLIC_TRIP_COLUMNS =
+  "id, client_id, title, slug, start_date, end_date, cover_image_url, instructions, status, created_at";
+
+export type TripWithDetailsOptions = {
+  // Token de vista previa (?preview={tripId}): en borradores es el único
+  // autorizador válido. Ver isTravelerTripVisible.
+  previewToken?: string | null;
+};
+
+// issue #404: RLS no puede ver los query params, así que un borrador con
+// ?preview={tripId} sigue siendo invisible para el cliente anon aunque el
+// token lo autorice. Cuando llega un token Y hay service role configurado, la
+// fila y sus tablas hijas se resuelven con el cliente de servicio
+// autorizado (mismo patrón canUseServiceRole()/getSupabaseAdmin() que
+// clients.ts). La validación de visibilidad NO se delega a RLS: queda en
+// código de aplicación y falla cerrada (null → notFound()). Sin token, o sin
+// service role, el comportamiento anon existente no cambia.
+export async function getTripWithDetails(
+  slug: string,
+  options: TripWithDetailsOptions = {}
+): Promise<TripWithDetails | null> {
+  const previewToken = options.previewToken;
+
+  if (previewToken && canUseServiceRole()) {
+    const admin = getSupabaseAdmin();
+    const { data: tripRow, error } = await admin
+      .from("trips")
+      .select(PUBLIC_TRIP_COLUMNS)
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) throw error;
+    // Fail closed: fila ausente o token que no coincide con el id del viaje
+    // (o viaje no-borrador que igual pediría token) → no hay vista previa.
+    if (
+      !tripRow ||
+      !isTravelerTripVisible(
+        tripRow.status as Trip["status"],
+        tripRow.id as string,
+        previewToken
+      )
+    ) {
+      return null;
+    }
+    return assemblePublicTripWithDetails(tripRow, admin);
+  }
+
   const supabase = await createServerSupabase();
   const { data: tripRow, error } = await supabase
     .from("trips")
-    .select(
-      "id, client_id, title, slug, start_date, end_date, cover_image_url, instructions, status, created_at"
-    )
+    .select(PUBLIC_TRIP_COLUMNS)
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
   if (!tripRow) return null;
-  return assemblePublicTripWithDetails(tripRow);
+  return assemblePublicTripWithDetails(tripRow, supabase);
 }
 
-async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): Promise<TripWithDetails> {
-  const supabase = await createServerSupabase();
+async function assemblePublicTripWithDetails(
+  tripRow: Record<string, unknown>,
+  // Cliente autorizado del caller: anon/cookie en la ruta pública normal,
+  // service-role cuando hay token de vista previa de borrador (#404). Todas
+  // las lecturas hijas y el firmado de documentos usan este mismo cliente
+  // para que un borrador no devuelva conjuntos vacíos por RLS.
+  supabase: SupabaseClient
+): Promise<TripWithDetails> {
   const trip = rowToTrip(tripRow);
 
   const { data: photoRows, error: photosError } = await supabase
@@ -488,7 +541,7 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
           .filter((doc) => doc.item_id === item.id)
           .map(async (docRow) => {
             const doc = rowToDocument(docRow);
-            const url = await getSignedDocumentUrl(doc.fileUrl);
+            const url = await getSignedDocumentUrl(doc.fileUrl, supabase);
             return { ...doc, url };
           }));
         if (item.supplierId && supplierById.has(item.supplierId)) {
@@ -508,7 +561,7 @@ async function assemblePublicTripWithDetails(tripRow: Record<string, unknown>): 
   const documents = await Promise.all(
     (tripDocRows ?? []).map(async (row) => {
       const doc = rowToTripDocument(row);
-      const url = await getSignedDocumentUrl(doc.filePath);
+      const url = await getSignedDocumentUrl(doc.filePath, supabase);
       return { ...doc, url };
     })
   );
