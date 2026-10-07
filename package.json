@@ -17,8 +17,8 @@
     "db:reset": "supabase db reset",
     "test:e2e:ui": "playwright test --ui",
     "whatsapp:simulate": "node scripts/whatsapp-simulate-inbound.mjs",
-    "sanity": "node ../sanity-kit/src/cli.ts run",
-    "sanity:fast": "node ../sanity-kit/src/cli.ts run --fast"
+    "sanity": "node \"${SANITY_KIT_PATH:-../sanity-kit}/src/cli.ts\" run",
+    "sanity:fast": "node \"${SANITY_KIT_PATH:-../sanity-kit}/src/cli.ts\" run --fast"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.48",
