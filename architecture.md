@@ -357,6 +357,7 @@ Variables relevantes:
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — conexión pública a Supabase
 - `SUPABASE_SERVICE_ROLE_KEY` — uso server-side únicamente, nunca exponer al cliente
+- `SANITY_KIT_PATH` — opcional, ruta al checkout de sanity-kit para `npm run sanity` / `npm run sanity:fast`; necesaria solo en worktrees (desde el checkout principal el fallback `../sanity-kit` ya resuelve)
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — opcional, activa autocomplete de ubicación y mapa embebido
 - `RESEND_API_KEY` — opcional, activa el recordatorio automático por email antes del viaje (ver `src/lib/email.ts` y `src/app/api/cron/trip-reminders/route.ts`)
 - `EMAIL_FROM` — opcional, remitente del recordatorio (default `TravelHub <onboarding@resend.dev>`)
